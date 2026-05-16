@@ -72,8 +72,8 @@ const PDFPadres = {
       ${this._sidebar(n)}
       <main class="pdf-main">
         ${this._resumenMes(n)}
-        ${this._equipo(n)}
         ${this._horario(n)}
+        ${this._equipo(n)}
         ${this._reuniones(n)}
         <p class="pdf-closing">Estamos aquí para acompañarlos a él y a ustedes. Siempre pueden escribirnos.</p>
       </main>
@@ -157,27 +157,20 @@ const PDFPadres = {
     if (!equipo.length) return '';
     const primerNombre = (n.nombre_completo || '').split(' ')[0];
 
-    const cards = equipo.map(e => {
+    const items = equipo.map(e => {
       const t = Data.terapeuta(e.id_terapeuta);
       if (!t) return '';
-      const inicial = (t.nombre_completo || '?').trim().slice(0, 1).toUpperCase();
-      const sesionesSem = Data.sesionesDeNino(n.id_nino)
-        .filter(s => s.id_terapeuta === t.id_terapeuta && fechasSemana().includes(s.fecha)).length;
       return `
-        <div class="pdf-team-card">
-          <div class="pdf-team-avatar">${UI.esc(inicial)}</div>
-          <div class="pdf-team-body">
-            <div class="pdf-team-name">${UI.esc(t.nombre_completo)}</div>
-            <div class="pdf-team-role">${UI.esc(t.especialidad || '')}</div>
-            ${sesionesSem ? `<div class="pdf-team-meta">${sesionesSem} ${sesionesSem === 1 ? 'sesión' : 'sesiones'} esta semana</div>` : ''}
-          </div>
-        </div>`;
+        <li class="pdf-team-item">
+          <span class="pdf-team-name">${UI.esc(t.nombre_completo)}</span>
+          <span class="pdf-team-role">${UI.esc(t.especialidad || '')}</span>
+        </li>`;
     }).join('');
 
     return `
-      <section class="pdf-section">
-        <h2 class="pdf-h2">Las personas que acompañan a ${UI.esc(primerNombre)}</h2>
-        <div class="pdf-team">${cards}</div>
+      <section class="pdf-section pdf-section-soft">
+        <h2 class="pdf-h2 pdf-h2-soft">Equipo que acompaña a ${UI.esc(primerNombre)}</h2>
+        <ul class="pdf-team-list">${items}</ul>
       </section>
     `;
   },

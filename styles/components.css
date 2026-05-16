@@ -581,6 +581,17 @@
   border-left: 3px solid var(--cn-mostaza);
   border-radius: var(--r-sm);
 }
+.nota-where-hint {
+  font-size: 11.5px;
+  color: var(--cn-azul-deep);
+  background: var(--cn-azul-bg-soft);
+  border-left: 3px solid var(--cn-azul);
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-radius: var(--r-sm);
+  line-height: 1.45;
+}
+.nota-where-hint b { color: var(--cn-azul-darker); }
 
 /* === Login screen === */
 .login-screen {

@@ -116,8 +116,8 @@ const Comunicacion = {
         </div>
         <div class="cf-preview">
           ${this._previewResumen(n)}
-          ${this._previewEquipo(n)}
           ${this._previewHorario(n)}
+          ${this._previewEquipo(n)}
         </div>
       </div>
     `;
@@ -144,15 +144,15 @@ const Comunicacion = {
   _previewEquipo(n) {
     const equipo = Data.equipoDeNino(n.id_nino);
     if (!equipo.length) return '';
-    const cards = equipo.map(e => {
+    const items = equipo.map(e => {
       const t = Data.terapeuta(e.id_terapeuta);
       if (!t) return '';
-      return `<div class="cf-prev-ter"><b>${UI.esc(t.nombre_completo)}</b><span>${UI.esc(t.especialidad)}</span></div>`;
+      return `<li><span>${UI.esc(t.nombre_completo)}</span><em>${UI.esc(t.especialidad)}</em></li>`;
     }).join('');
     return `
       <div class="cf-prev-section">
-        <div class="cf-prev-h">Equipo que acompaña</div>
-        <div class="cf-prev-equipo">${cards}</div>
+        <div class="cf-prev-h cf-prev-h-soft">Equipo que acompaña a ${UI.esc((n.nombre_completo || '').split(' ')[0])}</div>
+        <ul class="cf-prev-equipo-list">${items}</ul>
       </div>
     `;
   },

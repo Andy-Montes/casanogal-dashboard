@@ -79,6 +79,9 @@ const Panel = {
         </div>
         ${editable ? `
           <div class="panel-notes-editor">
+            <div class="nota-where-hint">
+              Esta nota queda guardada en la ficha de <b>${UI.esc(nino?.nombre_completo || sesion.nino_visible)}</b>, en la sección Historial. Coordinación y el equipo asignado pueden verla.
+            </div>
             <textarea id="notaTextarea" class="panel-notes-textarea" placeholder="${notaTexto ? '' : 'Anota lo que trabajaste con el niño en esta sesión…'}">${UI.esc(notaTexto)}</textarea>
             <div class="panel-notes-actions">
               <button class="btn btn-ghost" id="notaCancelBtn" type="button">Cancelar</button>
@@ -138,7 +141,8 @@ const Panel = {
         delete store[sesion.id_sesion];
       }
       localStorage.setItem('casanogal_notas', JSON.stringify(store));
-      UI.toast(txt ? 'Nota guardada' : 'Nota eliminada', 'success');
+      const ninoNombre = nino?.nombre_completo?.split(' ')[0] || 'el niño';
+      UI.toast(txt ? `Nota guardada en la ficha de ${ninoNombre} · Historial` : 'Nota eliminada', 'success');
       Main.renderPendientes();
     });
     document.getElementById('notaCancelBtn')?.addEventListener('click', () => {

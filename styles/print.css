@@ -104,6 +104,26 @@
   padding-bottom: 2pt;
   border-bottom: 1pt solid #E2DDD7;
 }
+.pdf-h2-soft { font-size: 9.5pt; color: #5C5C5C; font-weight: 600; }
+.pdf-section-soft { margin-top: 4mm; }
+.pdf-team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5mm 6mm;
+}
+.pdf-team-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 8.5pt;
+  border-bottom: 0.4pt dotted #D2C8B5;
+  padding: 1.5pt 0;
+}
+.pdf-team-item .pdf-team-name { font-size: 9pt; }
+.pdf-team-item .pdf-team-role { font-size: 8pt; color: #5C5C5C; font-weight: 400; }
 
 .pdf-lead { font-size: 9pt; color: #5C5C5C; margin: 0; }
 
