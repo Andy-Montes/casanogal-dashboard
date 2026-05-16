@@ -83,10 +83,27 @@ const Calendar = {
           <div class="kpi-value">${k.salas.activas}<span class="kpi-unit">/${k.salas.total}</span></div>
           <div class="kpi-meta">${k.salas.saturadas.length ? k.salas.saturadas.slice(0,3).join(' · ') + ' saturadas' : 'Distribución pareja'}</div>
         </div>
-        <div class="kpi ${k.conf.count ? 'kpi-alert' : ''}">
+        <div class="kpi ${k.conf.count ? 'kpi-alert kpi-clickable' : ''}" id="kpiConflict" ${k.conf.count ? 'role="button" tabindex="0"' : ''}>
           <div class="kpi-label">${k.conf.count ? '<span class="alert-dot"></span>' : ''}Conflictos detectados</div>
           <div class="kpi-value">${k.conf.count}</div>
-          <div class="kpi-meta">${k.conf.count ? this._descConflictos(k.conf.list) : 'Sin conflictos'}</div>
+          <div class="kpi-meta">${k.conf.count ? 'Click para ver detalle' : 'Sin conflictos'}</div>
+          ${k.conf.count ? `
+            <div class="kpi-expand" id="kpiConflictExpand">
+              ${k.conf.list.map(s => {
+                const ter = Data.terapeuta(s.id_terapeuta);
+                return `<div class="conflict-row" data-id="${s.id_sesion}">
+                  <div class="conflict-row-head">
+                    <b>${UI.esc(s.nino_visible)}</b> con <b>${UI.esc(ter?.nombre_visible || '—')}</b>
+                  </div>
+                  <div class="conflict-row-meta">
+                    ${UI.esc(s.tipo_terapia)} · Sala ${UI.esc(s.sala_nombre)} · ${UI.esc(s.dia_semana)} ${UI.esc(s.hora_inicio)}<br>
+                    <span class="conflict-reason">⚠ ${UI.esc(s.conflicto_detectado)}</span>
+                  </div>
+                  <button class="btn btn-secondary conflict-jump">Ir →</button>
+                </div>`;
+              }).join('')}
+            </div>
+          ` : ''}
         </div>
       </div>
 
@@ -249,6 +266,26 @@ const Calendar = {
   },
 
   _wire() {
+    // KPI conflicto expandible
+    const kpiConf = document.getElementById('kpiConflict');
+    if (kpiConf?.classList.contains('kpi-clickable')) {
+      kpiConf.addEventListener('click', (e) => {
+        if (e.target.closest('.conflict-jump') || e.target.closest('.conflict-row')) return;
+        kpiConf.classList.toggle('open');
+      });
+      document.querySelectorAll('.conflict-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const id = row.dataset.id;
+          const target = document.querySelector(`#calendar .session[data-id="${id}"]`);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('flash');
+            setTimeout(() => target.classList.remove('flash'), 1800);
+          }
+        });
+      });
+    }
+
     // Botón hoy / nav semana
     document.getElementById('todayBtn')?.addEventListener('click', () => {
       State.weekStart = '2026-05-11';
@@ -280,27 +317,34 @@ const Calendar = {
       el.addEventListener('dragend', () => {
         el.classList.remove('dragging');
         document.querySelectorAll('.drag-over, .drag-over-conflict').forEach(c => c.classList.remove('drag-over', 'drag-over-conflict'));
+        Calendar._dragId = null;
       });
     });
+
+    // Helper: ¿hay otras sesiones en esa celda (según State, no DOM)?
+    const cellOcupadaPorOtra = (cell, ownId) => {
+      const fecha = cell.dataset.fecha;
+      const idBloque = cell.dataset.bloque;
+      return State.data.sesiones.some(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== ownId);
+    };
 
     // Celdas: drop + click vacío
     document.querySelectorAll('#calendar .cal-cell').forEach(cell => {
       cell.addEventListener('dragover', (e) => {
         e.preventDefault();
-        const hasSession = cell.querySelector('.session');
-        const draggedInside = cell.contains(document.querySelector('.session.dragging'));
-        if (hasSession && !draggedInside) cell.classList.add('drag-over-conflict');
+        const id = Calendar._dragId;
+        if (cellOcupadaPorOtra(cell, id)) cell.classList.add('drag-over-conflict');
         else cell.classList.add('drag-over');
       });
       cell.addEventListener('dragleave', () => cell.classList.remove('drag-over', 'drag-over-conflict'));
       cell.addEventListener('drop', (e) => {
         e.preventDefault();
+        cell.classList.remove('drag-over', 'drag-over-conflict');
         const id = Calendar._dragId;
         if (!id) return;
         const sesion = State.data.sesiones.find(s => s.id_sesion === id);
         if (!sesion) return;
-        const targetHasOther = Array.from(cell.querySelectorAll('.session')).some(el => el.dataset.id !== id);
-        if (targetHasOther) {
+        if (cellOcupadaPorOtra(cell, id)) {
           UI.toast('⚠ Conflicto: el bloque ya está ocupado', 'alert');
           return;
         }

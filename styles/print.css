@@ -1,0 +1,97 @@
+/* Hoja de estilos para PDF de padres
+   Se activa con body.printing-padres + @media print
+*/
+
+@media print {
+  @page { size: A4 portrait; margin: 14mm 14mm 16mm 14mm; }
+
+  body.printing-padres * { visibility: hidden; }
+  body.printing-padres .main,
+  body.printing-padres .main * { visibility: visible; }
+
+  /* Encabezado imprimible */
+  body.printing-padres .main::before {
+    content: 'Casa Nogal · Sistema clínico';
+    visibility: visible;
+    display: block;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: 800;
+    color: #1B6B8A;
+    letter-spacing: -0.02em;
+    margin-bottom: 4pt;
+  }
+  body.printing-padres .main::after {
+    content: 'Horario semanal · documento informativo · casanogal.cl';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #8B92A0;
+    visibility: visible;
+  }
+
+  body.printing-padres {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.printing-padres .layout {
+    display: block !important;
+  }
+
+  body.printing-padres .header,
+  body.printing-padres .sidebar,
+  body.printing-padres .section-actions,
+  body.printing-padres .cal-toolbar,
+  body.printing-padres .kpi-row,
+  body.printing-padres .legend,
+  body.printing-padres .role-banner,
+  body.printing-padres .hero-week-nav,
+  body.printing-padres .section-head .btn,
+  body.printing-padres #downloadPDF { display: none !important; }
+
+  body.printing-padres .main {
+    padding: 0 !important;
+    background: white !important;
+    grid-column: 1 / -1;
+  }
+
+  body.printing-padres .hero {
+    background: white !important;
+    color: var(--text) !important;
+    padding: 12pt 0 16pt;
+    margin: 0 0 8pt 0;
+    border-radius: 0;
+    border-bottom: 2pt solid var(--cn-azul);
+  }
+  body.printing-padres .hero::before { display: none; }
+  body.printing-padres .hero-brain { display: none; }
+  body.printing-padres .hero-inner { display: block; }
+  body.printing-padres .hero-eyebrow { color: var(--cn-azul) !important; }
+  body.printing-padres .hero-title { color: var(--text) !important; font-size: 18pt; }
+  body.printing-padres .hero-meta { color: var(--text-2) !important; }
+  body.printing-padres .hero-meta-label { color: var(--text-3) !important; }
+  body.printing-padres .hero-meta-value { color: var(--text) !important; font-size: 14pt; }
+
+  body.printing-padres .section-head .section-title { font-size: 13pt; }
+  body.printing-padres .section-head .section-sub { font-size: 9pt; }
+
+  body.printing-padres .calendar { border: 1pt solid var(--border); page-break-inside: avoid; }
+  body.printing-padres .cal-grid { display: grid; }
+  body.printing-padres .cal-cell { min-height: 36pt; }
+  body.printing-padres .session {
+    animation: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    padding: 3pt 4pt;
+    font-size: 8pt;
+  }
+  body.printing-padres .session-name { font-size: 8pt; }
+  body.printing-padres .session-name .ter { display: none; } /* padres no ven abrev terapeuta */
+  body.printing-padres .session-sub { font-size: 7pt; }
+}

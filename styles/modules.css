@@ -43,8 +43,14 @@
   border-left: 1px solid var(--border);
   text-align: center;
   position: sticky;
-  top: 0;
+  top: var(--header-h);
   z-index: 4;
+  box-shadow: 0 1px 0 var(--border);
+}
+.cal-time {
+  position: sticky;
+  left: 0;
+  z-index: 3;
 }
 .cal-header-cell:first-child { border-left: none; }
 .cal-day-name {
@@ -128,14 +134,14 @@
 
 /* Sesión píldora */
 .session {
-  padding: 7px 9px;
+  padding: 5px 7px;
   border-radius: var(--r-sm);
   cursor: grab;
   transition: all 0.22s var(--ease);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   border-left: 3px solid;
   opacity: 0;
   animation: sessionFadeIn 0.35s var(--ease) forwards;
@@ -152,27 +158,36 @@
   filter: brightness(1.04);
 }
 .session.dragging { opacity: 0.5; transform: scale(0.95); }
+.session.flash {
+  animation: sessionFlash 1.8s var(--ease);
+  z-index: 8;
+}
+@keyframes sessionFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(232,163,23,0.7); transform: scale(1); }
+  20%  { box-shadow: 0 0 0 12px rgba(232,163,23,0); transform: scale(1.08); }
+  100% { box-shadow: 0 0 0 0 rgba(232,163,23,0); transform: scale(1); }
+}
 .session-name {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  line-height: 1.2;
+  gap: 5px;
+  line-height: 1.15;
 }
 .session-name .ter {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   opacity: 0.78;
   flex-shrink: 0;
 }
 .session-sub {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
-  opacity: 0.78;
+  opacity: 0.75;
   letter-spacing: 0.01em;
   line-height: 1.2;
 }
@@ -774,3 +789,92 @@
   letter-spacing: -0.03em;
   margin-top: 4px;
 }
+
+/* === Onboarding modal === */
+.onb-card {
+  background: var(--bg);
+  border-radius: var(--r-xl);
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 32px 36px;
+  box-shadow: var(--sh-3);
+  animation: slideUp 0.3s var(--ease);
+}
+.onb-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+.onb-brain { width: 60px; height: 60px; flex-shrink: 0; opacity: 0.85; }
+.onb-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--cn-azul); margin-bottom: 8px;
+}
+.onb-title {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.035em;
+  color: var(--text); line-height: 1.15; margin-bottom: 8px;
+}
+.onb-sub { font-size: 14px; color: var(--text-2); line-height: 1.55; }
+
+.onb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.onb-block {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-soft);
+  border-radius: var(--r-md);
+}
+.onb-icon {
+  width: 38px; height: 38px;
+  border-radius: var(--r-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.onb-block-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.015em; }
+.onb-block-sub { font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
+
+.onb-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.onb-skip {
+  font-size: 12.5px;
+  color: var(--text-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.onb-skip:hover { color: var(--text-2); }
+.onb-go { height: 42px; padding: 0 22px; font-size: 14px; }
+
+@media (max-width: 640px) {
+  .onb-card { padding: 22px 20px; }
+  .onb-head { grid-template-columns: 1fr; }
+  .onb-brain { width: 48px; height: 48px; }
+  .onb-title { font-size: 22px; }
+  .onb-grid { grid-template-columns: 1fr; }
+}
+
+/* Help link en footer sidebar */
+.sidebar-help {
+  margin-top: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  transition: color 0.16s var(--ease);
+}
+.sidebar-help:hover { color: var(--cn-azul); }

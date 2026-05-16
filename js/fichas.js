@@ -98,10 +98,10 @@ const Fichas = {
     const prox = sesiones
       .filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO)
       .sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
-    const avCls = UI.avatarClassByPrograma(n.id_programa);
+    const c = UI.colorNino(n.id_nino);
     return `<div class="ficha-card" data-id="${n.id_nino}">
       <div class="ficha-card-head">
-        <span class="ficha-avatar ${avCls}">${UI.initials(n.nombre_completo)}</span>
+        <span class="ficha-avatar" style="background:${c.bg};color:${c.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>
         <div style="flex:1;min-width:0">
           <div class="ficha-name">${UI.esc(n.nombre_completo)}</div>
           <div class="ficha-prog">${UI.esc(n.programa_nombre)}${n.semana_actual?` · Sem ${n.semana_actual}`:''} · ${n.edad_anios} años</div>
@@ -130,7 +130,7 @@ const Fichas = {
       : sesiones;
     const objetivos = Data.objetivosDeNino(id);
     const docs = Data.documentosDeNino(id);
-    const avCls = UI.avatarClassByPrograma(n.id_programa);
+    const cNino = UI.colorNino(n.id_nino);
     const semProg = n.semana_actual && prog?.duracion_semanas ? Math.round(100 * n.semana_actual / prog.duracion_semanas) : null;
     const isTer = State.role === 'terapeuta';
     const tabs = isTer
@@ -145,7 +145,7 @@ const Fichas = {
       </button>
 
       <div class="ficha-detail-head">
-        <span class="ficha-avatar-lg ficha-avatar ${avCls}">${UI.initials(n.nombre_completo)}</span>
+        <span class="ficha-avatar-lg ficha-avatar" style="background:${cNino.bg};color:${cNino.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>
         <div>
           <div class="ficha-detail-name">${UI.esc(n.nombre_completo)}</div>
           <div class="ficha-detail-meta">

@@ -63,14 +63,15 @@ const Recursos = {
         ${list.map(s => {
           const enUso = sesHoy.filter(x => x.id_sala === s.id_sala).length;
           const pct = Math.min(100, Math.round(enUso / 14 * 100));
-          return `<div class="ficha-card" style="cursor:default">
+          const c = UI.colorSala(s.tipo_principal);
+          return `<div class="ficha-card sala-card" style="cursor:default;border-left:4px solid ${c.main}">
             <div class="ficha-card-head">
-              <span class="ficha-avatar int" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep)">
+              <span class="ficha-avatar" style="background:${c.bg};color:${c.text}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
               </span>
               <div style="flex:1">
                 <div class="ficha-name">${UI.esc(s.nombre)}</div>
-                <div class="ficha-prog">${UI.esc(s.tipo_principal)} · cap. ${s.capacidad_personas}</div>
+                <div class="ficha-prog" style="color:${c.main};font-weight:600">${UI.esc(s.tipo_principal)} · cap. ${s.capacidad_personas}</div>
               </div>
             </div>
             <div style="font-size:12px;color:var(--text-3);line-height:1.4">${UI.esc(s.equipamiento || '—')}</div>
@@ -110,9 +111,9 @@ const Recursos = {
           </tr></thead>
           <tbody>
             ${filtered.map(n => {
-              const av = UI.avatarClassByPrograma(n.id_programa);
+              const c = UI.colorNino(n.id_nino);
               return `<tr style="cursor:pointer" data-id="${n.id_nino}">
-                <td><span class="ficha-avatar ${av}" style="width:32px;height:32px;font-size:11px">${UI.initials(n.nombre_completo)}</span></td>
+                <td><span class="ficha-avatar" style="width:32px;height:32px;font-size:11px;background:${c.bg};color:${c.text}">${UI.esc(UI.initials(n.nombre_completo))}</span></td>
                 <td><div style="font-weight:600;color:var(--text)">${UI.esc(n.nombre_completo)}</div><div style="font-size:11px;color:var(--text-3)" class="mono">${UI.esc(n.rut)}</div></td>
                 <td class="num">${n.edad_anios}</td>
                 <td>${UI.esc(n.programa_nombre)}</td>

@@ -51,4 +51,37 @@ const UI = {
     const map = { 'Realizada':'realizada', 'Agendada':'agendada', 'Cancelada':'cancelada', 'No Asistió':'no_asistio' };
     return map[estado] || 'agendada';
   },
+
+  // Palette de 8 colores vibrantes para avatares de niños — derivado del id_nino
+  _NINO_PALETTE: [
+    { bg:'#1B6B8A', text:'#FFFFFF' }, // azul brand
+    { bg:'#E8A317', text:'#0A1018' }, // mostaza
+    { bg:'#4D8B2C', text:'#FFFFFF' }, // verde
+    { bg:'#D4571C', text:'#FFFFFF' }, // naranja
+    { bg:'#7A3E9C', text:'#FFFFFF' }, // lavanda
+    { bg:'#0F857E', text:'#FFFFFF' }, // turquesa
+    { bg:'#C58B0A', text:'#FFFFFF' }, // ocre
+    { bg:'#2C5DA8', text:'#FFFFFF' }, // azul cog
+  ],
+  colorNino(idNino) {
+    if (!idNino) return this._NINO_PALETTE[0];
+    let h = 0;
+    for (let i = 0; i < idNino.length; i++) h = (h * 31 + idNino.charCodeAt(i)) >>> 0;
+    return this._NINO_PALETTE[h % this._NINO_PALETTE.length];
+  },
+
+  // Color de sala por tipo_principal
+  colorSala(tipo) {
+    const map = {
+      'Terapia Ocupacional':  { bg: 'var(--to-bg)',    text: 'var(--to-text)',    main: 'var(--to)' },
+      'Fonoaudiología':       { bg: 'var(--fono-bg)',  text: 'var(--fono-text)',  main: 'var(--fono)' },
+      'Cognitivo':            { bg: 'var(--cog-bg)',   text: 'var(--cog-text)',   main: 'var(--cog)' },
+      'Psicología':           { bg: 'var(--psico-bg)', text: 'var(--psico-text)', main: 'var(--psico)' },
+      'Psicología/RDI':       { bg: 'var(--rdi-bg)',   text: 'var(--rdi-text)',   main: 'var(--rdi)' },
+      'Kinesiología':         { bg: 'var(--kine-bg)',  text: 'var(--kine-text)',  main: 'var(--kine)' },
+      'Habilidad Adaptativa': { bg: 'var(--kids-bg)',  text: 'var(--kids-text)',  main: 'var(--kids)' },
+      'Multifunción':         { bg: 'var(--cn-mostaza-bg)', text: 'var(--cn-mostaza-deep)', main: 'var(--cn-mostaza)' },
+    };
+    return map[tipo] || { bg: 'var(--cn-azul-bg)', text: 'var(--cn-azul-deep)', main: 'var(--cn-azul)' };
+  },
 };

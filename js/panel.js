@@ -21,6 +21,10 @@ const Panel = {
     document.getElementById('panelSubtitle').textContent = `${sesion.tipo_terapia}${sesion.es_dupla ? ' · Dupla' : ''}`;
 
     const showNotas = State.role !== 'padres';
+    const editable = State.role === 'coordinacion' || State.role === 'terapeuta';
+    const storedNotas = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+    const notaEditada = storedNotas[sesion.id_sesion];
+    const notaTexto = notaEditada || nota?.notas_libres || '';
     document.getElementById('panelBody').innerHTML = `
       ${sesion.conflicto_detectado ? `
         <div class="alert-banner">
@@ -61,25 +65,53 @@ const Panel = {
       </div>
 
       ${showNotas ? `
-        <div class="panel-section-title">Notas clínicas</div>
-        <div class="panel-notes">
-          ${nota ? `
-            <p>${UI.esc(nota.notas_libres || 'Sin notas libres.')}</p>
-            ${nota.objetivos_trabajados && nota.objetivos_trabajados.length ? `
+        <div class="panel-section-title">Notas clínicas ${notaEditada ? '<span style="color:var(--success);font-weight:600;font-size:10px;margin-left:6px">EDITADA</span>' : ''}</div>
+        ${editable ? `
+          <div class="panel-notes-editor">
+            <textarea id="notaTextarea" class="panel-notes-textarea" placeholder="${notaTexto ? '' : 'Anota lo que trabajaste con el niño en esta sesión…'}">${UI.esc(notaTexto)}</textarea>
+            <div class="panel-notes-actions">
+              <button class="btn btn-ghost" id="notaCancelBtn" type="button">Cancelar</button>
+              <button class="btn btn-primary" id="notaSaveBtn" type="button">Guardar nota</button>
+            </div>
+            ${nota?.objetivos_trabajados?.length ? `
+              <div style="margin-top:12px;font-size:12px;color:var(--text-3)"><b>Objetivos trabajados anteriormente:</b><br>
+                ${nota.objetivos_trabajados.map(o => `<span class="objetivo-pill">${UI.esc(o)}</span>`).join('')}
+              </div>
+            ` : ''}
+            ${nota?.avance_percibido != null ? `
+              <div style="margin-top:8px;font-size:12px;color:var(--text-3)"><b>Avance percibido (último):</b> <span class="mono">${nota.avance_percibido}/10</span></div>
+            ` : ''}
+          </div>
+        ` : `
+          <div class="panel-notes">
+            ${notaTexto ? `<p>${UI.esc(notaTexto)}</p>` : `<p class="empty">Aún no hay notas. El terapeuta podrá registrar después de la sesión.</p>`}
+            ${nota?.objetivos_trabajados?.length ? `
               <div style="margin-top:10px"><b>Objetivos trabajados:</b><br>
                 ${nota.objetivos_trabajados.map(o => `<span class="objetivo-pill">${UI.esc(o)}</span>`).join('')}
               </div>
             ` : ''}
-            ${nota.avance_percibido != null ? `
+            ${nota?.avance_percibido != null ? `
               <div style="margin-top:10px;font-size:12px;color:var(--text-3)"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></div>
             ` : ''}
-          ` : `<p class="empty">Aún no hay notas. El terapeuta podrá registrar después de la sesión.</p>`}
-        </div>
+          </div>
+        `}
       ` : ''}
     `;
 
     document.getElementById('panelOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
+
+    // Wire de notas editables
+    document.getElementById('notaSaveBtn')?.addEventListener('click', () => {
+      const txt = document.getElementById('notaTextarea').value.trim();
+      const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+      if (txt) store[sesion.id_sesion] = txt; else delete store[sesion.id_sesion];
+      localStorage.setItem('casanogal_notas', JSON.stringify(store));
+      UI.toast(txt ? 'Nota guardada' : 'Nota eliminada', 'success');
+    });
+    document.getElementById('notaCancelBtn')?.addEventListener('click', () => {
+      document.getElementById('notaTextarea').value = notaTexto;
+    });
   },
 
   close() {

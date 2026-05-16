@@ -83,10 +83,94 @@ const Reportes = {
           </tbody>
         </table>
       </div>
+
+      <div class="section-head" style="margin-top:32px">
+        <div>
+          <div class="section-title">Pago profesionales</div>
+          <div class="section-sub">Mayo 2026 · horas trabajadas × valor hora. Honorarios y sueldo Planta.</div>
+        </div>
+      </div>
+
+      ${this._renderPagos()}
     `;
 
     document.getElementById('exportPDF').addEventListener('click', () => UI.toast('Exportación PDF enviada al correo', 'success'));
     document.getElementById('exportXLS').addEventListener('click', () => UI.toast('Exportación Excel enviada al correo', 'success'));
+  },
+
+  _renderPagos() {
+    // Agrupar sesiones realizadas por terapeuta
+    const sesiones = State.data.sesiones.filter(s => s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
+    const porTer = {};
+    sesiones.forEach(s => {
+      porTer[s.id_terapeuta] = porTer[s.id_terapeuta] || { sesiones: 0, minutos: 0 };
+      porTer[s.id_terapeuta].sesiones++;
+      const b = Data.bloque(s.id_bloque);
+      porTer[s.id_terapeuta].minutos += b?.duracion_minutos || 35;
+    });
+
+    const rows = State.data.terapeutas.filter(t => t.estado === 'Activo').map(t => {
+      const stats = porTer[t.id_terapeuta] || { sesiones: 0, minutos: 0 };
+      const horas = stats.minutos / 60;
+      const esPlanta = t.tipo_contrato === 'Planta';
+      const monto = esPlanta ? null : Math.round(horas * (t.valor_hora || 0));
+      return { t, sesiones: stats.sesiones, horas, monto, esPlanta };
+    }).sort((a, b) => b.horas - a.horas);
+
+    const totalHoras = rows.reduce((a, r) => a + r.horas, 0);
+    const totalHonorarios = rows.filter(r => !r.esPlanta).reduce((a, r) => a + (r.monto || 0), 0);
+    const planta = rows.filter(r => r.esPlanta).length;
+    const honor = rows.filter(r => !r.esPlanta).length;
+
+    return `
+      <div class="reportes-summary">
+        <div class="summary-card"><div class="summary-label">Total horas mes</div><div class="summary-value">${totalHoras.toFixed(1)}</div></div>
+        <div class="summary-card"><div class="summary-label">Profesionales Planta</div><div class="summary-value">${planta}</div></div>
+        <div class="summary-card"><div class="summary-label">Profesionales Honorarios</div><div class="summary-value">${honor}</div></div>
+        <div class="summary-card" style="background:var(--cn-azul-bg);border-color:var(--cn-azul)">
+          <div class="summary-label" style="color:var(--cn-azul-deep)">Total honorarios a pagar</div>
+          <div class="summary-value" style="color:var(--cn-azul-deep)">${UI.fmtCLP(totalHonorarios)}</div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:24px">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Profesional</th>
+              <th>Especialidad</th>
+              <th>Contrato</th>
+              <th class="num">Sesiones</th>
+              <th class="num">Horas</th>
+              <th class="num">Valor hora</th>
+              <th class="num">Monto (CLP)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const c = ESPECIALIDAD_VAR[r.t.especialidad] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
+              return `<tr>
+                <td><span class="equipo-avatar" style="background:${c.bg};color:${c.text};width:30px;height:30px;font-size:10px">${UI.esc(r.t.abreviacion)}</span></td>
+                <td><div style="font-weight:600;color:var(--text)">${UI.esc(r.t.nombre_completo)}</div></td>
+                <td><span class="badge" style="background:${c.bg};color:${c.text}">${UI.esc(r.t.especialidad)}</span></td>
+                <td>${UI.esc(r.t.tipo_contrato)}</td>
+                <td class="num">${r.sesiones}</td>
+                <td class="num">${r.horas.toFixed(1)}</td>
+                <td class="num">${r.esPlanta ? '—' : UI.fmtCLP(r.t.valor_hora)}</td>
+                <td class="num">${r.esPlanta ? '<span style="color:var(--text-3)">Sueldo fijo</span>' : UI.fmtCLP(r.monto)}</td>
+              </tr>`;
+            }).join('')}
+            <tr class="total-row">
+              <td colspan="4">Total honorarios</td>
+              <td class="num">${rows.reduce((a,r)=>a+r.sesiones,0)}</td>
+              <td class="num">${totalHoras.toFixed(1)}</td>
+              <td class="num">—</td>
+              <td class="num">${UI.fmtCLP(totalHonorarios)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
   _monto(r) {
