@@ -90,6 +90,36 @@ const Main = {
       case 'permisos':   Recursos.renderPlaceholder('Permisos'); break;
       default:           Calendar.render();
     }
+    this._injectRoleBanner();
+  },
+
+  _injectRoleBanner() {
+    const main = document.getElementById('main');
+    if (!main) return;
+    let html = '';
+    if (State.role === 'terapeuta') {
+      const tid = DEMO_USERS.terapeuta.id_terapeuta;
+      const ninos = State.data.equipo_asignado.filter(e => e.id_terapeuta === tid && e.activa).length;
+      const sesSem = Data.sesionesSemana().length;
+      html = `
+        <div class="role-banner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <b>Estás viendo como Terapeuta · Krasna Petrovic.</b>
+            Solo aparecen tus ${ninos} niños asignados y tus ${sesSem} sesiones de la semana. Cambia el rol arriba para ver todo.
+          </div>
+        </div>`;
+    } else if (State.role === 'padres') {
+      html = `
+        <div class="role-banner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <b>Vista familiar de León Aravena.</b>
+            Solo ves lo que es de tu hijo: sesiones, tipo de terapia, sala. Sin nombres de terapeutas ni notas clínicas internas.
+          </div>
+        </div>`;
+    }
+    if (html) main.insertAdjacentHTML('afterbegin', html);
   },
 
   refreshUserChip() {

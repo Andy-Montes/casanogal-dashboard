@@ -264,6 +264,24 @@
   text-transform: uppercase;
 }
 
+/* === Role banner (cuando rol filtra la vista) === */
+.role-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--cn-mostaza-bg);
+  border: 1px solid rgba(232, 163, 23, 0.35);
+  border-left: 3px solid var(--cn-mostaza);
+  border-radius: var(--r-md);
+  color: var(--cn-mostaza-deep);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.role-banner svg { flex-shrink: 0; margin-top: 1px; color: var(--cn-mostaza); }
+.role-banner b { font-weight: 700; color: var(--text); }
+
 /* === Toast === */
 .toast {
   position: fixed;

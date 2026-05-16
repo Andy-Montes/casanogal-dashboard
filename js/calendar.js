@@ -93,7 +93,7 @@ const Calendar = {
       <div class="section-head">
         <div>
           <div class="section-title">Agenda semanal</div>
-          <div class="section-sub">Hoy es ${UI.fmtFecha(HOY_ISO)} · click en celda vacía para crear · drag para mover</div>
+          <div class="section-sub">${semana.length} sesiones esta semana${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'} detectado${k.conf.count===1?'':'s'}</b> automáticamente` : ''} · click en celda vacía para crear · drag para mover</div>
         </div>
         <div class="section-actions">
           <button class="btn btn-secondary" id="todayBtn">

@@ -20,11 +20,31 @@ const Fichas = {
     const conteo = { all: ninos.length };
     ['INT','CONT','EVAL','APR','AT'].forEach(k => conteo[k] = ninos.filter(n => n.id_programa === 'PROG-' + k).length);
 
+    // Cuando hay búsqueda activa o filtro distinto a "all", se aplana en una sola grilla
+    const useGroups = !q && State.filterFicha === 'all' && filtered.length > 0;
+    const intensivos = filtered.filter(n => n.id_programa === 'PROG-INT');
+    const continuos  = filtered.filter(n => n.id_programa === 'PROG-CONT');
+    const otros      = filtered.filter(n => ['PROG-EVAL','PROG-APR','PROG-AT'].includes(n.id_programa));
+
+    const renderGrupo = (titulo, eyebrow, items) => items.length === 0 ? '' : `
+      <div class="group-section">
+        <div class="group-section-head">
+          <div>
+            <div class="group-eyebrow">${UI.esc(eyebrow)}</div>
+            <div class="group-title">${UI.esc(titulo)} <span class="group-count">· ${items.length} niño${items.length===1?'':'s'}</span></div>
+          </div>
+        </div>
+        <div class="fichas-grid">
+          ${items.map(n => this._card(n)).join('')}
+        </div>
+      </div>
+    `;
+
     document.getElementById('main').innerHTML = `
       <div class="section-head">
         <div>
           <div class="section-title">Fichas clínicas</div>
-          <div class="section-sub">${filtered.length} de ${ninos.length} niños · click en una ficha para abrir el historial</div>
+          <div class="section-sub">Historial completo de cada niño · click en una ficha para abrir</div>
         </div>
       </div>
 
@@ -45,9 +65,13 @@ const Fichas = {
 
       ${filtered.length === 0 ? `
         <div class="empty-state">
-          <div class="empty-state-title">Sin resultados</div>
-          <div>Ajusta los filtros o limpia la búsqueda.</div>
+          <div class="empty-state-title">Nada por acá con este filtro</div>
+          <div>Prueba con <b>Todos</b> o limpia la búsqueda.</div>
         </div>
+      ` : useGroups ? `
+        ${renderGrupo('Intensivo 40', 'Programa intensivo · 6 semanas', intensivos)}
+        ${renderGrupo('Seguimiento', 'Programa continuo · sesiones recurrentes', continuos)}
+        ${renderGrupo('Otros programas', 'Evaluación, Apraxia y Atención Temprana', otros)}
       ` : `
         <div class="fichas-grid">
           ${filtered.map(n => this._card(n)).join('')}

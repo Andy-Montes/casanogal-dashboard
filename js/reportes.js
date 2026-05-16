@@ -23,8 +23,8 @@ const Reportes = {
     document.getElementById('main').innerHTML = `
       <div class="section-head">
         <div>
-          <div class="section-title">Reportes y boletas</div>
-          <div class="section-sub">Período: mayo 2026 · sesiones realizadas listas para facturar</div>
+          <div class="section-title">Boletas del mes</div>
+          <div class="section-sub">Mayo 2026 · <b>listo para emitir</b>, sin armar a mano. Cada sesión realizada cuenta automático.</div>
         </div>
         <div class="section-actions">
           <button class="btn btn-secondary" id="exportPDF">

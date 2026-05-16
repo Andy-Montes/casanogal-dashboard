@@ -9,7 +9,7 @@ const Recursos = {
       <div class="section-head">
         <div>
           <div class="section-title">Equipo</div>
-          <div class="section-sub">${filtered.length} terapeutas · ${list.filter(t=>t.estado==='Activo').length} activos</div>
+          <div class="section-sub"><b>${list.length} terapeutas</b> · sus horas, contratos y especialidades en un solo lugar</div>
         </div>
       </div>
       <div class="fichas-toolbar">
@@ -56,7 +56,7 @@ const Recursos = {
       <div class="section-head">
         <div>
           <div class="section-title">Salas</div>
-          <div class="section-sub">${list.length} salas · ocupación de hoy</div>
+          <div class="section-sub"><b>Ocupación en tiempo real</b> de las ${list.length} salas del centro · hoy ${UI.fmtFecha(HOY_ISO)}</div>
         </div>
       </div>
       <div class="fichas-grid">
@@ -93,8 +93,8 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head">
         <div>
-          <div class="section-title">Niños</div>
-          <div class="section-sub">${filtered.length} de ${list.length} · todos los programas</div>
+          <div class="section-title">Niños activos</div>
+          <div class="section-sub"><b>${list.filter(n=>n.id_programa==='PROG-INT').length} en Intensivo</b>, <b>${list.filter(n=>n.id_programa==='PROG-CONT').length} en Seguimiento</b>, ${list.filter(n=>['PROG-EVAL','PROG-APR','PROG-AT'].includes(n.id_programa)).length} en evaluación o programas puntuales</div>
         </div>
       </div>
       <div class="fichas-toolbar">

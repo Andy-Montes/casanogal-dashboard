@@ -5,7 +5,7 @@ const State = {
   currentUser: null,             // usuario activo según rol
   module: 'calendario',          // módulo activo
   weekStart: '2026-05-11',       // semana visible (lunes)
-  filterPrograma: 'all',         // all | INT | CONT | EVAL | APR | AT
+  filterPrograma: 'INT',         // default: Intensivo (producto estrella). all | INT | CONT | EVAL | APR | AT
   filterFicha: 'all',
   fichaActiva: null,             // id_nino abierto en vista B
   searchQuery: '',
