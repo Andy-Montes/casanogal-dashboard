@@ -524,13 +524,27 @@ const Main = {
       ];
     }
     const conf = Data.kpiConflictos();
-    return [
+    const altasVencidas = State.data.ninos.filter(n => n.estado === 'Activo' && n.fecha_termino_programa && n.fecha_termino_programa < HOY_ISO);
+    const pend = [
       { id:'c-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} a resolver hoy`, detail:`Detectamos ${conf.count} sesiones que chocan en sala o terapeuta.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver y resolver.' },
+    ];
+    if (altasVencidas.length > 0) {
+      const lista = altasVencidas.slice(0, 5).map(n => `${n.nombre_completo} (alta ${n.fecha_termino_programa})`).join(', ');
+      pend.push({
+        id: 'c-alta-vencida',
+        t: 'alert',
+        msg: `${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con alta vencida`,
+        detail: `Hay ${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con fecha_termino_programa vencida pero todavía marcados como Activo: ${lista}.`,
+        action: 'Abre la ficha del niño en Fichas clínicas y decide si se extiende el programa o se cierra el alta.',
+      });
+    }
+    pend.push(
       { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'Hay 5 boletas del mes con sesiones realizadas y monto calculado automáticamente.', action:'En el módulo Reportes y boletas se ve la tabla completa para emitir.' },
       { id:'c-equi',  t:'warn',  msg:'3 fichas con equipo incompleto',         detail:'Hay 3 niños que aún no tienen todo el equipo terapéutico asignado.', action:'En Fichas clínicas abre la ficha del niño y revisa la pestaña Equipo.' },
       { id:'c-cierre',t:'ok',    msg:'Cierre semanal del Intensivo · viernes', detail:'Hoy viernes corresponde el cierre semanal del programa Intensivo 40.', action:'Revisa la semana completa en el módulo Calendario.' },
       { id:'c-eval',  t:'ok',    msg:'2 nuevas evaluaciones esta semana',      detail:'Se sumaron 2 niños al programa de Evaluación inicial.', action:'En Fichas clínicas aparecen en el grupo "Otros programas".' },
-    ];
+    );
+    return pend;
   },
 };
 
