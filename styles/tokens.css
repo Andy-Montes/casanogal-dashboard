@@ -1,0 +1,62 @@
+/* Casa Nogal - Sistema de tokens */
+:root {
+  /* Brand */
+  --cn-azul: #1B6B8A;
+  --cn-azul-deep: #0F4D67;
+  --cn-azul-darker: #083547;
+  --cn-azul-bright: #2A8FB8;
+  --cn-azul-bg: #E6F1F6;
+  --cn-azul-bg-soft: #F2F8FB;
+
+  --cn-mostaza: #E8A317;
+  --cn-mostaza-deep: #B57E0E;
+  --cn-mostaza-bright: #F5BC3F;
+  --cn-mostaza-bg: #FDF3DC;
+
+  /* Neutrales */
+  --bg: #FFFFFF;
+  --bg-soft: #F7F8FA;
+  --bg-panel: #FAFBFC;
+  --border: #E5E8ED;
+  --border-strong: #D2D7DE;
+  --text: #0A1018;
+  --text-2: #4A5260;
+  --text-3: #8B92A0;
+  --text-4: #B5BAC4;
+
+  /* Especialidades */
+  --to: #4D8B2C;    --to-bg: #E6F2DA;    --to-text: #2A5417;
+  --fono: #D4571C;  --fono-bg: #FBE7D9;  --fono-text: #7F3411;
+  --cog: #2C5DA8;   --cog-bg: #DEE9F8;   --cog-text: #173770;
+  --psico: #C58B0A; --psico-bg: #FAEFD0; --psico-text: #6D4A02;
+  --kine: #57606E;  --kine-bg: #E5E8ED;  --kine-text: #2D333D;
+  --rdi: #7A3E9C;   --rdi-bg: #EFE0F7;   --rdi-text: #491F60;
+  --kids: #0F857E;  --kids-bg: #D5F0EE;  --kids-text: #084540;
+
+  /* Semántica */
+  --success: #1F8A4D; --success-bg: #E0F3E8;
+  --alert: #D63B30;   --alert-bg: #FBE5E3;
+  --warning: #E8A317;
+
+  /* Radios */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  /* Sombras */
+  --sh-1: 0 1px 2px rgba(10,16,24,0.06), 0 0 0 1px rgba(10,16,24,0.04);
+  --sh-2: 0 4px 12px rgba(10,16,24,0.08), 0 0 0 1px rgba(10,16,24,0.04);
+  --sh-3: 0 12px 24px rgba(10,16,24,0.10), 0 0 0 1px rgba(10,16,24,0.05);
+  --sh-mostaza: 0 8px 20px rgba(232,163,23,0.30);
+
+  /* Dimensiones layout */
+  --sidebar-w: 248px;
+  --panel-w: 420px;
+  --header-h: 60px;
+
+  /* Easing */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
