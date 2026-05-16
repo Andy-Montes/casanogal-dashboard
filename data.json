@@ -87125,11 +87125,11 @@
       "id_asignacion": "EQA-0127",
       "id_nino": "NINO-0009",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0128",
@@ -87865,11 +87865,11 @@
       "id_asignacion": "EQA-0201",
       "id_nino": "NINO-0014",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0202",
@@ -87895,11 +87895,11 @@
       "id_asignacion": "EQA-0204",
       "id_nino": "NINO-0014",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0205",
@@ -87955,21 +87955,21 @@
       "id_asignacion": "EQA-0210",
       "id_nino": "NINO-0015",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0211",
       "id_nino": "NINO-0015",
       "id_terapeuta": "TER-11",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0212",
@@ -88015,11 +88015,11 @@
       "id_asignacion": "EQA-0216",
       "id_nino": "NINO-0015",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0217",
@@ -88125,11 +88125,11 @@
       "id_asignacion": "EQA-0227",
       "id_nino": "NINO-0016",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0228",
@@ -88175,11 +88175,11 @@
       "id_asignacion": "EQA-0232",
       "id_nino": "NINO-0016",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0233",
@@ -88575,11 +88575,11 @@
       "id_asignacion": "EQA-0272",
       "id_nino": "NINO-0019",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0273",
@@ -88685,11 +88685,11 @@
       "id_asignacion": "EQA-0283",
       "id_nino": "NINO-0020",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0284",
@@ -88785,11 +88785,11 @@
       "id_asignacion": "EQA-0293",
       "id_nino": "NINO-0020",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0294",
@@ -88895,11 +88895,11 @@
       "id_asignacion": "EQA-0304",
       "id_nino": "NINO-0021",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0305",
@@ -88925,11 +88925,11 @@
       "id_asignacion": "EQA-0307",
       "id_nino": "NINO-0021",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0308",
@@ -88995,21 +88995,21 @@
       "id_asignacion": "EQA-0314",
       "id_nino": "NINO-0022",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0315",
       "id_nino": "NINO-0022",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0316",
@@ -89205,11 +89205,11 @@
       "id_asignacion": "EQA-0335",
       "id_nino": "NINO-0023",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0336",
@@ -89275,11 +89275,11 @@
       "id_asignacion": "EQA-0342",
       "id_nino": "NINO-0024",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0343",
@@ -89375,11 +89375,11 @@
       "id_asignacion": "EQA-0352",
       "id_nino": "NINO-0024",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0353",
@@ -89435,11 +89435,11 @@
       "id_asignacion": "EQA-0358",
       "id_nino": "NINO-0025",
       "id_terapeuta": "TER-11",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0359",
@@ -89725,11 +89725,11 @@
       "id_asignacion": "EQA-0387",
       "id_nino": "NINO-0027",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0388",
@@ -89905,21 +89905,21 @@
       "id_asignacion": "EQA-0405",
       "id_nino": "NINO-0028",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0406",
       "id_nino": "NINO-0028",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0407",
@@ -89945,11 +89945,11 @@
       "id_asignacion": "EQA-0409",
       "id_nino": "NINO-0028",
       "id_terapeuta": "TER-09",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0410",
@@ -90085,11 +90085,11 @@
       "id_asignacion": "EQA-0423",
       "id_nino": "NINO-0029",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0424",
@@ -90265,11 +90265,11 @@
       "id_asignacion": "EQA-0441",
       "id_nino": "NINO-0031",
       "id_terapeuta": "TER-02",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0442",
@@ -90395,21 +90395,21 @@
       "id_asignacion": "EQA-0454",
       "id_nino": "NINO-0032",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 5 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 5 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0455",
       "id_nino": "NINO-0032",
       "id_terapeuta": "TER-11",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0456",
@@ -90455,11 +90455,11 @@
       "id_asignacion": "EQA-0460",
       "id_nino": "NINO-0032",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0461",
@@ -90605,11 +90605,11 @@
       "id_asignacion": "EQA-0475",
       "id_nino": "NINO-0033",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0476",
@@ -90635,11 +90635,11 @@
       "id_asignacion": "EQA-0478",
       "id_nino": "NINO-0033",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0479",
@@ -90725,11 +90725,11 @@
       "id_asignacion": "EQA-0487",
       "id_nino": "NINO-0034",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0488",
@@ -90765,11 +90765,11 @@
       "id_asignacion": "EQA-0491",
       "id_nino": "NINO-0034",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0492",
@@ -90825,21 +90825,21 @@
       "id_asignacion": "EQA-0497",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0498",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-09",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0499",
@@ -90875,11 +90875,11 @@
       "id_asignacion": "EQA-0502",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-01",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0503",
@@ -90905,21 +90905,21 @@
       "id_asignacion": "EQA-0505",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0506",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 4 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 4 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0507",
@@ -90955,21 +90955,21 @@
       "id_asignacion": "EQA-0510",
       "id_nino": "NINO-0036",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0511",
       "id_nino": "NINO-0036",
       "id_terapeuta": "TER-10",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 1 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 1 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0512",
@@ -90995,21 +90995,21 @@
       "id_asignacion": "EQA-0514",
       "id_nino": "NINO-0036",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0515",
       "id_nino": "NINO-0036",
       "id_terapeuta": "TER-06",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0516",
@@ -91075,21 +91075,21 @@
       "id_asignacion": "EQA-0522",
       "id_nino": "NINO-0037",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0523",
       "id_nino": "NINO-0037",
       "id_terapeuta": "TER-11",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0524",
@@ -91125,21 +91125,21 @@
       "id_asignacion": "EQA-0527",
       "id_nino": "NINO-0037",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0528",
       "id_nino": "NINO-0037",
       "id_terapeuta": "TER-06",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0529",
@@ -91165,11 +91165,11 @@
       "id_asignacion": "EQA-0531",
       "id_nino": "NINO-0037",
       "id_terapeuta": "TER-02",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0532",
@@ -91215,11 +91215,11 @@
       "id_asignacion": "EQA-0536",
       "id_nino": "NINO-0038",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0537",
@@ -91275,21 +91275,21 @@
       "id_asignacion": "EQA-0542",
       "id_nino": "NINO-0038",
       "id_terapeuta": "TER-12",
-      "rol_terapeuta": "Principal",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 3 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 3 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0543",
       "id_nino": "NINO-0038",
       "id_terapeuta": "TER-11",
-      "rol_terapeuta": "Apoyo",
-      "activa": true,
+      "rol_terapeuta": "Sustituto",
+      "activa": false,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": null,
-      "notas": "Equipo permanente · 2 sesiones"
+      "fecha_fin": "2026-05-16",
+      "notas": "Sustituto · 2 sesiones · demovido por cap"
     },
     {
       "id_asignacion": "EQA-0544",
