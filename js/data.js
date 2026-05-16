@@ -60,7 +60,18 @@ const Data = {
     }
     if (State.role === 'terapeuta') {
       const tid = DEMO_USERS.terapeuta.id_terapeuta;
-      const ids = new Set(State.data.equipo_asignado.filter(e => e.id_terapeuta === tid && e.activa).map(e => e.id_nino));
+      // Union: niños con sesiones del terapeuta + niños en equipo_asignado.activa
+      // Esto asegura coherencia entre lo que ve en Calendario y en Fichas.
+      const ids = new Set();
+      State.data.equipo_asignado
+        .filter(e => e.id_terapeuta === tid && e.activa)
+        .forEach(e => ids.add(e.id_nino));
+      State.data.sesiones
+        .filter(s => s.id_terapeuta === tid || s.id_terapeuta_secundario === tid)
+        .forEach(s => {
+          if (s.id_nino) ids.add(s.id_nino);
+          if (s.id_nino_secundario) ids.add(s.id_nino_secundario);
+        });
       return State.data.ninos.filter(n => ids.has(n.id_nino));
     }
     return State.data.ninos;

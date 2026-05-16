@@ -1,90 +1,213 @@
-// Modal de bienvenida — sobrio, una sola pantalla, no tour invasivo
+// Tour guiado paso a paso · primera vez que un usuario entra
 const Onboarding = {
-  KEY: 'casanogal_onboarded',
+  KEY: 'casanogal_tour_done',
 
   shouldShow() {
-    return !localStorage.getItem(this.KEY);
+    const session = State.session;
+    if (!session) return false;
+    const key = this.KEY + '_' + (session.tipo === 'admin' ? 'admin' : 'ter');
+    return !localStorage.getItem(key);
+  },
+
+  _markDone() {
+    const session = State.session;
+    const key = this.KEY + '_' + (session?.tipo === 'admin' ? 'admin' : 'ter');
+    localStorage.setItem(key, '1');
+  },
+
+  reset() {
+    localStorage.removeItem(this.KEY + '_admin');
+    localStorage.removeItem(this.KEY + '_ter');
   },
 
   open(force = false) {
     if (!force && !this.shouldShow()) return;
-    const html = `
-      <div class="pendiente-modal-overlay" id="onbOverlay">
-        <div class="onb-card">
-          <div class="onb-head">
-            <svg viewBox="0 0 64 64" fill="none" class="onb-brain">
-              <path d="M22 14C16 14 12 18 12 24C12 26 12.5 28 13.5 29.5C11 31 9 34 9 38C9 44 13 48 19 48C20 49.5 22 51 24 51C24 53 25 54 27 54C29 54 31 53 31 51V14C28 14 25 14 22 14Z" stroke="#E8A317" stroke-width="2.5"/>
-              <path d="M42 14C48 14 52 18 52 24C52 26 51.5 28 50.5 29.5C53 31 55 34 55 38C55 44 51 48 45 48C44 49.5 42 51 40 51C40 53 39 54 37 54C35 54 33 53 33 51V14C36 14 39 14 42 14Z" stroke="#E8A317" stroke-width="2.5"/>
-              <line x1="32" y1="14" x2="32" y2="51" stroke="#E8A317" stroke-width="2.5"/>
-            </svg>
-            <div>
-              <div class="onb-eyebrow">Bienvenida · Casa Nogal · Sistema clínico</div>
-              <div class="onb-title">Toda tu operación clínica en un solo lugar.</div>
-              <div class="onb-sub">Antes lo armabas en 7 pestañas de Google Sheets. Ahora es un solo sistema, con conflictos detectados solos y vistas distintas según quién entra.</div>
-            </div>
-          </div>
+    const steps = State.session?.tipo === 'admin' ? this._stepsAdmin() : this._stepsTerapeuta();
+    this._run(steps, 0);
+  },
 
-          <div class="onb-grid">
-            <div class="onb-block">
-              <span class="onb-icon" style="background:var(--cn-azul-bg);color:var(--cn-azul)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </span>
-              <div>
-                <div class="onb-block-title">Calendario semanal</div>
-                <div class="onb-block-sub">Agenda completa de todos los niños. Drag para mover sesiones. <b style="color:var(--alert)">Conflictos detectados automáticamente.</b></div>
-              </div>
-            </div>
+  _run(steps, idx) {
+    document.getElementById('tourLayer')?.remove();
+    if (idx >= steps.length) {
+      this._markDone();
+      UI.toast('Listo. Puedes volver al recorrido desde "¿Qué es Casa Nogal?" en el sidebar.', 'success');
+      return;
+    }
+    const step = steps[idx];
 
-            <div class="onb-block">
-              <span class="onb-icon" style="background:var(--cn-mostaza-bg);color:var(--cn-mostaza-deep)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
-              </span>
-              <div>
-                <div class="onb-block-title">3 vistas por rol</div>
-                <div class="onb-block-sub">Coordinación ve todo. Cada terapeuta ve solo a sus niños. Los padres ven solo a su hijo. Con un click cambias de vista.</div>
-              </div>
-            </div>
+    // Acción previa al paso (cambiar de módulo, abrir panel, etc.)
+    if (typeof step.before === 'function') {
+      try { step.before(); } catch {}
+    }
 
-            <div class="onb-block">
-              <span class="onb-icon" style="background:var(--to-bg);color:var(--to-text)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3-3 3 3 3-3 3 3z"/></svg>
-              </span>
-              <div>
-                <div class="onb-block-title">Fichas clínicas</div>
-                <div class="onb-block-sub">Historial completo de cada niño: sesiones, notas, objetivos, equipo, documentos. Todo en una ficha.</div>
-              </div>
-            </div>
+    // Esperar a que el target esté en el DOM
+    setTimeout(() => this._paintStep(steps, idx, step), step.wait || 60);
+  },
 
-            <div class="onb-block">
-              <span class="onb-icon" style="background:var(--success-bg);color:var(--success)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              </span>
-              <div>
-                <div class="onb-block-title">Boletas y pagos</div>
-                <div class="onb-block-sub">Boletas del mes calculadas automáticas. Horas trabajadas por terapeuta para pagar honorarios.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="onb-foot">
-            <a href="#" class="onb-skip" id="onbDontShow">No mostrar de nuevo</a>
-            <button class="btn btn-primary onb-go" id="onbGo">Entendido, mostrar el dashboard →</button>
+  _paintStep(steps, idx, step) {
+    const target = step.target ? document.querySelector(step.target) : null;
+    const layer = document.createElement('div');
+    layer.id = 'tourLayer';
+    layer.className = 'tour-layer';
+    layer.innerHTML = `
+      <div class="tour-backdrop"></div>
+      <div class="tour-pop" id="tourPop">
+        <div class="tour-step-count">Paso ${idx + 1} de ${steps.length}</div>
+        <div class="tour-title">${UI.esc(step.title)}</div>
+        <div class="tour-body">${step.body}</div>
+        <div class="tour-foot">
+          <a href="#" class="tour-skip" id="tourSkip">Saltar recorrido</a>
+          <div class="tour-nav">
+            ${idx > 0 ? '<button class="btn btn-ghost btn-xs" id="tourBack">← Atrás</button>' : ''}
+            <button class="btn btn-primary btn-xs" id="tourNext">${idx === steps.length - 1 ? 'Listo' : 'Siguiente →'}</button>
           </div>
         </div>
       </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', html);
+    document.body.appendChild(layer);
 
-    const close = (markDone) => {
-      document.getElementById('onbOverlay')?.remove();
-      if (markDone) localStorage.setItem(this.KEY, '1');
-    };
-    document.getElementById('onbGo').addEventListener('click', () => close(true));
-    document.getElementById('onbDontShow').addEventListener('click', (e) => { e.preventDefault(); close(true); });
-    document.getElementById('onbOverlay').addEventListener('click', (e) => { if (e.target.id === 'onbOverlay') close(false); });
+    // Highlight del target
+    if (target) {
+      target.classList.add('tour-highlight');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Posicionar el popover
+    this._positionPop(target, step.position);
+
+    // Wire
+    document.getElementById('tourNext').addEventListener('click', () => {
+      target?.classList.remove('tour-highlight');
+      this._run(steps, idx + 1);
+    });
+    document.getElementById('tourBack')?.addEventListener('click', () => {
+      target?.classList.remove('tour-highlight');
+      this._run(steps, idx - 1);
+    });
+    document.getElementById('tourSkip').addEventListener('click', (e) => {
+      e.preventDefault();
+      target?.classList.remove('tour-highlight');
+      document.getElementById('tourLayer')?.remove();
+      this._markDone();
+    });
   },
 
-  reset() {
-    localStorage.removeItem(this.KEY);
+  _positionPop(target, pos) {
+    const pop = document.getElementById('tourPop');
+    if (!pop) return;
+    if (!target) {
+      // Centrado en pantalla
+      pop.style.left = '50%';
+      pop.style.top = '50%';
+      pop.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const popW = 360, popH = pop.offsetHeight || 200;
+    let left, top;
+    const place = pos || 'auto';
+
+    if (place === 'right' || (place === 'auto' && rect.right + popW + 20 < vw)) {
+      left = rect.right + 16;
+      top = rect.top + rect.height / 2 - popH / 2;
+    } else if (place === 'left' || (place === 'auto' && rect.left - popW - 20 > 0)) {
+      left = rect.left - popW - 16;
+      top = rect.top + rect.height / 2 - popH / 2;
+    } else if (place === 'below' || (place === 'auto' && rect.bottom + popH + 20 < vh)) {
+      left = Math.max(20, rect.left + rect.width / 2 - popW / 2);
+      top = rect.bottom + 14;
+    } else {
+      left = Math.max(20, rect.left + rect.width / 2 - popW / 2);
+      top = Math.max(20, rect.top - popH - 14);
+    }
+    pop.style.left = Math.max(20, Math.min(left, vw - popW - 20)) + 'px';
+    pop.style.top = Math.max(20, Math.min(top, vh - popH - 20)) + 'px';
+    pop.style.transform = 'none';
+  },
+
+  // ====== Steps ======
+
+  _stepsAdmin() {
+    return [
+      {
+        title: 'Bienvenida a Casa Nogal',
+        body: 'Te voy a mostrar el sistema en menos de 1 minuto. Lo que antes vivía en 7 hojas de cálculo ahora está acá, con conflictos detectados solos y vistas por rol. <b>Click en "Siguiente" para empezar.</b>',
+      },
+      {
+        target: '.sidebar',
+        position: 'right',
+        title: 'Navegación principal',
+        body: 'Desde el menú lateral entras a <b>Calendario</b>, <b>Fichas clínicas</b>, <b>Reportes y boletas</b>, <b>Equipo</b>, <b>Niños</b>, <b>Salas</b>, <b>Configuración</b> y <b>Permisos</b>. Cada sección está pensada para un momento del día.',
+      },
+      {
+        target: '#roleSwitcher',
+        position: 'below',
+        title: 'Cambia de vista según quién necesita ver qué',
+        body: 'Como super admin puedes previsualizar cómo se ve el sistema para un <b>Terapeuta</b> (solo sus niños) o entrar a la <b>Consola Familia</b> (Padres) para preparar lo que les llega a los apoderados.',
+      },
+      {
+        target: '.kpi-row, .hero-meta, .hero',
+        position: 'below',
+        title: 'Termómetro del centro',
+        body: 'Arriba del calendario tienes los <b>KPIs de la semana</b>: ocupación, sesiones hoy, salas activas y conflictos. Si algo se pone rojo, le clickeas y entras al detalle.',
+      },
+      {
+        target: '#newSessionBtn',
+        position: 'below',
+        title: 'Crear sesiones',
+        body: 'Desde aquí abres el formulario de <b>nueva sesión</b>. También puedes hacer click directo en cualquier celda vacía del calendario para crear ahí mismo.',
+      },
+      {
+        target: '[data-role="padres"]',
+        position: 'below',
+        title: 'Consola Familia',
+        body: 'Cuando necesites enviar el horario semanal a una familia, entra a <b>Padres</b>. Eliges al niño, revisas qué información va a recibir, y mandas el PDF por mail con un click. Esta vista <b>no la ven los apoderados</b>: es solo para coordinación.',
+      },
+      {
+        target: '[data-module="config"]',
+        position: 'right',
+        title: 'Configuración',
+        body: 'En <b>Configuración</b> manejas horarios del centro, profesionales (agregar/editar/eliminar), valores hora, notificaciones automáticas y la plantilla del mail a familias. Todo lo que cambies se aplica al instante.',
+      },
+      {
+        title: 'Listo',
+        body: 'Ya conoces el sistema. Si necesitas volver al recorrido, hay un link <b>"¿Qué es Casa Nogal?"</b> al final del menú lateral.<br><br>Cualquier consulta, escríbele al equipo de soporte.',
+      },
+    ];
+  },
+
+  _stepsTerapeuta() {
+    const t = Data.terapeuta(State.session?.id_terapeuta);
+    const primerNombre = (t?.nombre_completo || 'Profesional').split(' ')[0];
+    return [
+      {
+        title: `Hola, ${primerNombre}`,
+        body: 'Te muestro tu espacio de trabajo en menos de 30 segundos. <b>Click en "Siguiente"</b>.',
+      },
+      {
+        target: '.sidebar',
+        position: 'right',
+        title: 'Tu menú',
+        body: 'Tienes acceso a tu <b>Calendario</b>, las <b>Fichas</b> de los niños que atiendes, <b>Reportes</b> (tus horas y tu pago) y <b>Salas</b>. Las áreas administrativas no te aparecen.',
+      },
+      {
+        target: '.cal-grid, .calendar, [data-module="calendario"]',
+        position: 'auto',
+        title: 'Tu calendario',
+        body: 'Ves solo <b>tus sesiones de la semana</b>. Si necesitas moverlas, arrastra la sesión a otra celda. El sistema detecta solo si hay choques con salas o con otro terapeuta.',
+        before: () => { State.module = 'calendario'; Main.activateNav('calendario'); Calendar.render(); }
+      },
+      {
+        target: '[data-module="fichas"]',
+        position: 'right',
+        title: 'Fichas de tus niños',
+        body: 'Click en <b>Fichas</b> para ver el historial completo, notas y objetivos de cada niño que atiendes. Solo aparecen los tuyos.',
+      },
+      {
+        title: 'Listo',
+        body: 'Ya conoces tu espacio. Para volver al recorrido, click en <b>"¿Qué es Casa Nogal?"</b> al pie del menú lateral.',
+      },
+    ];
   },
 };
