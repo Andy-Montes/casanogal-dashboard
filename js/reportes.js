@@ -247,7 +247,7 @@ const Reportes = {
       porTer[s.id_terapeuta].minutos += b?.duracion_minutos || 35;
     });
 
-    const rows = State.data.terapeutas.filter(t => t.estado === 'Activo').map(t => {
+    const rows = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').map(t => {
       const stats = porTer[t.id_terapeuta] || { sesiones: 0, minutos: 0 };
       const horas = stats.minutos / 60;
       const esPlanta = t.tipo_contrato === 'Planta';

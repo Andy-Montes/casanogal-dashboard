@@ -34,7 +34,7 @@ const Modal = {
     const salas = State.data.salas;
     const bloques = State.data.bloques_horarios.sort((a, b) => a.orden - b.orden);
     const tipoSel = pre.tipo_terapia || tipos[0];
-    const terapeutasFiltrados = State.data.terapeutas.filter(t => t.especialidad === tipoSel && t.estado === 'Activo');
+    const terapeutasFiltrados = Data.terapeutasEfectivos().filter(t => t.especialidad === tipoSel && t.estado === 'Activo');
 
     document.getElementById('modalBody').innerHTML = `
       <div class="field">
@@ -87,7 +87,7 @@ const Modal = {
     // Cuando cambia tipo, regenerar terapeutas
     document.getElementById('f_tipo').addEventListener('change', () => {
       const t = document.getElementById('f_tipo').value;
-      const list = State.data.terapeutas.filter(x => x.especialidad === t && x.estado === 'Activo');
+      const list = Data.terapeutasEfectivos().filter(x => x.especialidad === t && x.estado === 'Activo');
       document.getElementById('f_ter').innerHTML = list.map(x => `<option value="${x.id_terapeuta}">${UI.esc(x.nombre_visible)} (${UI.esc(x.abreviacion)})</option>`).join('');
       this._validate();
     });

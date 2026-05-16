@@ -169,7 +169,7 @@ const Login = {
       Data.load().then(() => this._fillTerSelect());
       return;
     }
-    const lista = State.data.terapeutas
+    const lista = Data.terapeutasEfectivos()
       .filter(t => t.estado === 'Activo')
       .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +

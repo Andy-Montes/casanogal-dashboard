@@ -46,6 +46,14 @@ const Config = {
     return list;
   },
 
+  _estadoSlug(estado) {
+    if (!estado || estado === 'Activo') return 'activo';
+    if (estado === 'Vacaciones') return 'vacaciones';
+    if (estado === 'Licencia médica') return 'licencia';
+    if (estado === 'Permiso') return 'permiso';
+    return 'inactivo';
+  },
+
   _readOverrides() {
     try {
       const o = JSON.parse(localStorage.getItem(this.KEY_TER) || '{}');
@@ -163,7 +171,10 @@ const Config = {
                   <td>${UI.esc(t.tipo_contrato)}</td>
                   <td class="num mono">${vh}</td>
                   <td class="mono" style="font-size:12px">${UI.esc(t.email || '—')}</td>
-                  <td><span class="estado-pill ${t.estado==='Activo'?'realizada':'cancelada'}">${UI.esc(t.estado || 'Activo')}</span></td>
+                  <td>
+                    <span class="estado-prof estado-${this._estadoSlug(t.estado)}">${UI.esc(t.estado || 'Activo')}</span>
+                    ${t.estado_nota ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${UI.esc(t.estado_nota)}</div>` : ''}
+                  </td>
                   <td style="white-space:nowrap">
                     <button class="btn btn-ghost btn-xs cfg-ter-edit" data-id="${t.id_terapeuta}">Editar</button>
                     <button class="btn btn-ghost btn-xs cfg-ter-del" data-id="${t.id_terapeuta}" style="color:#C36B5E">Eliminar</button>
@@ -335,8 +346,13 @@ const Config = {
             <div class="cfg-field"><label>Valor hora (CLP, deja vacío si Planta)</label><input type="number" id="ter-vh" value="${t?.valor_hora || ''}"></div>
             <div class="cfg-field"><label>Email</label><input id="ter-em" value="${UI.esc(t?.email || '')}"></div>
             <div class="cfg-field"><label>Teléfono</label><input id="ter-tel" value="${UI.esc(t?.telefono || '')}"></div>
-            <div class="cfg-field"><label>Estado</label>
-              <select id="ter-est"><option ${t?.estado!=='Inactivo'?'selected':''}>Activo</option><option ${t?.estado==='Inactivo'?'selected':''}>Inactivo</option></select>
+            <div class="cfg-field"><label>Estado actual</label>
+              <select id="ter-est">
+                ${['Activo','Vacaciones','Licencia médica','Permiso','Inactivo'].map(e => `<option ${(t?.estado || 'Activo') === e ? 'selected' : ''}>${e}</option>`).join('')}
+              </select>
+            </div>
+            <div class="cfg-field" style="grid-column:1/-1"><label>Nota de estado (opcional)</label>
+              <input id="ter-est-nota" placeholder="Ej: regresa el 15 de junio · licencia hasta 30/05" value="${UI.esc(t?.estado_nota || '')}">
             </div>
           </div>
           <div class="pendiente-modal-foot">
@@ -363,6 +379,7 @@ const Config = {
         email: document.getElementById('ter-em').value.trim(),
         telefono: document.getElementById('ter-tel').value.trim(),
         estado: document.getElementById('ter-est').value,
+        estado_nota: document.getElementById('ter-est-nota').value.trim() || null,
       };
       if (!data.nombre_completo) { UI.toast('El nombre es obligatorio', 'error'); return; }
 

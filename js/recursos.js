@@ -1,7 +1,7 @@
 // Módulos Equipo, Niños, Salas + placeholder Config/Permisos
 const Recursos = {
   renderEquipo() {
-    const list = State.data.terapeutas;
+    const list = Data.terapeutasEfectivos();
     const q = State.searchQuery.toLowerCase();
     const filtered = list.filter(t => !q || t.nombre_completo.toLowerCase().includes(q) || t.abreviacion.toLowerCase().includes(q));
 
@@ -33,7 +33,10 @@ const Recursos = {
                 <td>${UI.esc(t.tipo_contrato)}</td>
                 <td class="num">${t.horas_contrato}</td>
                 <td class="mono" style="font-size:12px">${UI.esc(t.email)}</td>
-                <td><span class="estado-pill ${t.estado==='Activo'?'realizada':'cancelada'}">${UI.esc(t.estado)}</span></td>
+                <td>
+                  <span class="estado-prof estado-${Config._estadoSlug(t.estado)}">${UI.esc(t.estado || 'Activo')}</span>
+                  ${t.estado_nota ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${UI.esc(t.estado_nota)}</div>` : ''}
+                </td>
               </tr>`;
             }).join('')}
           </tbody>

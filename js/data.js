@@ -8,7 +8,16 @@ const Data = {
   },
 
   terapeuta(id) {
-    return State.data.terapeutas.find(t => t.id_terapeuta === id);
+    const lista = this.terapeutasEfectivos();
+    return lista.find(t => t.id_terapeuta === id);
+  },
+  // Devuelve terapeutas con overrides locales aplicados (Config en localStorage).
+  // Si Config no está disponible aún, devuelve la base directa.
+  terapeutasEfectivos() {
+    if (typeof Config !== 'undefined' && Config.terapeutasEfectivos) {
+      return Config.terapeutasEfectivos();
+    }
+    return State.data?.terapeutas || [];
   },
   nino(id) {
     return State.data.ninos.find(n => n.id_nino === id);

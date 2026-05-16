@@ -1239,6 +1239,42 @@
 
 .btn-xs { padding: 4px 10px; font-size: 11.5px; font-weight: 600; }
 
+/* Estado de profesional · badges diferenciados */
+.estado-prof {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+}
+.estado-prof.estado-activo {
+  background: var(--success-bg, #DCEFE3);
+  color: var(--success, #1F8A4D);
+  border-color: var(--success, #1F8A4D);
+}
+.estado-prof.estado-vacaciones {
+  background: var(--cn-mostaza-bg);
+  color: var(--cn-mostaza-deep);
+  border-color: var(--cn-mostaza);
+}
+.estado-prof.estado-licencia {
+  background: var(--fono-bg);
+  color: var(--fono-text);
+  border-color: var(--fono);
+}
+.estado-prof.estado-permiso {
+  background: var(--bg-soft);
+  color: var(--text-2);
+  border-color: var(--border-strong);
+}
+.estado-prof.estado-inactivo {
+  background: #F0EDE8;
+  color: #807762;
+  border-color: #D2C8B5;
+}
+
 /* === Permisos read-only banner === */
 .perm-banner {
   background: var(--cn-mostaza-bg, #FAF0D7);

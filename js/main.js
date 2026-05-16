@@ -213,7 +213,7 @@ const Main = {
   },
 
   _openTerapeutaSelector(pillEl) {
-    const lista = State.data.terapeutas.filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_visible.localeCompare(b.nombre_visible));
+    const lista = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_visible.localeCompare(b.nombre_visible));
     this._renderLoginModal({
       titulo: 'Entrar como terapeuta',
       eyebrow: `Selecciona tu nombre · ${lista.length} activos`,
