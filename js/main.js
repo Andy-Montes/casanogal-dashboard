@@ -7,31 +7,69 @@ const Main = {
       document.getElementById('main').innerHTML = `<div class="empty-state"><div class="empty-state-title">No se pudo cargar data.json</div><div>${UI.esc(e.message)}</div></div>`;
       return;
     }
-    State.currentUser = DEMO_USERS.coordinacion;
-    // Restaurar terapeuta guardado en localStorage
-    const storedTer = localStorage.getItem('casanogal_terapeuta_id');
-    if (storedTer) {
-      const t = State.data.terapeutas.find(x => x.id_terapeuta === storedTer);
-      if (t) DEMO_USERS.terapeuta = { id:'USR-TER-'+storedTer, name:t.nombre_completo, short:t.nombre_visible, avatar:t.abreviacion.slice(0,2), role:'Terapeuta', id_terapeuta:storedTer };
+
+    // Validar sesión activa; si no hay, muestra login y se detiene
+    const session = Login.ensure();
+    if (!session) return;
+    State.session = session;
+
+    // Aplicar sesión: admin parte como coordinacion, terapeuta queda fijo en su rol
+    if (session.tipo === 'admin') {
+      State.role = 'coordinacion';
+      State.currentUser = DEMO_USERS.coordinacion;
+    } else if (session.tipo === 'terapeuta') {
+      const t = State.data.terapeutas.find(x => x.id_terapeuta === session.id_terapeuta);
+      if (t) {
+        DEMO_USERS.terapeuta = { id:'USR-TER-'+t.id_terapeuta, name:t.nombre_completo, short:t.nombre_visible, avatar:t.abreviacion.slice(0,2), role:'Terapeuta', id_terapeuta:t.id_terapeuta };
+      }
+      State.role = 'terapeuta';
+      State.currentUser = DEMO_USERS.terapeuta;
     }
-    // Restaurar padre guardado
-    const storedPad = localStorage.getItem('casanogal_padre_nino');
-    if (storedPad) {
-      const n = State.data.ninos.find(x => x.id_nino === storedPad);
-      if (n) DEMO_USERS.padres = { id:'USR-PAD-'+storedPad, name:n.apoderado_principal, short:n.apoderado_principal.split(' ')[0], avatar:UI.initials(n.apoderado_principal), role:'Padre', id_nino:storedPad };
+
+    // Inicializar selección de niño para consola padres (primer niño activo)
+    if (!DEMO_USERS.padres.id_nino || !State.data.ninos.find(n => n.id_nino === DEMO_USERS.padres.id_nino)) {
+      const primer = State.data.ninos.find(n => n.estado === 'Activo');
+      if (primer) {
+        DEMO_USERS.padres = { id:'USR-PAD-'+primer.id_nino, name:primer.apoderado_principal, short:primer.apoderado_principal.split(' ')[0], avatar:UI.initials(primer.apoderado_principal), role:'Padre', id_nino:primer.id_nino };
+      }
     }
+
     this._wireHeader();
     this._wireSidebar();
     this._wirePanel();
     this._wireModal();
+    this._applySessionUI();
     this.refreshUserChip();
     this.refreshCounts();
     this.renderPendientes();
     this.activateNav('calendario');
     Calendar.render();
+    this._injectRoleBanner();
+    this._aplicarVisibilidadSidebar();
     // Onboarding al primer ingreso
     document.getElementById('sidebarHelpLink')?.addEventListener('click', () => Onboarding.open(true));
     Onboarding.open();
+  },
+
+  _applySessionUI() {
+    const isAdmin = State.session?.tipo === 'admin';
+    const switcher = document.getElementById('roleSwitcher');
+    if (switcher) switcher.style.display = isAdmin ? '' : 'none';
+    // Botón logout
+    if (!document.getElementById('logoutBtn')) {
+      const actions = document.querySelector('.header-actions');
+      if (actions) {
+        const btn = document.createElement('button');
+        btn.id = 'logoutBtn';
+        btn.className = 'icon-btn';
+        btn.title = 'Cerrar sesión';
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+        btn.addEventListener('click', () => {
+          if (confirm('¿Cerrar sesión?')) Login.logout();
+        });
+        actions.appendChild(btn);
+      }
+    }
   },
 
   _wireHeader() {
@@ -48,13 +86,23 @@ const Main = {
         State.searchQuery = '';
         State.filterFicha = 'all';
         State.filterPrograma = newRole === 'coordinacion' ? 'INT' : 'all';
-        // Si pasa a terapeuta o padres, exigir login simple
+        // Solo el admin puede cambiar rol entre pills (preview). Terapeuta no ve pills.
         if (newRole === 'terapeuta') {
+          // Admin previsualiza vista terapeuta — abre selector sin password
           this._openTerapeutaSelector(b);
           return;
         }
         if (newRole === 'padres') {
-          this._openPadresSelector(b);
+          // Pasa directo a consola de comunicación; ya hay un niño seleccionado por default
+          document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          State.role = 'padres';
+          State.currentUser = DEMO_USERS.padres;
+          State.module = 'comunicacion';
+          this.refreshUserChip();
+          this.refreshCounts();
+          this.renderPendientes();
+          this._renderModule();
           return;
         }
         document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
@@ -115,20 +163,25 @@ const Main = {
   },
 
   _renderModule() {
-    // Padres: redirigir módulos no accesibles a Calendario
-    if (State.role === 'padres' && ['reportes','equipo','ninos','salas','config','permisos'].includes(State.module)) {
+    // Terapeuta: bloquear acceso a config y permisos (solo admin)
+    if (State.session?.tipo === 'terapeuta' && ['config','permisos'].includes(State.module)) {
       State.module = 'calendario';
       this.activateNav('calendario');
     }
+    // Padres: el módulo por defecto es la consola comunicacion
+    if (State.role === 'padres' && State.module === 'calendario') {
+      // se permite ver el calendario filtrado del niño, no se fuerza
+    }
     switch (State.module) {
+      case 'comunicacion': Comunicacion.render(); break;
       case 'calendario': Calendar.render(); break;
       case 'fichas':     Fichas.render(); break;
       case 'reportes':   Reportes.render(); break;
       case 'equipo':     Recursos.renderEquipo(); break;
       case 'ninos':      Recursos.renderNinosTable(); break;
       case 'salas':      Recursos.renderSalas(); break;
-      case 'config':     Recursos.renderPlaceholder('Configuración'); break;
-      case 'permisos':   Recursos.renderPlaceholder('Permisos'); break;
+      case 'config':     Config.render(); break;
+      case 'permisos':   Recursos.renderPermisos(); break;
       default:           Calendar.render();
     }
     this._injectRoleBanner();
@@ -350,16 +403,11 @@ const Main = {
     } else if (State.role === 'padres') {
       const nino = Data.nino(DEMO_USERS.padres.id_nino);
       html = `
-        <div class="role-banner">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div class="role-banner role-banner-padres">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-9-5-9 5z"/><polyline points="3 7 12 13 21 7"/></svg>
           <div>
-            <b>Vista familiar de ${UI.esc(nino?.nombre_completo || 'León Aravena')}.</b>
-            Solo ves lo que es de tu hijo. Sin nombres de terapeutas ni notas clínicas internas.
+            <b>Consola familia</b> · estás revisando qué recibe la familia de <b>${UI.esc(nino?.nombre_completo || '—')}</b>. Esta vista es solo para coordinación, no la ven los padres.
           </div>
-          <button class="btn btn-primary" id="downloadPDF" style="flex-shrink:0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Descargar PDF
-          </button>
         </div>`;
     }
     if (html) {

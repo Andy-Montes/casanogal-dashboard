@@ -21,6 +21,50 @@ const PDFPadres = {
     document.getElementById('pdfDoc')?.remove();
   },
 
+  mailto(idNino) {
+    const n = Data.nino(idNino);
+    if (!n) return '';
+    const email = n.email_apoderado || '';
+    const primer = (n.nombre_completo || '').split(' ')[0];
+    const mes = this._mesYAnio();
+    const tpl = this._loadTemplate();
+
+    const fechas = fechasSemana();
+    const sesNino = Data.sesionesDeNino(idNino).filter(s => fechas.includes(s.fecha));
+    const horarioTxt = fechas.map((f, i) => {
+      const [, , d] = f.split('-').map(Number);
+      const ses = sesNino.filter(s => s.fecha === f).sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||''));
+      const lineas = ses.length
+        ? ses.map(s => `   ${s.hora_inicio || ''}  ${s.tipo_terapia || ''} (${s.sala_nombre || ''})`).join('\n')
+        : '   Sin sesiones';
+      return `${DIAS_ABBR[i]} ${d}:\n${lineas}`;
+    }).join('\n\n');
+
+    const subject = tpl.subject
+      .replaceAll('{nombre}', n.nombre_completo)
+      .replaceAll('{primer_nombre}', primer)
+      .replaceAll('{mes}', mes);
+
+    const body = tpl.body
+      .replaceAll('{nombre}', n.nombre_completo)
+      .replaceAll('{primer_nombre}', primer)
+      .replaceAll('{mes}', mes)
+      .replaceAll('{horario}', horarioTxt);
+
+    return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  },
+
+  _loadTemplate() {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('casanogal_config') || '{}');
+      if (cfg.mailTemplate) return cfg.mailTemplate;
+    } catch {}
+    return {
+      subject: 'Acompañamiento de {primer_nombre} · {mes}',
+      body: 'Hola,\n\nLes compartimos el horario semanal de {primer_nombre} para este período. El PDF con el detalle completo está adjunto a este mismo correo (descárgalo desde la consola y adjúntalo manualmente).\n\nHorario de esta semana:\n\n{horario}\n\nCualquier consulta o necesidad de reagendar, escríbennos directo.\n\nUn saludo,\nEquipo Casa Nogal',
+    };
+  },
+
   // ====== Construcción ======
 
   _html(n) {

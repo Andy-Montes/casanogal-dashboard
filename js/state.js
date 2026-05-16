@@ -1,6 +1,7 @@
 // Estado global de la app
 const State = {
   data: null,
+  session: null,                 // { tipo: 'admin' } | { tipo: 'terapeuta', id_terapeuta }
   role: 'coordinacion',          // coordinacion | terapeuta | padres
   currentUser: null,             // usuario activo según rol
   module: 'calendario',          // módulo activo

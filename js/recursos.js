@@ -362,10 +362,14 @@ const Recursos = {
     };
     // Padres: solo "ver agenda del hijo" como permiso virtual
     document.getElementById('main').innerHTML = `
+      <div class="perm-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div><b>Solo el super admin puede modificar permisos.</b> Esta facultad estará disponible en la versión final del sistema. Por ahora la matriz es de solo lectura.</div>
+      </div>
       <div class="section-head">
         <div>
           <div class="section-title">Permisos por rol</div>
-          <div class="section-sub">Matriz de accesos. Coordinación es Super Admin. Solo lectura · los permisos se modifican desde Configuración.</div>
+          <div class="section-sub">Matriz de accesos. Coordinación es Super Admin. Cada terapeuta solo ve lo que le corresponde.</div>
         </div>
       </div>
 
