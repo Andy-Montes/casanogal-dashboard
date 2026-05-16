@@ -21,10 +21,18 @@ const Panel = {
     document.getElementById('panelSubtitle').textContent = `${sesion.tipo_terapia}${sesion.es_dupla ? ' · Dupla' : ''}`;
 
     const showNotas = State.role !== 'padres';
-    const editable = State.role === 'coordinacion' || State.role === 'terapeuta';
+    const esTerapeuta = State.role === 'terapeuta';
+    const esAdmin = State.role === 'coordinacion';
+    const editable = esTerapeuta;
     const storedNotas = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-    const notaEditada = storedNotas[sesion.id_sesion];
-    const notaTexto = notaEditada || nota?.notas_libres || '';
+    const notaRaw = storedNotas[sesion.id_sesion];
+    // Backwards compat: si es string plano, asumir autor terapeuta legacy
+    const notaEditada = typeof notaRaw === 'string'
+      ? { texto: notaRaw, autor: 'terapeuta', autor_nombre: null }
+      : notaRaw;
+    const notaTexto = notaEditada?.texto || nota?.notas_libres || '';
+    const notaAutor = notaEditada?.autor; // 'admin' | 'terapeuta' | undefined
+    const notaAutorNombre = notaEditada?.autor_nombre;
     document.getElementById('panelBody').innerHTML = `
       ${sesion.conflicto_detectado ? `
         <div class="alert-banner">
@@ -65,7 +73,10 @@ const Panel = {
       </div>
 
       ${showNotas ? `
-        <div class="panel-section-title">Notas clínicas ${notaEditada ? '<span style="color:var(--success);font-weight:600;font-size:10px;margin-left:6px">EDITADA</span>' : ''}</div>
+        <div class="panel-section-title">
+          Notas clínicas
+          ${notaEditada ? `<span class="nota-badge ${notaAutor === 'admin' ? 'nota-badge-admin' : 'nota-badge-ter'}">${notaAutor === 'admin' ? `NOTA ADMINISTRATIVA${notaAutorNombre ? ' · ' + UI.esc(notaAutorNombre) : ''}` : 'EDITADA'}</span>` : ''}
+        </div>
         ${editable ? `
           <div class="panel-notes-editor">
             <textarea id="notaTextarea" class="panel-notes-textarea" placeholder="${notaTexto ? '' : 'Anota lo que trabajaste con el niño en esta sesión…'}">${UI.esc(notaTexto)}</textarea>
@@ -84,7 +95,9 @@ const Panel = {
           </div>
         ` : `
           <div class="panel-notes">
-            ${notaTexto ? `<p>${UI.esc(notaTexto)}</p>` : `<p class="empty">Aún no hay notas. El terapeuta podrá registrar después de la sesión.</p>`}
+            ${notaTexto
+              ? `<p>${UI.esc(notaTexto)}</p>`
+              : `<p class="empty">Aún sin nota. El terapeuta la registrará después de la sesión.</p>`}
             ${nota?.objetivos_trabajados?.length ? `
               <div style="margin-top:10px"><b>Objetivos trabajados:</b><br>
                 ${nota.objetivos_trabajados.map(o => `<span class="objetivo-pill">${UI.esc(o)}</span>`).join('')}
@@ -92,6 +105,20 @@ const Panel = {
             ` : ''}
             ${nota?.avance_percibido != null ? `
               <div style="margin-top:10px;font-size:12px;color:var(--text-3)"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></div>
+            ` : ''}
+            ${esAdmin ? `
+              <button class="btn btn-ghost panel-admin-note-btn" id="notaAdminBtn" type="button" style="margin-top:12px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                ${notaTexto ? 'Editar nota administrativa' : 'Agregar nota administrativa'}
+              </button>
+              <div id="notaAdminEditor" style="display:none;margin-top:10px">
+                <div class="nota-admin-hint">Las notas administrativas quedan marcadas y visibles para el terapeuta del niño.</div>
+                <textarea id="notaAdminTextarea" class="panel-notes-textarea" placeholder="Nota administrativa de coordinación…">${UI.esc(notaAutor === 'admin' ? notaTexto : '')}</textarea>
+                <div class="panel-notes-actions">
+                  <button class="btn btn-ghost" id="notaAdminCancelBtn" type="button">Cancelar</button>
+                  <button class="btn btn-accent" id="notaAdminSaveBtn" type="button">Guardar nota administrativa</button>
+                </div>
+              </div>
             ` : ''}
           </div>
         `}
@@ -101,16 +128,46 @@ const Panel = {
     document.getElementById('panelOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
 
-    // Wire de notas editables
+    // Wire de notas editables (terapeuta)
     document.getElementById('notaSaveBtn')?.addEventListener('click', () => {
       const txt = document.getElementById('notaTextarea').value.trim();
       const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-      if (txt) store[sesion.id_sesion] = txt; else delete store[sesion.id_sesion];
+      if (txt) {
+        store[sesion.id_sesion] = { texto: txt, autor: 'terapeuta', autor_nombre: DEMO_USERS.terapeuta?.name || null };
+      } else {
+        delete store[sesion.id_sesion];
+      }
       localStorage.setItem('casanogal_notas', JSON.stringify(store));
       UI.toast(txt ? 'Nota guardada' : 'Nota eliminada', 'success');
+      Main.renderPendientes();
     });
     document.getElementById('notaCancelBtn')?.addEventListener('click', () => {
       document.getElementById('notaTextarea').value = notaTexto;
+    });
+
+    // Wire de nota administrativa (admin)
+    const adminBtn = document.getElementById('notaAdminBtn');
+    const adminEditor = document.getElementById('notaAdminEditor');
+    adminBtn?.addEventListener('click', () => {
+      const visible = adminEditor.style.display !== 'none';
+      adminEditor.style.display = visible ? 'none' : 'block';
+      if (!visible) document.getElementById('notaAdminTextarea').focus();
+    });
+    document.getElementById('notaAdminCancelBtn')?.addEventListener('click', () => {
+      adminEditor.style.display = 'none';
+    });
+    document.getElementById('notaAdminSaveBtn')?.addEventListener('click', () => {
+      const txt = document.getElementById('notaAdminTextarea').value.trim();
+      const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+      if (txt) {
+        store[sesion.id_sesion] = { texto: txt, autor: 'admin', autor_nombre: DEMO_USERS.coordinacion?.name || 'Coordinación' };
+      } else {
+        delete store[sesion.id_sesion];
+      }
+      localStorage.setItem('casanogal_notas', JSON.stringify(store));
+      UI.toast(txt ? 'Nota administrativa guardada' : 'Nota eliminada', 'success');
+      Main.renderPendientes();
+      Panel.open(sesion); // re-render para mostrar badge
     });
   },
 

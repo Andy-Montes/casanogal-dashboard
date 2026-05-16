@@ -8,6 +8,16 @@ const Main = {
       return;
     }
 
+    // Validar sesión guardada antes de aceptarla
+    const rawSession = Login.read();
+    if (rawSession?.tipo === 'terapeuta') {
+      const existe = State.data.terapeutas.find(x => x.id_terapeuta === rawSession.id_terapeuta);
+      if (!existe) {
+        Login.clear();
+        UI.toast('Tu sesión apuntaba a un profesional eliminado. Vuelve a entrar.', 'warning');
+      }
+    }
+
     // Validar sesión activa; si no hay, muestra login y se detiene
     const session = Login.ensure();
     if (!session) return;
@@ -55,17 +65,17 @@ const Main = {
     const isAdmin = State.session?.tipo === 'admin';
     const switcher = document.getElementById('roleSwitcher');
     if (switcher) switcher.style.display = isAdmin ? '' : 'none';
-    // Botón logout
+    // Botón logout con label visible
     if (!document.getElementById('logoutBtn')) {
       const actions = document.querySelector('.header-actions');
       if (actions) {
         const btn = document.createElement('button');
         btn.id = 'logoutBtn';
-        btn.className = 'icon-btn';
-        btn.title = 'Cerrar sesión';
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+        btn.className = 'logout-btn';
+        btn.title = 'Cerrar sesión y entrar como otro usuario';
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Salir</span>';
         btn.addEventListener('click', () => {
-          if (confirm('¿Cerrar sesión?')) Login.logout();
+          if (confirm('¿Cerrar sesión y volver a la pantalla de login?')) Login.logout();
         });
         actions.appendChild(btn);
       }
@@ -501,6 +511,22 @@ const Main = {
     });
   },
 
+  _notasFaltantes(filtroTerapeuta) {
+    let localNotas = {};
+    try { localNotas = JSON.parse(localStorage.getItem('casanogal_notas') || '{}'); } catch {}
+    const d = new Date(HOY_ISO);
+    d.setDate(d.getDate() - 14);
+    const haceCatorce = d.toISOString().slice(0, 10);
+    return State.data.sesiones.filter(s => {
+      if (s.estado !== 'Realizada') return false;
+      if (s.fecha < haceCatorce || s.fecha > HOY_ISO) return false;
+      if (filtroTerapeuta && s.id_terapeuta !== filtroTerapeuta && s.id_terapeuta_secundario !== filtroTerapeuta) return false;
+      if (Data.notaPorSesion(s.id_sesion)) return false;
+      if (localNotas[s.id_sesion]) return false;
+      return true;
+    });
+  },
+
   _pendientesPorRol() {
     if (State.role === 'padres') {
       const n = Data.nino(DEMO_USERS.padres.id_nino) || {};
@@ -515,13 +541,27 @@ const Main = {
     if (State.role === 'terapeuta') {
       const conf = Data.kpiConflictos();
       const tName = DEMO_USERS.terapeuta?.short || 'terapeuta';
-      return [
+      const tid = DEMO_USERS.terapeuta?.id_terapeuta;
+      const faltantes = this._notasFaltantes(tid);
+      const pend = [
         { id:'t-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} en tu agenda`, detail:`Hay ${conf.count} sesiones que chocan con otra terapeuta o sala en tu agenda de esta semana.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver el detalle.' },
-        { id:'t-notas', t:'warn',  msg:'Faltan notas en sesiones recientes',     detail:'Algunas sesiones realizadas todavía no tienen notas clínicas registradas.', action:'Abre cualquier sesión del calendario y escribe la nota en el panel lateral.' },
+      ];
+      if (faltantes.length > 0) {
+        const ejemplos = faltantes.slice(0, 4).map(s => `${UI.fmtFecha(s.fecha)} ${s.hora_inicio} · ${s.nino_visible}`).join(' · ');
+        pend.push({
+          id: 't-notas',
+          t: 'warn',
+          msg: `Te faltan ${faltantes.length} nota${faltantes.length===1?'':'s'} clínica${faltantes.length===1?'':'s'}`,
+          detail: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica registrada. Ejemplos: ${ejemplos}.`,
+          action: 'Abre la sesión desde tu Calendario o desde la ficha del niño y registra la nota en el panel lateral.',
+        });
+      }
+      pend.push(
         { id:'t-obj',   t:'warn',  msg:'Revisar objetivos del mes',              detail:'Los objetivos terapéuticos de tus niños asignados deben revisarse mensualmente.', action:'En Fichas clínicas abre la ficha de cada niño asignado y revisa la pestaña Objetivos.' },
         { id:'t-reu',   t:'ok',    msg:'Reunión de equipo programada',           detail:'Reunión de coordinación del programa Intensivo esta semana.', action:'Revisa el detalle en el correo del centro.' },
         { id:'t-horas', t:'ok',    msg:'Tu hoja de horas está lista',            detail:`Tus horas trabajadas en mayo están calculadas, ${UI.esc(tName)}.`, action:'En el módulo Reportes y boletas, abajo aparece tu fila con horas, valor y monto.' },
-      ];
+      );
+      return pend;
     }
     const conf = Data.kpiConflictos();
     const altasVencidas = State.data.ninos.filter(n => n.estado === 'Activo' && n.fecha_termino_programa && n.fecha_termino_programa < HOY_ISO);
@@ -536,6 +576,23 @@ const Main = {
         msg: `${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con alta vencida`,
         detail: `Hay ${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con fecha_termino_programa vencida pero todavía marcados como Activo: ${lista}.`,
         action: 'Abre la ficha del niño en Fichas clínicas y decide si se extiende el programa o se cierra el alta.',
+      });
+    }
+    const notasFaltantes = this._notasFaltantes();
+    if (notasFaltantes.length > 0) {
+      const porTer = {};
+      notasFaltantes.forEach(s => { porTer[s.id_terapeuta] = (porTer[s.id_terapeuta] || 0) + 1; });
+      const top = Object.entries(porTer)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([tid, n]) => `${Data.terapeuta(tid)?.nombre_visible || tid}: ${n}`)
+        .join(' · ');
+      pend.push({
+        id: 'c-notas-faltantes',
+        t: 'warn',
+        msg: `${notasFaltantes.length} sesión${notasFaltantes.length===1?'':'es'} realizada${notasFaltantes.length===1?'':'s'} sin nota clínica`,
+        detail: `En los últimos 14 días hay ${notasFaltantes.length} sesiones realizadas que aún no tienen nota clínica registrada. Distribución por terapeuta (top 3): ${top}.`,
+        action: 'Avisa al terapeuta correspondiente. Si es urgente, agrega una nota administrativa desde el panel lateral de la sesión.',
       });
     }
     pend.push(

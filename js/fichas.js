@@ -189,8 +189,20 @@ const Fichas = {
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => UI.toast('Exportación enviada al correo', 'success'));
     document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
-    document.querySelectorAll('.timeline-head').forEach(h => {
-      h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+    // Click en el body de la fila abre el panel; el caret expande/colapsa la nota inline
+    document.querySelectorAll('.timeline-item').forEach(item => {
+      const head = item.querySelector('.timeline-head');
+      const caret = item.querySelector('.timeline-caret');
+      caret?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.classList.toggle('open');
+      });
+      head?.addEventListener('click', (e) => {
+        if (e.target.closest('.timeline-caret')) return;
+        const sid = item.dataset.sesionId;
+        const s = State.data.sesiones.find(x => x.id_sesion === sid);
+        if (s) Panel.open(s);
+      });
     });
     document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
     document.querySelectorAll('.reu-delete').forEach(b => {
@@ -311,7 +323,7 @@ const Fichas = {
           ${ordered.slice(0, 30).map(s => {
             const nota = Data.notaPorSesion(s.id_sesion);
             const ter = Data.terapeuta(s.id_terapeuta);
-            return `<div class="timeline-item">
+            return `<div class="timeline-item" data-sesion-id="${UI.esc(s.id_sesion)}">
               <div class="timeline-head">
                 <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
                 <div>
@@ -319,7 +331,9 @@ const Fichas = {
                   <div style="font-size:11px;color:var(--text-3)">${UI.esc(ter?.nombre_visible || '—')} · Sala ${UI.esc(s.sala_nombre)}</div>
                 </div>
                 <span class="estado-pill ${UI.estadoClass(s.estado)}">${UI.esc(s.estado)}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-3)"><polyline points="6 9 12 15 18 9"/></svg>
+                <button class="timeline-caret" type="button" aria-label="Expandir notas" title="Ver/ocultar notas">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </div>
               <div class="timeline-body">
                 ${nota ? `

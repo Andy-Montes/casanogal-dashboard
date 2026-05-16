@@ -794,6 +794,20 @@
   transition: background 0.18s var(--ease);
 }
 .timeline-head:hover { background: var(--bg-soft); }
+.timeline-caret {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s var(--ease), background 0.15s var(--ease);
+}
+.timeline-caret:hover { background: var(--bg-soft); color: var(--text); }
+.timeline-item.open .timeline-caret { transform: rotate(180deg); }
 .timeline-date {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
