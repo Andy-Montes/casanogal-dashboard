@@ -416,7 +416,7 @@ const Main = {
         <div class="role-banner role-banner-padres">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-9-5-9 5z"/><polyline points="3 7 12 13 21 7"/></svg>
           <div>
-            <b>Consola familia</b> · estás revisando qué recibe la familia de <b>${UI.esc(nino?.nombre_completo || '—')}</b>. Esta vista es solo para coordinación, no la ven los padres.
+            <b>Consola de coordinación</b> · estás preparando lo que recibirá la familia de <b>${UI.esc(nino?.nombre_completo || '—')}</b>. Los apoderados no acceden al sistema; este es el espacio donde tú revisas y envías la información.
           </div>
         </div>`;
     }
@@ -551,7 +551,7 @@ const Main = {
         pend.push({
           id: 't-notas',
           t: 'warn',
-          msg: `Te faltan ${faltantes.length} nota${faltantes.length===1?'':'s'} clínica${faltantes.length===1?'':'s'}`,
+          msg: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} sin nota todavía`,
           detail: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica registrada. Ejemplos: ${ejemplos}.`,
           action: 'Abre la sesión desde tu Calendario o desde la ficha del niño y registra la nota en el panel lateral.',
         });
@@ -574,7 +574,7 @@ const Main = {
         id: 'c-alta-vencida',
         t: 'alert',
         msg: `${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con alta vencida`,
-        detail: `Hay ${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con fecha_termino_programa vencida pero todavía marcados como Activo: ${lista}.`,
+        detail: `Hay ${altasVencidas.length} niño${altasVencidas.length===1?'':'s'} con fecha de cierre de programa vencida pero todavía marcados como Activo: ${lista}.`,
         action: 'Abre la ficha del niño en Fichas clínicas y decide si se extiende el programa o se cierra el alta.',
       });
     }

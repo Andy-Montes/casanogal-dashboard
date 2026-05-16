@@ -131,6 +131,24 @@ const Panel = {
     document.getElementById('panelOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
 
+    // Permisos: padres no debería ver acciones de modificar; terapeuta puede editar/mover pero no eliminar.
+    const footer = document.querySelector('.panel-footer');
+    if (footer) {
+      if (esTerapeuta) {
+        footer.style.display = '';
+        document.getElementById('panelDeleteBtn').style.display = 'none';
+        document.getElementById('panelEditBtn').style.display = '';
+        document.getElementById('panelMoveBtn').style.display = '';
+      } else if (esAdmin) {
+        footer.style.display = '';
+        document.getElementById('panelDeleteBtn').style.display = '';
+        document.getElementById('panelEditBtn').style.display = '';
+        document.getElementById('panelMoveBtn').style.display = '';
+      } else {
+        footer.style.display = 'none';
+      }
+    }
+
     // Wire de notas editables (terapeuta)
     document.getElementById('notaSaveBtn')?.addEventListener('click', () => {
       const txt = document.getElementById('notaTextarea').value.trim();
@@ -185,7 +203,7 @@ const Panel = {
     if (!State.selectedSesion) return;
     const id = State.selectedSesion.id_sesion;
     State.data.sesiones = State.data.sesiones.filter(s => s.id_sesion !== id);
-    UI.toast('Sesión eliminada', 'alert');
+    UI.toast('Sesión eliminada', 'success');
     this.close();
     if (State.module === 'calendario') Calendar.render();
   },

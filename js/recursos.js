@@ -215,7 +215,9 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div><div class="section-title">${UI.esc(label)}</div></div></div>
       <div class="empty-state">
-        <div class="empty-state-title">Próximamente</div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div class="empty-state-title">Próximamente disponible</div>
+        <div class="empty-state-sub">Este módulo está en construcción. Cuando esté listo aparecerá aquí con todas sus funciones.</div>
       </div>
     `;
   },

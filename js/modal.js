@@ -3,6 +3,10 @@ const Modal = {
   _editing: null,
 
   openCreate(prefill = {}) {
+    if (State.role === 'padres') {
+      UI.toast('Esta vista no permite crear sesiones', 'warning');
+      return;
+    }
     this._editing = null;
     document.getElementById('modalTitle').textContent = 'Nueva sesión';
     document.getElementById('modalSub').textContent = 'Completa los datos. La validación de conflictos es automática.';

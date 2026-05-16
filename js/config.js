@@ -21,7 +21,7 @@ const Config = {
       },
       mailTemplate: {
         subject: 'Acompañamiento de {primer_nombre} · {mes}',
-        body: 'Hola,\n\nLes compartimos el horario semanal de {primer_nombre} para este período. El PDF con el detalle completo está adjunto a este mismo correo (descárgalo desde la consola y adjúntalo manualmente).\n\nHorario de esta semana:\n\n{horario}\n\nCualquier consulta o necesidad de reagendar, escríbennos directo.\n\nUn saludo,\nEquipo Casa Nogal',
+        body: 'Hola,\n\nAquí tienen el horario de esta semana para {primer_nombre}. El PDF con el detalle completo está adjunto a este mismo correo (descárgalo desde la consola y adjúntalo manualmente).\n\nHorario de esta semana:\n\n{horario}\n\nCualquier consulta o necesidad de reagendar, pueden escribirnos directo.\n\nUn abrazo,\nEquipo Casa Nogal',
       },
       valor_hora_default: 35000,
     };

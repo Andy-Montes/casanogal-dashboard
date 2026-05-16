@@ -163,7 +163,7 @@ const Fichas = {
         <div style="display:flex;gap:8px">
           <button class="btn btn-secondary" id="exportFicha">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar
+            Exportar ficha
           </button>
           <button class="btn btn-primary" id="editFicha">Editar datos</button>
         </div>
@@ -187,7 +187,7 @@ const Fichas = {
     `;
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
-    document.getElementById('exportFicha').addEventListener('click', () => UI.toast('Exportación enviada al correo', 'success'));
+    document.getElementById('exportFicha').addEventListener('click', () => UI.toast(`Ficha de ${n.nombre_completo.split(' ')[0]} enviada a tu correo como PDF`, 'success'));
     document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
     // Click en el body de la fila abre el panel; el caret expande/colapsa la nota inline
     document.querySelectorAll('.timeline-item').forEach(item => {

@@ -48,12 +48,13 @@ const Login = {
           </svg>
           <div class="login-brand-text">
             <div class="login-brand-name">casa<b>nogal</b></div>
+            <div class="login-brand-tag">Centro de terapias · Sistema clínico</div>
             <div class="login-brand-tag">Sistema clínico</div>
           </div>
         </div>
 
-        <h1 class="login-title">¿Cómo entras hoy?</h1>
-        <p class="login-sub">Elige tu perfil para acceder al sistema.</p>
+        <h1 class="login-title">Bienvenida a Casa Nogal</h1>
+        <p class="login-sub">Elige cómo quieres entrar hoy.</p>
 
         <div class="login-choice" id="loginChoice">
           <button class="login-option" data-tipo="admin">

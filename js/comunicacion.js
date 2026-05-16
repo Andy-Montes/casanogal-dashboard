@@ -6,7 +6,15 @@ const Comunicacion = {
     if (!main) return;
     const id = DEMO_USERS.padres.id_nino;
     const n = Data.nino(id);
-    if (!n) { main.innerHTML = '<div class="empty-state">Sin niños disponibles</div>'; return; }
+    if (!n) {
+      main.innerHTML = `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-3);opacity:0.5;margin-bottom:12px"><circle cx="9" cy="7" r="4"/><path d="M3 21v-1a6 6 0 0 1 12 0v1"/><path d="M19 14v6"/><path d="M16 17h6"/></svg>
+          <div class="empty-state-title">No hay niños activos registrados</div>
+          <div class="empty-state-sub">Agrega un niño desde Fichas clínicas para poder comunicarte con su familia.</div>
+        </div>`;
+      return;
+    }
 
     main.innerHTML = `
       <div class="section-head">
@@ -224,6 +232,13 @@ const Comunicacion = {
     if (!n) return;
     const email = n.email_apoderado;
     if (!email) { UI.toast('Esta familia no tiene email registrado', 'error'); return; }
+    const btn = document.getElementById('cfMail');
+    if (btn) {
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<svg class="cf-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Abriendo correo…';
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = original; }, 1800);
+    }
     const link = PDFPadres.mailto(id);
     window.location.href = link;
     UI.toast(`Abriendo tu cliente de correo · ${email}`, 'success');

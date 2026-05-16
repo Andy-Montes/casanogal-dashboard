@@ -405,14 +405,28 @@
 }
 .panel-footer .btn { flex: 1; justify-content: center; }
 
+/* === Section heading eyebrow === */
+.section-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cn-mostaza-deep);
+  margin-bottom: 4px;
+}
+
 /* === Estado vacío === */
 .empty-state {
-  padding: 60px 20px;
+  padding: 56px 20px;
   text-align: center;
   color: var(--text-3);
+  background: var(--bg-panel);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
 }
-.empty-state svg { margin: 0 auto 16px; opacity: 0.4; }
-.empty-state-title { font-size: 16px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+.empty-state svg { margin: 0 auto 14px; opacity: 0.45; display: block; }
+.empty-state-title { font-size: 15px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; letter-spacing: -0.01em; }
+.empty-state-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; max-width: 400px; margin-inline: auto; line-height: 1.5; }
 
 /* === Fichas Clínicas === */
 .fichas-toolbar {
@@ -1197,6 +1211,8 @@
 }
 .cf-sim { font-size: 12px; color: var(--text-3); text-decoration: underline; margin-left: auto; }
 .cf-sim:hover { color: var(--cn-azul); }
+.cf-spinner { animation: cf-spin 0.7s linear infinite; }
+@keyframes cf-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 
 /* === Configuración === */
 .cfg-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; flex-wrap: wrap; }

@@ -825,7 +825,7 @@
       "id_programa": "PROG-INT",
       "programa_nombre": "Intensivo",
       "fecha_inicio_programa": "2026-03-30",
-      "fecha_termino_programa": "2026-05-10",
+      "fecha_termino_programa": "2026-06-14",
       "semana_actual": 6,
       "frecuencia_semanal": 5,
       "horario_tipo": "Jornada completa",
@@ -90825,11 +90825,11 @@
       "id_asignacion": "EQA-0497",
       "id_nino": "NINO-0035",
       "id_terapeuta": "TER-07",
-      "rol_terapeuta": "Sustituto",
-      "activa": false,
+      "rol_terapeuta": "Principal",
+      "activa": true,
       "fecha_inicio": "2026-05-16",
-      "fecha_fin": "2026-05-16",
-      "notas": "Sustituto · 3 sesiones · demovido por cap"
+      "fecha_fin": null,
+      "notas": "Equipo permanente · 3 sesiones · activado por fix"
     },
     {
       "id_asignacion": "EQA-0498",
