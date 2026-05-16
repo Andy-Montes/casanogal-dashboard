@@ -321,11 +321,16 @@ const Calendar = {
       });
     });
 
-    // Helper: ¿hay otras sesiones en esa celda (según State, no DOM)?
-    const cellOcupadaPorOtra = (cell, ownId) => {
+    // Detecta conflicto REAL: misma sala o mismo terapeuta en el mismo (fecha, bloque)
+    const detectarConflicto = (cell, sesion) => {
+      if (!sesion) return null;
       const fecha = cell.dataset.fecha;
       const idBloque = cell.dataset.bloque;
-      return State.data.sesiones.some(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== ownId);
+      const otras = State.data.sesiones.filter(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
+      if (otras.some(s => s.id_sala === sesion.id_sala)) return 'Sala ' + sesion.sala_nombre + ' ya está usada en ese bloque';
+      if (otras.some(s => s.id_terapeuta === sesion.id_terapeuta)) return 'El terapeuta ya tiene otra sesión en ese bloque';
+      if (sesion.id_terapeuta_secundario && otras.some(s => s.id_terapeuta === sesion.id_terapeuta_secundario || s.id_terapeuta_secundario === sesion.id_terapeuta_secundario)) return 'Terapeuta secundario duplicado';
+      return null;
     };
 
     // Celdas: drop + click vacío
@@ -333,7 +338,8 @@ const Calendar = {
       cell.addEventListener('dragover', (e) => {
         e.preventDefault();
         const id = Calendar._dragId;
-        if (cellOcupadaPorOtra(cell, id)) cell.classList.add('drag-over-conflict');
+        const sesion = id ? State.data.sesiones.find(s => s.id_sesion === id) : null;
+        if (sesion && detectarConflicto(cell, sesion)) cell.classList.add('drag-over-conflict');
         else cell.classList.add('drag-over');
       });
       cell.addEventListener('dragleave', () => cell.classList.remove('drag-over', 'drag-over-conflict'));
@@ -344,8 +350,9 @@ const Calendar = {
         if (!id) return;
         const sesion = State.data.sesiones.find(s => s.id_sesion === id);
         if (!sesion) return;
-        if (cellOcupadaPorOtra(cell, id)) {
-          UI.toast('⚠ Conflicto: el bloque ya está ocupado', 'alert');
+        const conf = detectarConflicto(cell, sesion);
+        if (conf) {
+          UI.toast('⚠ ' + conf, 'alert');
           return;
         }
         sesion.fecha = cell.dataset.fecha;

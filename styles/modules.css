@@ -594,6 +594,135 @@
 }
 .progress-label { font-size: 11px; color: var(--text-3); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
 
+/* Ficha unificada: secciones */
+.ficha-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.quick-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  text-align: center;
+}
+.quick-stat-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.quick-stat-l {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+.ficha-section {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.ficha-section:last-child { margin-bottom: 0; }
+.ficha-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ficha-section-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--bg-soft);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+.ficha-section-hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  margin-left: auto;
+  text-transform: none;
+}
+
+/* Reuniones */
+.reu-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+.reu-list { display: grid; gap: 10px; }
+.reu-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  border-left: 3px solid var(--cn-azul);
+}
+.reu-card.pasada { opacity: 0.7; border-left-color: var(--text-3); }
+.reu-date {
+  background: var(--cn-azul-bg);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 56px;
+}
+.reu-card.pasada .reu-date { background: var(--bg); }
+.reu-day {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cn-azul-deep);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.reu-month {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cn-azul);
+  margin-top: 3px;
+}
+.reu-title { font-size: 14px; font-weight: 700; letter-spacing: -0.015em; color: var(--text); }
+.reu-meta { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+.reu-nota { font-size: 12px; color: var(--text-2); margin-top: 6px; line-height: 1.4; }
+.btn-icon {
+  width: 30px; height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.16s var(--ease);
+}
+.btn-icon:hover { color: var(--alert); background: var(--alert-bg); }
+
 .tabs {
   display: flex;
   gap: 4px;
@@ -865,6 +994,79 @@
   .onb-title { font-size: 22px; }
   .onb-grid { grid-template-columns: 1fr; }
 }
+
+/* Grilla detalle de sala */
+.sala-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(5, 1fr);
+  gap: 2px;
+  background: var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.sala-grid-head {
+  background: var(--bg-panel);
+  padding: 8px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.sala-grid-time {
+  background: var(--bg-soft);
+  padding: 6px 4px;
+  font-size: 10px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sala-grid-cell {
+  background: var(--bg);
+  padding: 5px 6px;
+  min-height: 36px;
+  font-size: 9.5px;
+}
+.sala-grid-cell.empty {
+  background: var(--bg-panel);
+  opacity: 0.4;
+}
+
+/* Boletas en ficha */
+.boletas-list { display: flex; flex-direction: column; gap: 8px; }
+.boleta-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  border-left: 3px solid var(--cn-mostaza);
+}
+.boleta-row.pagada {
+  background: var(--success-bg);
+  border-left-color: var(--success);
+  opacity: 0.85;
+}
+.boleta-row.pendiente { border-left-color: var(--cn-mostaza); }
+.boleta-mes {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+.boleta-monto {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.boleta-detalle { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
 /* Help link en footer sidebar */
 .sidebar-help {

@@ -124,7 +124,6 @@ const Fichas = {
     const prog = Data.programa(n.id_programa);
     const equipo = Data.equipoDeNino(id);
     const sesiones = Data.sesionesDeNino(id);
-    // Solo el terapeuta ve sus propias sesiones en el historial
     const sesionesVisibles = (State.role === 'terapeuta')
       ? sesiones.filter(s => s.id_terapeuta === DEMO_USERS.terapeuta.id_terapeuta || s.id_terapeuta_secundario === DEMO_USERS.terapeuta.id_terapeuta)
       : sesiones;
@@ -133,10 +132,12 @@ const Fichas = {
     const cNino = UI.colorNino(n.id_nino);
     const semProg = n.semana_actual && prog?.duracion_semanas ? Math.round(100 * n.semana_actual / prog.duracion_semanas) : null;
     const isTer = State.role === 'terapeuta';
-    const tabs = isTer
-      ? ['general', 'historial', 'objetivos']
-      : ['general', 'equipo', 'historial', 'objetivos', 'reuniones', 'documentos'];
-    const tabLabels = { general: 'General', equipo: 'Equipo', historial: 'Historial', objetivos: 'Objetivos', reuniones: 'Reuniones', documentos: 'Documentos' };
+
+    // Stats rápidas
+    const realizadas = sesiones.filter(s => s.estado === 'Realizada').length;
+    const canceladas = sesiones.filter(s => s.estado === 'Cancelada').length;
+    const noAsistio = sesiones.filter(s => s.estado === 'No Asistió').length;
+    const agendadas = sesiones.filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO).length;
 
     document.getElementById('main').innerHTML = `
       <button class="ficha-back" id="fichaBack">
@@ -168,38 +169,97 @@ const Fichas = {
         </div>
       </div>
 
-      <div class="tabs">
-        ${tabs.map((t,i) => `<button class="tab ${i===0?'active':''}" data-tab="${t}">${tabLabels[t]}</button>`).join('')}
+      <div class="ficha-quick-stats">
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--success)">${realizadas}</div><div class="quick-stat-l">Realizadas</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--cn-azul-deep)">${agendadas}</div><div class="quick-stat-l">Agendadas (próx.)</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--alert)">${noAsistio}</div><div class="quick-stat-l">No asistió</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--text-3)">${canceladas}</div><div class="quick-stat-l">Canceladas</div></div>
       </div>
 
-      <div id="tabsHost">
-        ${this._tab_general(n)}
-        ${!isTer ? this._tab_equipo(equipo) : ''}
-        ${this._tab_historial(sesionesVisibles)}
-        ${this._tab_objetivos(objetivos)}
-        ${!isTer ? this._tab_reuniones() : ''}
-        ${!isTer ? this._tab_documentos(docs) : ''}
-      </div>
+      <!-- Ficha unificada: una sola vista con secciones -->
+      ${this._seccionDatos(n)}
+      ${!isTer ? this._seccionEquipo(equipo) : ''}
+      ${this._seccionHistorial(sesionesVisibles)}
+      ${this._seccionObjetivos(objetivos)}
+      ${!isTer ? this._seccionReuniones(n.id_nino) : ''}
+      ${!isTer ? this._seccionBoletas(n.id_nino) : ''}
+      ${!isTer ? this._seccionDocumentos(docs) : ''}
     `;
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => UI.toast('Exportación enviada al correo', 'success'));
     document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
-    document.querySelectorAll('.tab').forEach(t => {
-      t.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-        t.classList.add('active');
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        document.querySelector(`.tab-panel[data-panel="${t.dataset.tab}"]`)?.classList.add('active');
-      });
-    });
     document.querySelectorAll('.timeline-head').forEach(h => {
       h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
     });
+    document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
+    document.querySelectorAll('.reu-delete').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._borrarReunion(n.id_nino, b.dataset.rid);
+        this._renderDetalle(n.id_nino);
+      });
+    });
+    document.querySelectorAll('.boleta-pagar-inline').forEach(b => {
+      b.addEventListener('click', () => {
+        Reportes.marcarPagada(b.dataset.bid);
+        UI.toast('Boleta marcada como pagada', 'success');
+        this._renderDetalle(n.id_nino);
+      });
+    });
+    document.querySelectorAll('.boleta-revertir').forEach(b => {
+      b.addEventListener('click', () => {
+        Reportes.marcarNoPagada(b.dataset.bid);
+        UI.toast('Boleta marcada como pendiente', 'success');
+        this._renderDetalle(n.id_nino);
+      });
+    });
   },
 
-  _tab_general(n) {
-    return `<div class="tab-panel active" data-panel="general">
+  _seccionBoletas(idNino) {
+    const boletas = Reportes.boletasDeNino(idNino);
+    if (!boletas.length) {
+      return `<section class="ficha-section">
+        <h2 class="ficha-section-title">Boletas <span class="ficha-section-count">0</span></h2>
+        <div class="empty-state"><div class="empty-state-title">Sin boletas registradas</div></div>
+      </section>`;
+    }
+    const totalPagado = boletas.filter(b => b.pagada).reduce((a, b) => a + b.monto, 0);
+    const totalPendiente = boletas.filter(b => !b.pagada).reduce((a, b) => a + b.monto, 0);
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">
+        Historial de boletas <span class="ficha-section-count">${boletas.length}</span>
+        <span class="ficha-section-hint">${UI.fmtCLP(totalPagado)} cobrado · ${UI.fmtCLP(totalPendiente)} pendiente</span>
+      </h2>
+      <div class="boletas-list">
+        ${boletas.map(b => `
+          <div class="boleta-row ${b.pagada ? 'pagada' : 'pendiente'}">
+            <div class="boleta-mes">${UI.esc(Reportes._mesLabel(b.mes))}</div>
+            <div class="boleta-info">
+              <div class="boleta-monto mono">${UI.fmtCLP(b.monto)}</div>
+              <div class="boleta-detalle">${b.sesiones} sesiones · ${(b.minutos/60).toFixed(1)}h</div>
+            </div>
+            <div class="boleta-estado">
+              ${b.pagada
+                ? `<span class="estado-pill realizada">Pagada</span>`
+                : `<span class="estado-pill no_asistio">Pendiente</span>`}
+            </div>
+            <div class="boleta-actions">
+              ${b.pagada
+                ? `<button class="btn btn-ghost boleta-revertir" data-bid="${b.id}" style="height:28px;padding:0 8px;font-size:11px">Revertir</button>`
+                : `<button class="btn btn-primary boleta-pagar-inline" data-bid="${b.id}" style="height:28px;padding:0 10px;font-size:11px">Marcar pagada</button>`}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </section>`;
+  },
+
+  // ===== Secciones de la ficha unificada =====
+
+  _seccionDatos(n) {
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Datos generales</h2>
       <div class="info-grid">
         <div class="panel-field"><span class="panel-field-label">Fecha de nacimiento</span><span class="panel-field-value mono">${UI.fmtFechaCorta(n.fecha_nacimiento)}</span></div>
         <div class="panel-field"><span class="panel-field-label">Apoderado principal</span><span class="panel-field-value">${UI.esc(n.apoderado_principal)}</span></div>
@@ -214,11 +274,12 @@ const Fichas = {
           <div>${(n.diagnosticos||[]).map(d=>`<span class="badge" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep);margin-right:4px">${UI.esc(d)}</span>`).join('')}</div>
         </div>
       </div>
-    </div>`;
+    </section>`;
   },
 
-  _tab_equipo(equipo) {
-    return `<div class="tab-panel" data-panel="equipo">
+  _seccionEquipo(equipo) {
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Equipo terapéutico <span class="ficha-section-count">${equipo.length}</span></h2>
       ${equipo.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin equipo asignado</div></div>` : `
         <div class="equipo-list">
           ${equipo.map(e => {
@@ -235,18 +296,18 @@ const Fichas = {
           }).join('')}
         </div>
       `}
-    </div>`;
+    </section>`;
   },
 
-  _tab_historial(sesiones) {
+  _seccionHistorial(sesiones) {
     const ordered = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio || '').localeCompare(a.hora_inicio || ''));
-    return `<div class="tab-panel" data-panel="historial">
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${ordered.length}</span> <span class="ficha-section-hint">últimas 30 mostradas</span></h2>
       ${ordered.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin historial</div></div>` : `
         <div class="timeline">
-          ${ordered.slice(0, 80).map(s => {
+          ${ordered.slice(0, 30).map(s => {
             const nota = Data.notaPorSesion(s.id_sesion);
             const ter = Data.terapeuta(s.id_terapeuta);
-            const c = ESPECIALIDAD_VAR[s.tipo_terapia] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
             return `<div class="timeline-item">
               <div class="timeline-head">
                 <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
@@ -262,23 +323,26 @@ const Fichas = {
                   <p>${UI.esc(nota.notas_libres || 'Sin notas.')}</p>
                   ${nota.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${nota.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
                   ${nota.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></p>` : ''}
-                ` : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin notas registradas.</p>`}
+                ` : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin notas registradas para esta sesión.</p>`}
               </div>
             </div>`;
           }).join('')}
         </div>
       `}
-    </div>`;
+    </section>`;
   },
 
-  _tab_objetivos(objetivos) {
+  _seccionObjetivos(objetivos) {
     if (!objetivos.length) {
-      return `<div class="tab-panel" data-panel="objetivos"><div class="empty-state"><div class="empty-state-title">Sin objetivos planteados</div></div></div>`;
+      return `<section class="ficha-section">
+        <h2 class="ficha-section-title">Objetivos terapéuticos</h2>
+        <div class="empty-state"><div class="empty-state-title">Sin objetivos planteados</div></div>
+      </section>`;
     }
-    // Agrupar por area
     const grupos = {};
     objetivos.forEach(o => { (grupos[o.area] = grupos[o.area] || []).push(o); });
-    return `<div class="tab-panel" data-panel="objetivos">
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Objetivos terapéuticos <span class="ficha-section-count">${objetivos.length}</span></h2>
       ${Object.entries(grupos).map(([area, list]) => {
         const c = ESPECIALIDAD_VAR[area] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
         return `<h3 style="font-size:13px;margin:18px 0 8px;color:${c?.text || 'var(--text-2)'};letter-spacing:0.04em;text-transform:uppercase">${UI.esc(area)} <span style="color:var(--text-3);font-weight:400">· ${list.length}</span></h3>
@@ -293,21 +357,151 @@ const Fichas = {
           </div>`).join('')}
         </div>`;
       }).join('')}
-    </div>`;
+    </section>`;
   },
 
-  _tab_reuniones() {
-    return `<div class="tab-panel" data-panel="reuniones">
-      <div class="empty-state">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
-        <div class="empty-state-title">Reuniones</div>
-        <div>Aquí aparecerán las reuniones de equipo y de apoderados, con resumen y acuerdos.</div>
+  _seccionReuniones(idNino) {
+    const reus = this._leerReuniones(idNino);
+    const ordered = [...reus].sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+    const futuras = ordered.filter(r => r.fecha >= HOY_ISO);
+    const pasadas = ordered.filter(r => r.fecha < HOY_ISO);
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">
+        Reuniones <span class="ficha-section-count">${ordered.length}</span>
+        <button class="btn btn-primary" id="addReuBtn" style="margin-left:auto;height:32px;padding:0 12px;font-size:12px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agendar reunión
+        </button>
+      </h2>
+      ${ordered.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state-title">Sin reuniones agendadas</div>
+          <div>Usa "Agendar reunión" para coordinar con el equipo o apoderados.</div>
+        </div>
+      ` : `
+        ${futuras.length ? `<div class="reu-subtitle">Próximas</div>` : ''}
+        <div class="reu-list">
+          ${futuras.map(r => this._reuCard(r, true)).join('')}
+        </div>
+        ${pasadas.length ? `<div class="reu-subtitle" style="margin-top:18px">Pasadas</div>
+        <div class="reu-list">
+          ${pasadas.map(r => this._reuCard(r, false)).join('')}
+        </div>` : ''}
+      `}
+    </section>`;
+  },
+
+  _reuCard(r, futura) {
+    return `<div class="reu-card ${futura ? 'futura' : 'pasada'}">
+      <div class="reu-date">
+        <div class="reu-day mono">${r.fecha.split('-')[2]}</div>
+        <div class="reu-month">${['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][parseInt(r.fecha.split('-')[1])-1]}</div>
       </div>
+      <div style="flex:1;min-width:0">
+        <div class="reu-title">${UI.esc(r.tipo)} <span style="color:var(--text-3);font-weight:400;margin-left:6px;font-size:12px">${UI.esc(r.hora)}</span></div>
+        <div class="reu-meta">Con ${UI.esc(r.con)}${r.modo ? ' · ' + UI.esc(r.modo) : ''}</div>
+        ${r.nota ? `<div class="reu-nota">${UI.esc(r.nota)}</div>` : ''}
+      </div>
+      <button class="btn-icon reu-delete" data-rid="${r.id}" title="Eliminar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
     </div>`;
   },
 
-  _tab_documentos(docs) {
-    return `<div class="tab-panel" data-panel="documentos">
+  _leerReuniones(idNino) {
+    const all = JSON.parse(localStorage.getItem('casanogal_reuniones') || '{}');
+    return all[idNino] || [];
+  },
+
+  _guardarReuniones(idNino, list) {
+    const all = JSON.parse(localStorage.getItem('casanogal_reuniones') || '{}');
+    all[idNino] = list;
+    localStorage.setItem('casanogal_reuniones', JSON.stringify(all));
+  },
+
+  _borrarReunion(idNino, rid) {
+    const list = this._leerReuniones(idNino).filter(r => r.id !== rid);
+    this._guardarReuniones(idNino, list);
+    UI.toast('Reunión eliminada', 'success');
+  },
+
+  _abrirModalReunion(idNino) {
+    const html = `
+      <div class="pendiente-modal-overlay" id="reuOverlay">
+        <div class="pendiente-modal" style="width:min(440px,92vw)">
+          <div class="pendiente-modal-head">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <div>
+              <div class="pendiente-modal-title">Agendar reunión</div>
+              <div class="pendiente-modal-eyebrow">Coordina con equipo o apoderados</div>
+            </div>
+            <button class="panel-close" id="reuClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="field">
+              <label class="field-label">Tipo</label>
+              <select class="field-select" id="reuTipo">
+                <option>Reunión con apoderados</option>
+                <option>Reunión de equipo terapéutico</option>
+                <option>Reunión clínica con médico externo</option>
+                <option>Reunión de coordinación</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Fecha</label><input type="date" class="field-input" id="reuFecha" value="${HOY_ISO}"></div>
+              <div class="field"><label class="field-label">Hora</label><input type="time" class="field-input" id="reuHora" value="16:00"></div>
+            </div>
+            <div class="field">
+              <label class="field-label">Con</label>
+              <input type="text" class="field-input" id="reuCon" placeholder="Ej: Carolina Pérez · apoderada">
+            </div>
+            <div class="field">
+              <label class="field-label">Modalidad</label>
+              <select class="field-select" id="reuModo">
+                <option>Presencial</option>
+                <option>Videollamada (Meet)</option>
+                <option>Híbrida</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">Tema / nota (opcional)</label>
+              <input type="text" class="field-input" id="reuNota" placeholder="Ej: Revisar objetivos del mes y avances">
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="reuCancel">Cancelar</button>
+            <button class="btn btn-primary" id="reuSave">Agendar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const close = () => document.getElementById('reuOverlay')?.remove();
+    document.getElementById('reuClose').addEventListener('click', close);
+    document.getElementById('reuCancel').addEventListener('click', close);
+    document.getElementById('reuOverlay').addEventListener('click', (e) => { if (e.target.id === 'reuOverlay') close(); });
+    document.getElementById('reuSave').addEventListener('click', () => {
+      const r = {
+        id: 'RE-' + Date.now().toString(36),
+        tipo: document.getElementById('reuTipo').value,
+        fecha: document.getElementById('reuFecha').value,
+        hora: document.getElementById('reuHora').value,
+        con: document.getElementById('reuCon').value.trim() || 'Equipo',
+        modo: document.getElementById('reuModo').value,
+        nota: document.getElementById('reuNota').value.trim(),
+      };
+      const list = this._leerReuniones(idNino);
+      list.push(r);
+      this._guardarReuniones(idNino, list);
+      UI.toast('Reunión agendada', 'success');
+      close();
+      this._renderDetalle(idNino);
+    });
+  },
+
+  _seccionDocumentos(docs) {
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Documentos <span class="ficha-section-count">${docs.length}</span></h2>
       ${docs.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin documentos</div></div>` : `
         <div class="docs-list">
           ${docs.map(d => `<div class="doc-row">
@@ -324,6 +518,7 @@ const Fichas = {
           </div>`).join('')}
         </div>
       `}
-    </div>`;
+    </section>`;
   },
+
 };

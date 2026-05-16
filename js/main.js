@@ -12,11 +12,13 @@ const Main = {
     const storedTer = localStorage.getItem('casanogal_terapeuta_id');
     if (storedTer) {
       const t = State.data.terapeutas.find(x => x.id_terapeuta === storedTer);
-      if (t) {
-        DEMO_USERS.terapeuta = { id:'USR-TER-'+storedTer, name:t.nombre_completo, short:t.nombre_visible, avatar:t.abreviacion.slice(0,2), role:'Terapeuta', id_terapeuta:storedTer };
-        const pill = document.querySelector('[data-role=terapeuta]');
-        if (pill) pill.textContent = `Terapeuta · ${t.nombre_visible}`;
-      }
+      if (t) DEMO_USERS.terapeuta = { id:'USR-TER-'+storedTer, name:t.nombre_completo, short:t.nombre_visible, avatar:t.abreviacion.slice(0,2), role:'Terapeuta', id_terapeuta:storedTer };
+    }
+    // Restaurar padre guardado
+    const storedPad = localStorage.getItem('casanogal_padre_nino');
+    if (storedPad) {
+      const n = State.data.ninos.find(x => x.id_nino === storedPad);
+      if (n) DEMO_USERS.padres = { id:'USR-PAD-'+storedPad, name:n.apoderado_principal, short:n.apoderado_principal.split(' ')[0], avatar:UI.initials(n.apoderado_principal), role:'Padre', id_nino:storedPad };
     }
     this._wireHeader();
     this._wireSidebar();
@@ -40,19 +42,25 @@ const Main = {
           this._openTerapeutaSelector();
           return;
         }
-        document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        State.role = b.dataset.role;
-        State.currentUser = DEMO_USERS[State.role];
+        const newRole = b.dataset.role;
+        // Reset COMPLETO de filtros al cambiar de rol
         State.fichaActiva = null;
         State.searchQuery = '';
-        // Cuando entra a terapeuta por primera vez, abrir selector
-        if (b.dataset.role === 'terapeuta' && !localStorage.getItem('casanogal_terapeuta_id')) {
-          this._openTerapeutaSelector();
-        } else if (b.dataset.role === 'terapeuta') {
-          const stored = localStorage.getItem('casanogal_terapeuta_id');
-          if (stored) this._setTerapeutaActivo(stored, false);
+        State.filterFicha = 'all';
+        State.filterPrograma = newRole === 'coordinacion' ? 'INT' : 'all';
+        // Si pasa a terapeuta o padres, exigir login simple
+        if (newRole === 'terapeuta') {
+          this._openTerapeutaSelector(b);
+          return;
         }
+        if (newRole === 'padres') {
+          this._openPadresSelector(b);
+          return;
+        }
+        document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        State.role = newRole;
+        State.currentUser = DEMO_USERS[newRole];
         this.refreshUserChip();
         this.refreshCounts();
         this.renderPendientes();
@@ -73,7 +81,10 @@ const Main = {
       item.addEventListener('click', () => {
         const mod = item.dataset.module;
         State.module = mod;
+        // Limpiar el estado pegado al cambiar de módulo
         State.fichaActiva = null;
+        State.searchQuery = '';
+        State.filterFicha = 'all';
         this.activateNav(mod);
         this._renderModule();
       });
@@ -104,6 +115,11 @@ const Main = {
   },
 
   _renderModule() {
+    // Padres: redirigir módulos no accesibles a Calendario
+    if (State.role === 'padres' && ['reportes','equipo','ninos','salas','config','permisos'].includes(State.module)) {
+      State.module = 'calendario';
+      this.activateNav('calendario');
+    }
     switch (State.module) {
       case 'calendario': Calendar.render(); break;
       case 'fichas':     Fichas.render(); break;
@@ -116,49 +132,181 @@ const Main = {
       default:           Calendar.render();
     }
     this._injectRoleBanner();
+    this._aplicarVisibilidadSidebar();
   },
 
-  _openTerapeutaSelector() {
+  _aplicarVisibilidadSidebar() {
+    const isPadre = State.role === 'padres';
+    // En rol padres: solo calendario y fichas (su hijo) visibles
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const mod = item.dataset.module;
+      const ocultar = isPadre && ['reportes','equipo','ninos','salas','config','permisos'].includes(mod);
+      item.style.display = ocultar ? 'none' : '';
+    });
+    document.querySelectorAll('.nav-section').forEach(sec => {
+      const visibles = sec.querySelectorAll('.nav-item:not([style*="display: none"])').length;
+      sec.style.display = visibles === 0 ? 'none' : '';
+    });
+  },
+
+  _openTerapeutaSelector(pillEl) {
     const lista = State.data.terapeutas.filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_visible.localeCompare(b.nombre_visible));
+    this._renderLoginModal({
+      titulo: 'Entrar como terapeuta',
+      eyebrow: `Selecciona tu nombre · ${lista.length} activos`,
+      iconColor: 'var(--cn-azul)',
+      lista: lista.map(t => {
+        const c = ESPECIALIDAD_VAR[t.especialidad];
+        return {
+          id: t.id_terapeuta,
+          avatar: t.abreviacion,
+          color: { bg: c?.bg || 'var(--cn-azul-bg)', text: c?.text || 'var(--cn-azul-deep)' },
+          nombre: t.nombre_completo,
+          sub: `${t.especialidad} · ${t.tipo_contrato}`,
+        };
+      }),
+      onConfirm: (tid) => {
+        this._setTerapeutaActivo(tid, false);
+        this._aplicarRol('terapeuta', pillEl);
+      },
+      onCancel: () => {
+        // Si cancela, vuelve a coordinación
+        const coord = document.querySelector('[data-role=coordinacion]');
+        if (coord) {
+          document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
+          coord.classList.add('active');
+        }
+      },
+    });
+  },
+
+  _openPadresSelector(pillEl) {
+    const lista = State.data.ninos.filter(n => n.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    this._renderLoginModal({
+      titulo: 'Entrar como apoderado',
+      eyebrow: `Selecciona el niño · ${lista.length} fichas`,
+      iconColor: 'var(--cn-mostaza)',
+      lista: lista.map(n => ({
+        id: n.id_nino,
+        avatar: UI.initials(n.nombre_completo),
+        color: UI.colorNino(n.id_nino),
+        nombre: n.nombre_completo,
+        sub: `${n.programa_nombre} · apoderado: ${n.apoderado_principal}`,
+      })),
+      onConfirm: (nid) => {
+        const n = Data.nino(nid);
+        if (n) {
+          DEMO_USERS.padres = {
+            id: 'USR-PAD-' + nid,
+            name: n.apoderado_principal,
+            short: n.apoderado_principal.split(' ')[0],
+            avatar: UI.initials(n.apoderado_principal),
+            role: 'Padre',
+            id_nino: nid,
+          };
+          localStorage.setItem('casanogal_padre_nino', nid);
+        }
+        this._aplicarRol('padres', pillEl);
+      },
+      onCancel: () => {
+        const coord = document.querySelector('[data-role=coordinacion]');
+        if (coord) {
+          document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
+          coord.classList.add('active');
+        }
+      },
+    });
+  },
+
+  _renderLoginModal({ titulo, eyebrow, iconColor, lista, onConfirm, onCancel }) {
+    let selectedId = null;
     const html = `
-      <div class="pendiente-modal-overlay" id="terOverlay">
-        <div class="pendiente-modal" style="width:min(440px,92vw)">
+      <div class="pendiente-modal-overlay" id="loginOverlay">
+        <div class="pendiente-modal" style="width:min(460px,92vw)">
           <div class="pendiente-modal-head">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:${iconColor}"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div>
-              <div class="pendiente-modal-title">Entrar como terapeuta</div>
-              <div class="pendiente-modal-eyebrow">Selecciona tu nombre · ${lista.length} activos</div>
+              <div class="pendiente-modal-title">${UI.esc(titulo)}</div>
+              <div class="pendiente-modal-eyebrow">${UI.esc(eyebrow)}</div>
             </div>
-            <button class="panel-close" id="terCloseBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="panel-close" id="loginClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
-          <div class="pendiente-modal-body" style="max-height:60vh;overflow-y:auto;padding:8px 12px">
-            <div class="ter-selector-list">
-              ${lista.map(t => {
-                const c = ESPECIALIDAD_VAR[t.especialidad];
-                return `<button class="ter-selector-row" data-tid="${t.id_terapeuta}">
-                  <span class="equipo-avatar" style="background:${c?.bg || 'var(--cn-azul-bg)'};color:${c?.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span>
+          <div class="pendiente-modal-body" style="max-height:50vh;overflow-y:auto;padding:8px 12px">
+            <div class="ter-selector-list" id="loginList">
+              ${lista.map(item => `
+                <button class="ter-selector-row" data-id="${UI.esc(item.id)}">
+                  <span class="equipo-avatar" style="background:${item.color.bg};color:${item.color.text}">${UI.esc(item.avatar)}</span>
                   <div style="flex:1;text-align:left">
-                    <div style="font-weight:600">${UI.esc(t.nombre_completo)}</div>
-                    <div style="font-size:11px;color:var(--text-3)">${UI.esc(t.especialidad)} · ${UI.esc(t.tipo_contrato)}</div>
+                    <div style="font-weight:600">${UI.esc(item.nombre)}</div>
+                    <div style="font-size:11px;color:var(--text-3)">${UI.esc(item.sub)}</div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>`;
-              }).join('')}
+                </button>
+              `).join('')}
             </div>
+          </div>
+          <div class="login-pwd-section" id="loginPwdSection" style="display:none">
+            <div class="login-pwd-title">Entrando como <b id="loginPwdName">—</b></div>
+            <input type="password" id="loginPwd" class="field-input" placeholder="Contraseña · usa 0000 para esta demo" maxlength="8" autocomplete="off">
+            <div class="field-warn" id="loginPwdErr" style="display:none">Contraseña incorrecta</div>
+          </div>
+          <div class="pendiente-modal-foot" id="loginFoot" style="display:none">
+            <button class="btn btn-ghost" id="loginBack">← Volver</button>
+            <button class="btn btn-primary" id="loginConfirm">Entrar</button>
           </div>
         </div>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', html);
-    const close = () => document.getElementById('terOverlay')?.remove();
-    document.getElementById('terCloseBtn').addEventListener('click', close);
-    document.getElementById('terOverlay').addEventListener('click', (e) => { if (e.target.id === 'terOverlay') close(); });
-    document.querySelectorAll('.ter-selector-row').forEach(row => {
+    const close = (didConfirm) => {
+      document.getElementById('loginOverlay')?.remove();
+      if (!didConfirm && onCancel) onCancel();
+    };
+    document.getElementById('loginClose').addEventListener('click', () => close(false));
+    document.getElementById('loginOverlay').addEventListener('click', (e) => { if (e.target.id === 'loginOverlay') close(false); });
+    document.querySelectorAll('#loginList .ter-selector-row').forEach(row => {
       row.addEventListener('click', () => {
-        this._setTerapeutaActivo(row.dataset.tid, true);
-        close();
+        selectedId = row.dataset.id;
+        const item = lista.find(x => x.id === selectedId);
+        document.getElementById('loginList').style.display = 'none';
+        document.getElementById('loginPwdSection').style.display = 'block';
+        document.getElementById('loginFoot').style.display = 'flex';
+        document.getElementById('loginPwdName').textContent = item.nombre;
+        document.getElementById('loginPwd').focus();
       });
     });
+    document.getElementById('loginBack').addEventListener('click', () => {
+      document.getElementById('loginList').style.display = 'flex';
+      document.getElementById('loginPwdSection').style.display = 'none';
+      document.getElementById('loginFoot').style.display = 'none';
+      document.getElementById('loginPwd').value = '';
+      document.getElementById('loginPwdErr').style.display = 'none';
+      selectedId = null;
+    });
+    const tryConfirm = () => {
+      const pwd = document.getElementById('loginPwd').value;
+      if (pwd !== '0000') {
+        document.getElementById('loginPwdErr').style.display = 'flex';
+        document.getElementById('loginPwd').value = '';
+        document.getElementById('loginPwd').focus();
+        return;
+      }
+      close(true);
+      onConfirm(selectedId);
+    };
+    document.getElementById('loginConfirm').addEventListener('click', tryConfirm);
+    document.getElementById('loginPwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryConfirm(); });
+  },
+
+  _aplicarRol(role, pillEl) {
+    document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
+    if (pillEl) pillEl.classList.add('active');
+    State.role = role;
+    State.currentUser = DEMO_USERS[role];
+    this.refreshUserChip();
+    this.refreshCounts();
+    this.renderPendientes();
+    this._renderModule();
   },
 
   _setTerapeutaActivo(tid, rerender) {
@@ -175,9 +323,6 @@ const Main = {
     localStorage.setItem('casanogal_terapeuta_id', tid);
     if (State.role === 'terapeuta') {
       State.currentUser = DEMO_USERS.terapeuta;
-      // Update pill label
-      const pill = document.querySelector('[data-role=terapeuta]');
-      if (pill) pill.textContent = `Terapeuta · ${t.nombre_visible}`;
       this.refreshUserChip();
       this.refreshCounts();
       this.renderPendientes();
@@ -225,9 +370,18 @@ const Main = {
   },
 
   _downloadPDF() {
+    // Forzar vista calendario antes de imprimir (PDF = horario semanal completo)
+    if (State.module !== 'calendario') {
+      State.module = 'calendario';
+      this.activateNav('calendario');
+      this._renderModule();
+    }
     document.body.classList.add('printing-padres');
-    UI.toast('Preparando PDF…', 'success');
-    setTimeout(() => { window.print(); document.body.classList.remove('printing-padres'); }, 200);
+    UI.toast('Preparando PDF · horario semanal completo', 'success');
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => document.body.classList.remove('printing-padres'), 600);
+    }, 350);
   },
 
   refreshUserChip() {
@@ -301,31 +455,33 @@ const Main = {
 
   _pendientesPorRol() {
     if (State.role === 'padres') {
+      const n = Data.nino(DEMO_USERS.padres.id_nino) || {};
       return [
-        { id:'p-pago',    t:'warn',  msg:'Pago boleta mayo pendiente',           detail:'La boleta del mes de mayo aún no se ha pagado. El monto total es $245.000 CLP.', action:'Realizar transferencia o pago en línea antes del 30 de mayo.' },
-        { id:'p-prox',    t:'ok',    msg:'Próxima sesión: vie 9:55',             detail:'Sesión de Fonoaudiología con la terapeuta a cargo. Duración 35 minutos.', action:'Llegar 5 minutos antes para coordinación.' },
-        { id:'p-informe', t:'warn',  msg:'Revisar informe mensual',              detail:'El informe de avance del mes está disponible para descarga.', action:'Descargar desde la pestaña Documentos de la ficha.' },
-        { id:'p-reu',     t:'ok',    msg:'Reunión equipo programada',            detail:'Reunión bimensual con el equipo terapéutico de León.', action:'Confirmar asistencia respondiendo al correo.' },
-        { id:'p-conf',    t:'warn',  msg:'Confirmar asistencia próxima sem',     detail:'Necesitamos confirmar la asistencia para la próxima semana del intensivo.', action:'Responder confirmando los días.' },
+        { id:'p-pago',    t:'warn',  msg:'Pago boleta mayo pendiente',           detail:`La boleta del mes de mayo de ${UI.esc(n.nombre_completo || 'tu hijo')} está pendiente de pago.`, action:'El detalle del monto y los datos de transferencia los recibirás por correo desde coordinación.' },
+        { id:'p-prox',    t:'ok',    msg:'Próxima sesión esta semana',           detail:'Hay sesiones agendadas en los próximos días.', action:'Revisa el calendario semanal arriba para ver día, hora y tipo de terapia.' },
+        { id:'p-informe', t:'warn',  msg:'Informe mensual disponible',           detail:'El informe de avance del último mes está listo.', action:'Coordinación te lo envía por correo. También aparecerá en el botón Descargar PDF de esta vista.' },
+        { id:'p-reu',     t:'ok',    msg:'Reunión con el equipo terapéutico',    detail:'Reunión bimensual programada para revisar avances y objetivos.', action:'Confirma la asistencia respondiendo al correo enviado por coordinación.' },
+        { id:'p-conf',    t:'warn',  msg:'Confirmar asistencia próxima semana',  detail:'Necesitamos confirmar la asistencia para los días de la próxima semana.', action:'Responde al correo de coordinación indicando los días disponibles.' },
       ];
     }
     if (State.role === 'terapeuta') {
       const conf = Data.kpiConflictos();
+      const tName = DEMO_USERS.terapeuta?.short || 'terapeuta';
       return [
-        { id:'t-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} en tu agenda`, detail:`Hay ${conf.count} sesiones que chocan con otra terapeuta o sala. Revisa el calendario.`, action:'Click en el KPI Conflictos detectados para ver el detalle.' },
-        { id:'t-notas', t:'warn',  msg:'Faltan notas de 4 sesiones de ayer',     detail:'Cuatro sesiones del jueves 14 quedaron sin notas clínicas.', action:'Abrir cada sesión y escribir la nota en el panel.' },
-        { id:'t-obj',   t:'warn',  msg:'Revisar objetivos de Belén O.',          detail:'Los objetivos terapéuticos de Belén deben revisarse este mes según el plan.', action:'Ir a Fichas clínicas → Belén → pestaña Objetivos.' },
-        { id:'t-reu',   t:'ok',    msg:'Reunión equipo intensivo · jue 17:30',   detail:'Reunión de coordinación del programa Intensivo 40.', action:'Sala COG, llevar bitácora de la semana.' },
-        { id:'t-horas', t:'ok',    msg:'Hoja de horas lista para revisar',       detail:'Tu reporte de horas trabajadas en mayo está calculado y disponible.', action:'Revisar en Reportes y boletas → Pago profesionales.' },
+        { id:'t-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} en tu agenda`, detail:`Hay ${conf.count} sesiones que chocan con otra terapeuta o sala en tu agenda de esta semana.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver el detalle.' },
+        { id:'t-notas', t:'warn',  msg:'Faltan notas en sesiones recientes',     detail:'Algunas sesiones realizadas todavía no tienen notas clínicas registradas.', action:'Abre cualquier sesión del calendario y escribe la nota en el panel lateral.' },
+        { id:'t-obj',   t:'warn',  msg:'Revisar objetivos del mes',              detail:'Los objetivos terapéuticos de tus niños asignados deben revisarse mensualmente.', action:'En Fichas clínicas abre la ficha de cada niño asignado y revisa la pestaña Objetivos.' },
+        { id:'t-reu',   t:'ok',    msg:'Reunión de equipo programada',           detail:'Reunión de coordinación del programa Intensivo esta semana.', action:'Revisa el detalle en el correo del centro.' },
+        { id:'t-horas', t:'ok',    msg:'Tu hoja de horas está lista',            detail:`Tus horas trabajadas en mayo están calculadas, ${UI.esc(tName)}.`, action:'En el módulo Reportes y boletas, abajo aparece tu fila con horas, valor y monto.' },
       ];
     }
     const conf = Data.kpiConflictos();
     return [
-      { id:'c-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} a resolver hoy`, detail:`Detectamos ${conf.count} sesiones que chocan automáticamente. BUSCARV no las habría detectado.`, action:'Click en el KPI rojo del calendario para ver detalle y resolver.' },
-      { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'5 boletas con sesiones realizadas y monto calculado están listas.', action:'Ir a Reportes y boletas → emitir las boletas del mes.' },
-      { id:'c-equi',  t:'warn',  msg:'3 fichas sin equipo asignado',           detail:'Hay 3 niños recientes que aún no tienen equipo terapéutico asignado.', action:'Ir a Fichas clínicas → pestaña Equipo y asignar terapeutas.' },
-      { id:'c-cierre',t:'ok',    msg:'Cierre semanal intensivo · vie',         detail:'Hoy viernes corresponde el cierre semanal del Intensivo 40.', action:'Revisar resumen de la semana en el dashboard.' },
-      { id:'c-eval',  t:'ok',    msg:'2 nuevas evaluaciones esta semana',      detail:'Se sumaron 2 niños al programa de evaluación inicial.', action:'Ir a Fichas → grupo Otros programas.' },
+      { id:'c-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} a resolver hoy`, detail:`Detectamos ${conf.count} sesiones que chocan en sala o terapeuta.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver y resolver.' },
+      { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'Hay 5 boletas del mes con sesiones realizadas y monto calculado automáticamente.', action:'En el módulo Reportes y boletas se ve la tabla completa para emitir.' },
+      { id:'c-equi',  t:'warn',  msg:'3 fichas con equipo incompleto',         detail:'Hay 3 niños que aún no tienen todo el equipo terapéutico asignado.', action:'En Fichas clínicas abre la ficha del niño y revisa la pestaña Equipo.' },
+      { id:'c-cierre',t:'ok',    msg:'Cierre semanal del Intensivo · viernes', detail:'Hoy viernes corresponde el cierre semanal del programa Intensivo 40.', action:'Revisa la semana completa en el módulo Calendario.' },
+      { id:'c-eval',  t:'ok',    msg:'2 nuevas evaluaciones esta semana',      detail:'Se sumaron 2 niños al programa de Evaluación inicial.', action:'En Fichas clínicas aparecen en el grupo "Otros programas".' },
     ];
   },
 };

@@ -380,6 +380,53 @@
 .ter-selector-row .equipo-avatar { width: 34px; height: 34px; flex-shrink: 0; }
 .ter-selector-row svg:last-child { color: var(--text-3); }
 
+.login-pwd-section {
+  padding: 18px 22px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.login-pwd-title { font-size: 13px; color: var(--text-2); }
+.login-pwd-title b { color: var(--text); }
+.login-pwd-section .field-input { width: 100%; font-size: 16px; letter-spacing: 0.2em; }
+
+/* Toggles para Configuración */
+.toggle-list { display: flex; flex-direction: column; }
+.toggle-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.toggle-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; line-height: 1.45; }
+.toggle-input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle-pill {
+  width: 38px; height: 22px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.18s var(--ease);
+  flex-shrink: 0;
+}
+.toggle-pill::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform 0.2s var(--ease);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-input:checked + .toggle-pill { background: var(--cn-azul); }
+.toggle-input:checked + .toggle-pill::after { transform: translateX(16px); }
+
 /* === Toast === */
 .toast {
   position: fixed;
