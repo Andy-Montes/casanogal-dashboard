@@ -214,6 +214,9 @@ const Fichas = {
         this._renderDetalle(n.id_nino);
       });
     });
+    document.querySelectorAll('.doc-download').forEach(b => {
+      b.addEventListener('click', () => UI.toast('Descarga enviada al correo', 'success'));
+    });
   },
 
   _seccionBoletas(idNino) {
@@ -512,8 +515,8 @@ const Fichas = {
               <div class="doc-name">${UI.esc(d.nombre_archivo)}</div>
               <div class="doc-meta">${UI.esc(d.tipo)} · ${UI.fmtFechaCorta(d.fecha_documento)} · subido por ${UI.esc(d.subido_por)}</div>
             </div>
-            <button class="btn btn-ghost" onclick="UI.toast('Descarga enviada al correo','success')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button class="btn btn-ghost doc-download" type="button" aria-label="Descargar ${UI.esc(d.nombre_archivo)}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </div>`).join('')}
         </div>
