@@ -1,97 +1,266 @@
-/* Hoja de estilos para PDF de padres
-   Se activa con body.printing-padres + @media print
+/* PDF de padres · documento de acompañamiento
+   Activación: PDFPadres.render() inyecta #pdfDoc, body.printing-padres dispara estilos.
 */
 
+/* Por defecto, el #pdfDoc no se ve en pantalla — solo cuando printing-padres está activo */
+#pdfDoc { display: none; }
+
 @media print {
-  @page { size: A4 portrait; margin: 14mm 14mm 16mm 14mm; }
+  @page { size: A4 portrait; margin: 0; }
 
-  body.printing-padres * { visibility: hidden; }
-  body.printing-padres .main,
-  body.printing-padres .main * { visibility: visible; }
-
-  /* Encabezado imprimible */
-  body.printing-padres .main::before {
-    content: 'Casa Nogal · Sistema clínico';
-    visibility: visible;
-    display: block;
-    text-align: center;
-    font-size: 14pt;
-    font-weight: 800;
-    color: #1B6B8A;
-    letter-spacing: -0.02em;
-    margin-bottom: 4pt;
-  }
-  body.printing-padres .main::after {
-    content: 'Horario semanal · documento informativo · casanogal.cl';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 8pt;
-    color: #8B92A0;
-    visibility: visible;
-  }
-
-  body.printing-padres {
-    background: white !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  body.printing-padres .layout {
-    display: block !important;
-  }
-
+  /* Ocultar TODO el dashboard */
   body.printing-padres .header,
-  body.printing-padres .sidebar,
-  body.printing-padres .section-actions,
-  body.printing-padres .cal-toolbar,
-  body.printing-padres .kpi-row,
-  body.printing-padres .legend,
-  body.printing-padres .role-banner,
-  body.printing-padres .hero-week-nav,
-  body.printing-padres .section-head .btn,
-  body.printing-padres #downloadPDF { display: none !important; }
+  body.printing-padres .layout,
+  body.printing-padres .toast,
+  body.printing-padres #panelSesion,
+  body.printing-padres #modalContainer { display: none !important; }
 
-  body.printing-padres .main {
-    padding: 0 !important;
-    background: white !important;
-    grid-column: 1 / -1;
-  }
+  /* Mostrar SOLO el doc PDF */
+  body.printing-padres { background: #F7F4F0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.printing-padres #pdfDoc { display: grid !important; }
+}
 
-  body.printing-padres .hero {
-    background: white !important;
-    color: var(--text) !important;
-    padding: 12pt 0 16pt;
-    margin: 0 0 8pt 0;
-    border-radius: 0;
-    border-bottom: 2pt solid var(--cn-azul);
-  }
-  body.printing-padres .hero::before { display: none; }
-  body.printing-padres .hero-brain { display: none; }
-  body.printing-padres .hero-inner { display: block; }
-  body.printing-padres .hero-eyebrow { color: var(--cn-azul) !important; }
-  body.printing-padres .hero-title { color: var(--text) !important; font-size: 18pt; }
-  body.printing-padres .hero-meta { color: var(--text-2) !important; }
-  body.printing-padres .hero-meta-label { color: var(--text-3) !important; }
-  body.printing-padres .hero-meta-value { color: var(--text) !important; font-size: 14pt; }
+/* ====== Documento ====== */
+.pdf-doc {
+  display: grid;
+  grid-template-columns: 32% 1fr;
+  min-height: 297mm;
+  width: 210mm;
+  background: #F7F4F0;
+  color: #1A1A1A;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
 
-  body.printing-padres .section-head .section-title { font-size: 13pt; }
-  body.printing-padres .section-head .section-sub { font-size: 9pt; }
+/* ====== Sidebar ====== */
+.pdf-side {
+  background: #1B6B8A;
+  color: #FFFFFF;
+  padding: 18mm 10mm 14mm 10mm;
+  display: flex;
+  flex-direction: column;
+  gap: 9mm;
+}
 
-  body.printing-padres .calendar { border: 1pt solid var(--border); page-break-inside: avoid; }
-  body.printing-padres .cal-grid { display: grid; }
-  body.printing-padres .cal-cell { min-height: 36pt; }
-  body.printing-padres .session {
-    animation: none !important;
-    opacity: 1 !important;
-    box-shadow: none !important;
-    transform: none !important;
-    padding: 3pt 4pt;
-    font-size: 8pt;
-  }
-  body.printing-padres .session-name { font-size: 8pt; }
-  body.printing-padres .session-name .ter { display: none; } /* padres no ven abrev terapeuta */
-  body.printing-padres .session-sub { font-size: 7pt; }
+.pdf-brand { display: flex; align-items: center; gap: 8px; }
+.pdf-logo { width: 32px; height: 32px; flex: 0 0 32px; }
+.pdf-brand-name { font-size: 13pt; font-weight: 400; letter-spacing: -0.01em; }
+.pdf-brand-name b { font-weight: 800; }
+.pdf-brand-tag { font-size: 7.5pt; opacity: 0.75; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 1pt; }
+
+.pdf-child { border-top: 1pt solid rgba(255,255,255,0.18); border-bottom: 1pt solid rgba(255,255,255,0.18); padding: 7mm 0; }
+.pdf-eyebrow {
+  font-size: 7.5pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #FAF0D7;
+  margin-bottom: 4pt;
+  font-weight: 600;
+}
+.pdf-child-name {
+  font-size: 22pt;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin-bottom: 4pt;
+}
+.pdf-child-meta { font-size: 9pt; opacity: 0.82; }
+
+.pdf-block { display: flex; flex-direction: column; gap: 1pt; }
+.pdf-block-label {
+  font-size: 7.5pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #C9A23C;
+  font-weight: 700;
+  margin-bottom: 3pt;
+}
+.pdf-block-value { font-size: 13pt; font-weight: 700; letter-spacing: -0.01em; }
+.pdf-block-sub { font-size: 8.5pt; opacity: 0.75; }
+
+.pdf-contact-name { font-size: 10pt; font-weight: 700; }
+.pdf-contact-role { font-size: 8.5pt; opacity: 0.75; margin-bottom: 4pt; }
+.pdf-contact-line { font-size: 8.5pt; opacity: 0.92; }
+
+.pdf-foot { margin-top: auto; font-size: 7pt; opacity: 0.55; line-height: 1.45; }
+
+/* ====== Main ====== */
+.pdf-main {
+  padding: 18mm 12mm 14mm 12mm;
+  display: flex;
+  flex-direction: column;
+  gap: 9mm;
+}
+
+.pdf-section { display: flex; flex-direction: column; gap: 3mm; }
+
+.pdf-h2 {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1B6B8A;
+  letter-spacing: -0.015em;
+  margin: 0;
+  padding-bottom: 2pt;
+  border-bottom: 1pt solid #E2DDD7;
+}
+
+.pdf-lead { font-size: 9pt; color: #5C5C5C; margin: 0; }
+
+/* Resumen del mes */
+.pdf-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+  margin-top: 2mm;
+}
+.pdf-stat {
+  background: #FFFFFF;
+  border: 1pt solid #E2DDD7;
+  border-radius: 6pt;
+  padding: 5mm 4mm;
+  text-align: center;
+}
+.pdf-stat-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #1B6B8A;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 2pt;
+}
+.pdf-stat-label {
+  font-size: 8pt;
+  color: #5C5C5C;
+  letter-spacing: 0.02em;
+}
+
+/* Equipo */
+.pdf-team {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3mm;
+}
+.pdf-team-card {
+  display: flex;
+  gap: 3mm;
+  align-items: flex-start;
+  background: #FFFFFF;
+  border: 1pt solid #E2DDD7;
+  border-radius: 6pt;
+  padding: 3mm;
+}
+.pdf-team-avatar {
+  width: 9mm;
+  height: 9mm;
+  flex: 0 0 9mm;
+  background: #FAF0D7;
+  color: #8A6A1C;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12pt;
+}
+.pdf-team-name { font-size: 9.5pt; font-weight: 700; color: #1A1A1A; line-height: 1.2; }
+.pdf-team-role { font-size: 8.5pt; color: #5C5C5C; margin-top: 1pt; }
+.pdf-team-meta { font-size: 7.5pt; color: #1B6B8A; margin-top: 2pt; font-weight: 600; }
+
+/* Horario semanal */
+.pdf-week {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5mm;
+  background: #FFFFFF;
+  border: 1pt solid #E2DDD7;
+  border-radius: 6pt;
+  padding: 2mm;
+}
+.pdf-day { display: flex; flex-direction: column; gap: 1.5mm; }
+.pdf-day-head {
+  text-align: center;
+  background: #D6EBF2;
+  border-radius: 4pt;
+  padding: 2mm 0;
+}
+.pdf-day-name {
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #1B6B8A;
+}
+.pdf-day-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13pt;
+  font-weight: 700;
+  color: #1B6B8A;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-top: 1pt;
+}
+.pdf-day-body { display: flex; flex-direction: column; gap: 1.5mm; min-height: 50mm; }
+
+.pdf-ses {
+  background: #F7F4F0;
+  border-left: 2pt solid #1B6B8A;
+  border-radius: 3pt;
+  padding: 2mm;
+  font-size: 7.5pt;
+  line-height: 1.3;
+}
+.pdf-ses.is-done { background: #EFF6F0; border-left-color: #4A8A55; opacity: 0.78; }
+.pdf-ses.is-cancel { background: #FBEEEC; border-left-color: #C36B5E; opacity: 0.65; text-decoration: line-through; }
+.pdf-ses.is-miss { background: #FAF0D7; border-left-color: #C9A23C; opacity: 0.75; }
+.pdf-ses-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 8.5pt;
+  color: #1B6B8A;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 3pt;
+  margin-bottom: 1pt;
+}
+.pdf-ses.is-done .pdf-ses-time,
+.pdf-ses.is-cancel .pdf-ses-time,
+.pdf-ses.is-miss .pdf-ses-time { color: #5C5C5C; }
+.pdf-ses-dur { font-size: 6.5pt; font-weight: 500; color: #8B92A0; }
+.pdf-ses-esp { font-weight: 700; color: #1A1A1A; }
+.pdf-ses-sala { color: #5C5C5C; font-size: 7pt; }
+
+.pdf-empty {
+  text-align: center;
+  font-size: 7.5pt;
+  color: #A8A8A8;
+  font-style: italic;
+  padding: 4mm 0;
+}
+
+/* Reuniones */
+.pdf-reu {
+  display: grid;
+  grid-template-columns: 32mm 1fr;
+  gap: 4mm;
+  background: #FAF0D7;
+  border-radius: 5pt;
+  padding: 3mm 4mm;
+  margin-bottom: 2mm;
+}
+.pdf-reu-date { font-weight: 700; color: #8A6A1C; font-size: 9pt; }
+.pdf-reu-body { font-size: 9pt; color: #1A1A1A; }
+.pdf-reu-note { font-size: 8pt; color: #5C5C5C; margin-top: 1pt; }
+.pdf-reu-empty { font-size: 9pt; color: #5C5C5C; margin: 0; font-style: italic; }
+
+/* Cierre */
+.pdf-closing {
+  margin-top: auto;
+  padding-top: 6mm;
+  border-top: 1pt solid #E2DDD7;
+  font-size: 9pt;
+  color: #1B6B8A;
+  font-style: italic;
+  text-align: center;
 }

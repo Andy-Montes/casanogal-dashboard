@@ -370,18 +370,18 @@ const Main = {
   },
 
   _downloadPDF() {
-    // Forzar vista calendario antes de imprimir (PDF = horario semanal completo)
-    if (State.module !== 'calendario') {
-      State.module = 'calendario';
-      this.activateNav('calendario');
-      this._renderModule();
-    }
+    const idNino = DEMO_USERS.padres.id_nino;
+    const ok = PDFPadres.render(idNino);
+    if (!ok) { UI.toast('No se pudo generar el PDF', 'error'); return; }
     document.body.classList.add('printing-padres');
-    UI.toast('Preparando PDF · horario semanal completo', 'success');
+    UI.toast('Preparando documento de acompañamiento', 'success');
     setTimeout(() => {
       window.print();
-      setTimeout(() => document.body.classList.remove('printing-padres'), 600);
-    }, 350);
+      setTimeout(() => {
+        document.body.classList.remove('printing-padres');
+        PDFPadres.cleanup();
+      }, 800);
+    }, 250);
   },
 
   refreshUserChip() {
