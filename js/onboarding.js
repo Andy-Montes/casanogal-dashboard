@@ -138,13 +138,13 @@ const Onboarding = {
         target: '.sidebar',
         position: 'right',
         title: 'Navegación principal',
-        body: 'Desde el menú lateral entras a <b>Calendario</b>, <b>Fichas clínicas</b>, <b>Reportes</b>, <b>Boletas</b>, <b>Equipo</b>, <b>Niños</b>, <b>Salas</b>, <b>Configuración</b> y <b>Permisos</b>. Cada sección está pensada para un momento del día.',
+        body: 'El menú lateral organiza el sistema en tres bloques: <b>Gestión operativa</b>, <b>Recursos</b> y <b>Sistema</b>. Te muestro las secciones clave en los próximos pasos.',
       },
       {
         target: '#roleSwitcher',
         position: 'below',
-        title: 'Cambia de vista según quién necesita ver qué',
-        body: 'Como super admin puedes previsualizar cómo se ve el sistema para un <b>Terapeuta</b> (solo sus niños) o entrar a la <b>Consola Familia</b> (Padres) para preparar lo que les llega a los apoderados.',
+        title: 'Cambia de vista según el rol',
+        body: 'Como super admin puedes <b>previsualizar</b> cómo se ve el sistema para un <b>Terapeuta</b> o cambiar a la vista de <b>Familia</b>. Cada rol ve únicamente lo que le corresponde.',
       },
       {
         target: '.kpi-row, .hero-meta, .hero',
