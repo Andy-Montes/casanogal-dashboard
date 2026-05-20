@@ -241,10 +241,15 @@ const Fichas = {
         this._renderDetalle(n.id_nino);
       });
     });
-    const proxMasBtn = document.getElementById('proxMasBtn');
-    proxMasBtn?.addEventListener('click', () => {
-      const extra = document.getElementById('proxExtra');
-      if (extra) { extra.style.display = 'block'; proxMasBtn.style.display = 'none'; }
+    [['verPasadas', 'histPasadas'], ['verFuturas', 'histFuturas']].forEach(([btnId, blkId]) => {
+      const btn = document.getElementById(btnId);
+      const blk = document.getElementById(blkId);
+      if (!btn || !blk) return;
+      btn.addEventListener('click', () => {
+        const abierto = blk.style.display !== 'none';
+        blk.style.display = abierto ? 'none' : 'block';
+        btn.textContent = (abierto ? 'Revisar ' : 'Ocultar ') + btn.dataset.label;
+      });
     });
     document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
     document.querySelectorAll('.reu-delete').forEach(b => {
@@ -360,14 +365,19 @@ const Fichas = {
     // El terapeuta y coordinación registran aquí la nota de cada sesión.
     const puedeAnotar = State.role === 'terapeuta' || State.role === 'coordinacion';
     const stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-    const proximas = sesiones
-      .filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO)
+    const hoySes = sesiones
+      .filter(s => s.fecha === HOY_ISO)
+      .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    const futuras = sesiones
+      .filter(s => s.estado === 'Agendada' && s.fecha > HOY_ISO)
       .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
-    // Historial: lo ya ocurrido, más reciente primero
+    const enHoy = new Set(hoySes.map(s => s.id_sesion));
+    const enFut = new Set(futuras.map(s => s.id_sesion));
+    // Pasadas: todo lo que no es de hoy ni futura agendada, más reciente primero
     const pasadas = sesiones
-      .filter(s => !(s.estado === 'Agendada' && s.fecha >= HOY_ISO))
+      .filter(s => !enHoy.has(s.id_sesion) && !enFut.has(s.id_sesion))
       .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio || '').localeCompare(a.hora_inicio || ''));
-    const sinNota = pasadas.filter(s => s.estado === 'Realizada' && !Data.notaPorSesion(s.id_sesion) && !stored[s.id_sesion]).length;
+    const sinNota = [...hoySes, ...pasadas].filter(s => s.estado === 'Realizada' && !Data.notaPorSesion(s.id_sesion) && !stored[s.id_sesion]).length;
 
     const proxRow = (s) => {
       const ter = Data.terapeuta(s.id_terapeuta);
@@ -432,23 +442,31 @@ const Fichas = {
       </div>`;
     };
 
+    const lblPasadas = `sesiones pasadas · ${pasadas.length}${sinNota > 0 ? ' · ' + sinNota + ' sin nota' : ''}`;
+    const lblFuturas = `futuras agendadas · ${futuras.length}`;
+
     return `<section class="ficha-section">
-      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${pasadas.length}</span>${sinNota > 0 ? ` <span class="ficha-section-hint" style="color:var(--alert)">${sinNota} sin nota</span>` : ''}</h2>
-      ${proximas.length ? `
-        <div class="prox-block">
-          <div class="prox-title">Próximas sesiones agendadas · ${proximas.length}</div>
-          ${proximas.slice(0, 3).map(proxRow).join('')}
-          ${proximas.length > 3 ? `
-            <div class="prox-extra" id="proxExtra" style="display:none">${proximas.slice(3).map(proxRow).join('')}</div>
-            <button class="btn btn-ghost" id="proxMasBtn" type="button" style="margin-top:4px;height:30px;font-size:12px">Mostrar ${proximas.length - 3} agendadas más</button>
-          ` : ''}
-        </div>
+      <h2 class="ficha-section-title">Sesiones${sinNota > 0 ? ` <span class="ficha-section-hint" style="color:var(--alert)">${sinNota} sin nota</span>` : ''}</h2>
+      ${hoySes.length ? `
+        <div class="hist-sub">Hoy</div>
+        <div class="timeline">${hoySes.map(histItem).join('')}</div>
       ` : ''}
-      ${pasadas.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin sesiones realizadas aún</div></div>` : `
-        <div class="timeline">
-          ${pasadas.slice(0, 25).map(histItem).join('')}
-        </div>
-      `}
+      ${futuras.length ? `
+        <div class="hist-sub">Próximas sesiones</div>
+        <div class="prox-block">${futuras.slice(0, 3).map(proxRow).join('')}</div>
+      ` : (hoySes.length ? '' : `<div class="empty-state"><div class="empty-state-title">Sin sesiones próximas</div></div>`)}
+      <div class="hist-actions">
+        ${pasadas.length ? `<button class="btn btn-ghost" id="verPasadas" type="button" data-label="${lblPasadas}">Revisar ${lblPasadas}</button>` : ''}
+        ${futuras.length > 3 ? `<button class="btn btn-ghost" id="verFuturas" type="button" data-label="${lblFuturas}">Revisar ${lblFuturas}</button>` : ''}
+      </div>
+      <div id="histPasadas" style="display:none">
+        <div class="hist-sub">Sesiones pasadas · más reciente primero</div>
+        ${pasadas.length ? `<div class="timeline">${pasadas.slice(0, 40).map(histItem).join('')}</div>` : `<div class="empty-state"><div class="empty-state-title">Sin sesiones pasadas</div></div>`}
+      </div>
+      <div id="histFuturas" style="display:none">
+        <div class="hist-sub">Todas las sesiones agendadas</div>
+        <div class="prox-block">${futuras.map(proxRow).join('')}</div>
+      </div>
     </section>`;
   },
 

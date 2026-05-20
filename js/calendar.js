@@ -190,7 +190,7 @@ const Calendar = {
                   <div class="conflict-row-meta">
                     ${UI.esc(s.tipo_terapia)} · Sala ${UI.esc(s.sala_nombre)} · ${UI.esc(s.dia_semana)} ${UI.esc(s.hora_inicio)}<br>
                     <span class="conflict-reason">⚠ ${ci.motivo}</span>
-                    ${ci.sug ? `<br><span style="display:inline-block;margin-top:3px;font-size:11.5px;color:#fff;font-weight:600">💡 Sugerencia: mover a <b>${UI.esc(ci.sug)}</b> (bloque libre)</span>` : ''}
+                    ${ci.sug ? `<br><button class="conflict-mover" data-id="${UI.esc(s.id_sesion)}" data-fecha="${ci.sug.fecha}" data-bloque="${UI.esc(ci.sug.id_bloque)}" data-dia="${UI.esc(ci.sug.dia)}" style="margin-top:7px;background:#fff;color:var(--alert);border:none;border-radius:7px;padding:6px 11px;font-size:11.5px;font-weight:700;cursor:pointer">💡 Mover a ${UI.esc(ci.sug.label)} (bloque libre)</button>` : ''}
                   </div>
                   <button class="btn btn-secondary conflict-jump">Ir →</button>
                 </div>`;
@@ -279,10 +279,20 @@ const Calendar = {
         if (f === s.fecha && b.id_bloque === s.id_bloque) continue;
         const choca = State.data.sesiones.some(o => o.fecha === f && o.id_bloque === b.id_bloque && o.id_sesion !== s.id_sesion &&
           (o.id_sala === s.id_sala || o.id_terapeuta === s.id_terapeuta || o.id_nino === s.id_nino));
-        if (!choca) { sug = `${DIAS_LABEL[di]} ${b.hora_inicio}`; break; }
+        if (!choca) { sug = { fecha: f, id_bloque: b.id_bloque, dia: DIAS[di], label: `${DIAS_LABEL[di]} ${b.hora_inicio}` }; break; }
       }
     }
     return { motivo, sug };
+  },
+
+  // Re-evalúa los conflictos marcados: limpia los que ya no chocan con nada
+  _revaluarConflictos() {
+    State.data.sesiones.filter(s => s.conflicto_detectado).forEach(s => {
+      const otras = State.data.sesiones.filter(o =>
+        o.fecha === s.fecha && o.id_bloque === s.id_bloque && o.id_sesion !== s.id_sesion);
+      const sigueChocando = otras.some(o => o.id_sala === s.id_sala || o.id_terapeuta === s.id_terapeuta);
+      if (!sigueChocando) s.conflicto_detectado = null;
+    });
   },
 
   _renderGrid() {
@@ -503,6 +513,22 @@ const Calendar = {
             target.classList.add('flash');
             setTimeout(() => target.classList.remove('flash'), 1800);
           }
+        });
+      });
+      // Botón "Mover a ..." — resuelve el conflicto en un clic
+      document.querySelectorAll('.conflict-mover').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const s = State.data.sesiones.find(x => x.id_sesion === btn.dataset.id);
+          if (!s) return;
+          const b = Data.bloque(btn.dataset.bloque);
+          s.fecha = btn.dataset.fecha;
+          s.dia_semana = btn.dataset.dia;
+          s.id_bloque = btn.dataset.bloque;
+          if (b) { s.hora_inicio = b.hora_inicio; s.hora_fin = b.hora_fin; }
+          this._revaluarConflictos();
+          UI.toast(`${s.nino_visible} movido · conflicto resuelto`, 'success');
+          this.render();
         });
       });
     }

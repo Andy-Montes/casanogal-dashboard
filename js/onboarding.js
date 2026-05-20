@@ -31,7 +31,7 @@ const Onboarding = {
     document.getElementById('tourPop')?.remove();
     if (idx >= steps.length) {
       this._markDone();
-      UI.toast('Listo. Puedes volver al recorrido desde "¿Qué es Casa Nogal?" en el sidebar.', 'success');
+      UI.toast('Listo. Puedes volver al recorrido desde "Volver al tour guiado" en el sidebar.', 'success');
       return;
     }
     const step = steps[idx];
@@ -202,7 +202,7 @@ const Onboarding = {
       },
       {
         title: 'Listo',
-        body: 'Ya conoces el sistema. Si necesitas volver al recorrido, hay un link <b>"¿Qué es Casa Nogal?"</b> al final del menú lateral.<br><br>Cualquier consulta, escríbele al equipo de soporte.',
+        body: 'Ya conoces el sistema. Si necesitas repetir el recorrido, usa el link <b>"Volver al tour guiado"</b> al final del menú lateral.<br><br>Cualquier consulta, escríbele al equipo de soporte.',
       },
     ];
   },
@@ -236,7 +236,7 @@ const Onboarding = {
       },
       {
         title: 'Listo',
-        body: 'Ya conoces tu espacio. Para volver al recorrido, click en <b>"¿Qué es Casa Nogal?"</b> al pie del menú lateral.',
+        body: 'Ya conoces tu espacio. Para repetir el recorrido, click en <b>"Volver al tour guiado"</b> al pie del menú lateral.',
       },
     ];
   },
