@@ -198,6 +198,10 @@ const Reportes = {
   _renderTerapeutaView() {
     const tid = DEMO_USERS.terapeuta?.id_terapeuta;
     const t = Data.terapeuta(tid);
+    if (!t) {
+      document.getElementById('main').innerHTML = `<div class="empty-state"><div class="empty-state-title">No se encontró tu ficha de terapeuta</div><div>Tu sesión apunta a un profesional que ya no está en el sistema. Vuelve a entrar desde el botón Salir.</div></div>`;
+      return;
+    }
     const sesiones = State.data.sesiones.filter(s => s.id_terapeuta === tid && s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
     let minutos = 0;
     sesiones.forEach(s => { const b = Data.bloque(s.id_bloque); minutos += b?.duracion_minutos || 35; });

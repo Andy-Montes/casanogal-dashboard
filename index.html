@@ -30,6 +30,9 @@
 <!-- HEADER -->
 <header class="header" id="appHeader">
   <div class="header-inner">
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menú de navegación" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <div class="brand">
       <svg class="brand-logo" viewBox="0 0 64 64" fill="none" aria-hidden="true">
         <path d="M22 14C16 14 12 18 12 24C12 26 12.5 28 13.5 29.5C11 31 9 34 9 38C9 44 13 48 19 48C20 49.5 22 51 24 51C24 53 25 54 27 54C29 54 31 53 31 51V14C28 14 25 14 22 14Z" stroke="#E8A317" stroke-width="2.5"/>
@@ -145,6 +148,9 @@
     <!-- Contenido inyectado por JS -->
   </main>
 </div>
+
+<!-- Fondo oscuro del cajón de navegación móvil -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
 <!-- Detail panel (slide-in) -->
 <div class="panel-overlay" id="panelOverlay"></div>

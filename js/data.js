@@ -20,18 +20,23 @@ const Data = {
     return State.data?.terapeutas || [];
   },
   nino(id) {
+    if (!State.data) return undefined;
     return State.data.ninos.find(n => n.id_nino === id);
   },
   sala(id) {
+    if (!State.data) return undefined;
     return State.data.salas.find(s => s.id_sala === id);
   },
   programa(id) {
+    if (!State.data) return undefined;
     return State.data.programas.find(p => p.id_programa === id);
   },
   bloque(id) {
+    if (!State.data) return undefined;
     return State.data.bloques_horarios.find(b => b.id_bloque === id);
   },
   bloqueByOrden(orden) {
+    if (!State.data) return undefined;
     return State.data.bloques_horarios.find(b => b.orden === orden);
   },
   notaPorSesion(idSesion) {

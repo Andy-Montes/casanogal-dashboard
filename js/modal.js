@@ -181,7 +181,13 @@ const Modal = {
       });
       UI.toast(conflicto ? `Sesión guardada · ⚠ ${conflicto}` : 'Sesión actualizada', conflicto ? 'alert' : 'success');
     } else {
-      const newId = 'SES-' + String(State.data.sesiones.length + 1).padStart(4, '0');
+      // ID a partir del máximo numérico existente, no del largo del array:
+      // eliminar y recrear sesiones haría colisionar IDs si se usara length+1.
+      const maxNum = State.data.sesiones.reduce((m, s) => {
+        const n = parseInt(String(s.id_sesion).replace(/\D/g, ''), 10);
+        return Number.isFinite(n) && n > m ? n : m;
+      }, 0);
+      const newId = 'SES-' + String(maxNum + 1).padStart(4, '0');
       State.data.sesiones.push({
         id_sesion: newId,
         fecha,

@@ -59,7 +59,6 @@ const Login = {
           <div class="login-brand-text">
             <div class="login-brand-name">casa<b>nogal</b></div>
             <div class="login-brand-tag">Centro de terapias · Sistema clínico</div>
-            <div class="login-brand-tag">Sistema clínico</div>
           </div>
         </div>
 

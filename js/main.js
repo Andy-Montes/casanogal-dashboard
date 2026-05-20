@@ -44,10 +44,16 @@ const Main = {
       }
     }
 
-    this._wireHeader();
-    this._wireSidebar();
-    this._wirePanel();
-    this._wireModal();
+    // Cablear listeners una sola vez: el header/sidebar/panel/modal son DOM
+    // estático de index.html, así que un segundo init() no debe re-suscribir.
+    if (!this._wired) {
+      this._wireHeader();
+      this._wireSidebar();
+      this._wirePanel();
+      this._wireModal();
+      this._wireMobileNav();
+      this._wired = true;
+    }
     this._applySessionUI();
     this.refreshUserChip();
     this.refreshCounts();
@@ -145,6 +151,7 @@ const Main = {
         State.filterFicha = 'all';
         this.activateNav(mod);
         this._renderModule();
+        document.body.classList.remove('sidebar-open');
       });
     });
   },
@@ -156,7 +163,7 @@ const Main = {
     document.getElementById('panelEditBtn').addEventListener('click', () => Panel.edit());
     document.getElementById('panelMoveBtn').addEventListener('click', () => Panel.initMove());
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { Panel.close(); Modal.close(); }
+      if (e.key === 'Escape') { Panel.close(); Modal.close(); document.body.classList.remove('sidebar-open'); }
     });
   },
 
@@ -165,6 +172,20 @@ const Main = {
     document.getElementById('modalSaveBtn').addEventListener('click', () => Modal.save());
     document.getElementById('modalOverlay').addEventListener('click', (e) => {
       if (e.target.id === 'modalOverlay') Modal.close();
+    });
+  },
+
+  // Navegación móvil/tablet: el sidebar se vuelve un cajón deslizable bajo 1100px.
+  _wireMobileNav() {
+    const toggle = document.getElementById('navToggle');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    toggle?.addEventListener('click', () => {
+      const open = document.body.classList.toggle('sidebar-open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    backdrop?.addEventListener('click', () => {
+      document.body.classList.remove('sidebar-open');
+      toggle?.setAttribute('aria-expanded', 'false');
     });
   },
 
@@ -407,7 +428,7 @@ const Main = {
         <div class="role-banner">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <div>
-            <b>Estás viendo como Terapeuta · ${UI.esc(t?.nombre_completo || 'Krasna Petrovic')}.</b>
+            <b>Estás viendo como Terapeuta · ${UI.esc(t?.nombre_completo || DEMO_USERS.terapeuta?.name || '—')}.</b>
             Solo aparecen tus ${ninos} niños asignados y tus ${sesSem} sesiones de la semana. <a href="#" id="changeTerLink" style="color:var(--cn-azul);font-weight:600;text-decoration:underline">Cambiar de terapeuta</a> o cambia el rol arriba.
           </div>
         </div>`;
@@ -417,7 +438,7 @@ const Main = {
         <div class="role-banner role-banner-padres">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-9-5-9 5z"/><polyline points="3 7 12 13 21 7"/></svg>
           <div>
-            <b>Consola de coordinación</b> · estás preparando lo que recibirá la familia de <b>${UI.esc(nino?.nombre_completo || '—')}</b>. Los apoderados no acceden al sistema; este es el espacio donde tú revisas y envías la información.
+            <b>Consola de familia · ${UI.esc(nino?.nombre_completo || '—')}.</b> Aquí preparas y revisas lo que recibe el apoderado: horario semanal, informe y documento de acompañamiento. El apoderado no entra al sistema; tú se lo envías desde el botón Descargar PDF.
           </div>
         </div>`;
     }

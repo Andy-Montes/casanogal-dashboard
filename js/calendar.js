@@ -17,8 +17,8 @@ const Calendar = {
     const eyebrow = State.role === 'coordinacion'
       ? 'Vista coordinación · Intensivo 40'
       : State.role === 'terapeuta'
-      ? `Vista terapeuta · Krasna · TO`
-      : `Vista padres · León A. · Intensivo s2`;
+      ? `Vista terapeuta · ${UI.esc(DEMO_USERS.terapeuta?.short || '—')}`
+      : `Vista familia · ${UI.esc(Data.nino(DEMO_USERS.padres?.id_nino)?.nombre_visible || '—')}`;
 
     main.innerHTML = `
       <section class="hero">
