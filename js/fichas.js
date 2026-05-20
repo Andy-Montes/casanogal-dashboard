@@ -369,7 +369,7 @@ const Fichas = {
             const hayNota = !!notaTexto;
             const ter = Data.terapeuta(s.id_terapeuta);
             const editable = puedeAnotar && s.estado === 'Realizada';
-            return `<div class="timeline-item" data-sesion-id="${UI.esc(s.id_sesion)}">
+            return `<div class="timeline-item${editable && !hayNota ? ' open' : ''}" data-sesion-id="${UI.esc(s.id_sesion)}">
               <div class="timeline-head">
                 <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
                 <div>
@@ -387,15 +387,22 @@ const Fichas = {
                   <p>${UI.esc(notaTexto)}</p>
                   ${notaData?.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${notaData.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
                   ${notaData?.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${notaData.avance_percibido}/10</span></p>` : ''}
-                ` : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin nota registrada para esta sesión.</p>`}
-                ${editable ? `
-                  <button class="btn btn-ghost timeline-nota-toggle" type="button" data-sid="${UI.esc(s.id_sesion)}" style="margin-top:8px;height:30px;padding:0 12px;font-size:12px">
-                    ${hayNota ? 'Editar nota' : 'Registrar nota de la sesión'}
-                  </button>
+                ` : (editable ? '' : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin nota registrada para esta sesión.</p>`)}
+                ${editable && hayNota ? `
+                  <button class="btn btn-ghost timeline-nota-toggle" type="button" data-sid="${UI.esc(s.id_sesion)}" style="margin-top:8px;height:30px;padding:0 12px;font-size:12px">Editar nota</button>
                   <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="display:none;margin-top:8px">
                     <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="¿Qué se trabajó en esta sesión?">${UI.esc(notaTexto)}</textarea>
                     <div class="panel-notes-actions">
                       <button class="btn btn-ghost timeline-nota-cancel" type="button" data-sid="${UI.esc(s.id_sesion)}">Cancelar</button>
+                      <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
+                    </div>
+                  </div>
+                ` : ''}
+                ${editable && !hayNota ? `
+                  <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="margin-top:6px">
+                    <div style="font-size:12.5px;font-weight:700;color:var(--cn-mostaza-deep);margin-bottom:6px">✍ Registra acá lo que trabajaste en esta sesión</div>
+                    <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="Ej: trabajamos juego simbólico y turnos; respondió bien a la mediación con apoyo visual…"></textarea>
+                    <div class="panel-notes-actions">
                       <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
                     </div>
                   </div>

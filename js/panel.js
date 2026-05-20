@@ -110,9 +110,11 @@ const Panel = {
             ${nota?.avance_percibido != null ? `
               <div style="margin-top:10px;font-size:12px;color:var(--text-3)"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></div>
             ` : ''}
-            <div class="nota-where-hint" style="margin-top:12px">
-              La nota de cada sesión se registra y edita en la ficha del niño → sección <b>Historial de sesiones</b>.
-            </div>
+            ${(esTerapeuta || esAdmin) ? `
+              <button class="btn btn-primary panel-ir-ficha" type="button" style="margin-top:14px;width:100%">
+                ${notaTexto ? '✎ Ver o editar la nota en la ficha' : '✍ Registrar la nota en la ficha del niño'}
+              </button>
+            ` : ''}
           </div>
         `}
       ` : ''}
@@ -139,47 +141,13 @@ const Panel = {
       }
     }
 
-    // Wire de notas editables (terapeuta)
-    document.getElementById('notaSaveBtn')?.addEventListener('click', () => {
-      const txt = document.getElementById('notaTextarea').value.trim();
-      const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-      if (txt) {
-        store[sesion.id_sesion] = { texto: txt, autor: 'terapeuta', autor_nombre: DEMO_USERS.terapeuta?.name || null };
-      } else {
-        delete store[sesion.id_sesion];
-      }
-      localStorage.setItem('casanogal_notas', JSON.stringify(store));
-      const ninoNombre = nino?.nombre_completo?.split(' ')[0] || 'el niño';
-      UI.toast(txt ? `Nota guardada en la ficha de ${ninoNombre} · Historial` : 'Nota eliminada', 'success');
-      Main.renderPendientes();
-    });
-    document.getElementById('notaCancelBtn')?.addEventListener('click', () => {
-      document.getElementById('notaTextarea').value = notaTexto;
-    });
-
-    // Wire de nota administrativa (admin)
-    const adminBtn = document.getElementById('notaAdminBtn');
-    const adminEditor = document.getElementById('notaAdminEditor');
-    adminBtn?.addEventListener('click', () => {
-      const visible = adminEditor.style.display !== 'none';
-      adminEditor.style.display = visible ? 'none' : 'block';
-      if (!visible) document.getElementById('notaAdminTextarea').focus();
-    });
-    document.getElementById('notaAdminCancelBtn')?.addEventListener('click', () => {
-      adminEditor.style.display = 'none';
-    });
-    document.getElementById('notaAdminSaveBtn')?.addEventListener('click', () => {
-      const txt = document.getElementById('notaAdminTextarea').value.trim();
-      const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-      if (txt) {
-        store[sesion.id_sesion] = { texto: txt, autor: 'admin', autor_nombre: DEMO_USERS.coordinacion?.name || 'Coordinación' };
-      } else {
-        delete store[sesion.id_sesion];
-      }
-      localStorage.setItem('casanogal_notas', JSON.stringify(store));
-      UI.toast(txt ? 'Nota administrativa guardada' : 'Nota eliminada', 'success');
-      Main.renderPendientes();
-      Panel.open(sesion); // re-render para mostrar badge
+    // Ir a la ficha del niño a registrar/editar la nota de esta sesión
+    document.querySelector('.panel-ir-ficha')?.addEventListener('click', () => {
+      Panel.close();
+      State.module = 'fichas';
+      State.fichaActiva = sesion.id_nino;
+      Main.activateNav('fichas');
+      Main._renderModule();
     });
   },
 
