@@ -150,7 +150,21 @@ const Onboarding = {
         target: '.kpi-row, .hero-meta, .hero',
         position: 'below',
         title: 'Termómetro del centro',
-        body: 'Arriba del calendario tienes los <b>KPIs de la semana</b>: ocupación, sesiones hoy, salas activas y conflictos. Si algo se pone rojo, le clickeas y entras al detalle.',
+        body: 'Arriba del calendario tienes los <b>KPIs de la semana</b>: ocupación, sesiones hoy, salas activas y conflictos. Te muestro los dos más importantes en los próximos pasos.',
+      },
+      {
+        target: '#kpiConflict',
+        position: 'below',
+        title: 'Revisar un conflicto',
+        body: 'Cuando dos sesiones chocan en <b>sala</b> o en <b>terapeuta</b>, esta tarjeta se pone <b>roja</b>. Haz clic en ella para desplegar cada conflicto, y usa el botón <b>"Ir →"</b> para saltar a la sesión en el calendario y resolverla. El sistema los detecta solo, tú no tienes que buscarlos.',
+        before: () => { Calendar.view = 'semana'; State.module = 'calendario'; Main.activateNav('calendario'); Calendar.render(); },
+      },
+      {
+        target: '.session, .cal-grid',
+        position: 'auto',
+        title: 'Mover un niño es arrastrar',
+        body: 'Para redistribuir a un niño, <b>arrastra su sesión</b> de una celda a otra del calendario. Al soltarla, el sistema revisa solo si el nuevo bloque genera un choque de sala o terapeuta y te avisa antes de confirmar. Así reorganizas la semana en segundos.',
+        before: () => { Calendar.view = 'semana'; State.module = 'calendario'; Main.activateNav('calendario'); Calendar.render(); },
       },
       {
         target: '#newSessionBtn',
