@@ -67,45 +67,7 @@ const Calendar = {
         </div>
       </section>
 
-      <div class="kpi-row">
-        <div class="kpi kpi-featured">
-          <div class="kpi-label">Ocupación semanal</div>
-          <div class="kpi-value">${k.ocup}<span class="kpi-unit">%</span></div>
-          <div class="kpi-meta"><span class="delta up">↑ 4%</span><span>vs semana anterior</span></div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Sesiones hoy</div>
-          <div class="kpi-value">${k.hoy.total}</div>
-          <div class="kpi-meta">${k.hoy.manana} mañana · ${k.hoy.tarde} tarde</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Salas activas</div>
-          <div class="kpi-value">${k.salas.activas}<span class="kpi-unit">/${k.salas.total}</span></div>
-          <div class="kpi-meta">${k.salas.saturadas.length ? k.salas.saturadas.slice(0,3).join(' · ') + ' saturadas' : 'Distribución pareja'}</div>
-        </div>
-        <div class="kpi ${k.conf.count ? 'kpi-alert kpi-clickable' : ''}" id="kpiConflict" ${k.conf.count ? 'role="button" tabindex="0"' : ''}>
-          <div class="kpi-label">${k.conf.count ? '<span class="alert-dot"></span>' : ''}Conflictos detectados</div>
-          <div class="kpi-value">${k.conf.count}</div>
-          <div class="kpi-meta">${k.conf.count ? 'Click para ver detalle' : 'Sin conflictos'}</div>
-          ${k.conf.count ? `
-            <div class="kpi-expand" id="kpiConflictExpand">
-              ${k.conf.list.map(s => {
-                const ter = Data.terapeuta(s.id_terapeuta);
-                return `<div class="conflict-row" data-id="${s.id_sesion}">
-                  <div class="conflict-row-head">
-                    <b>${UI.esc(s.nino_visible)}</b> con <b>${UI.esc(ter?.nombre_visible || '—')}</b>
-                  </div>
-                  <div class="conflict-row-meta">
-                    ${UI.esc(s.tipo_terapia)} · Sala ${UI.esc(s.sala_nombre)} · ${UI.esc(s.dia_semana)} ${UI.esc(s.hora_inicio)}<br>
-                    <span class="conflict-reason">⚠ ${UI.esc(s.conflicto_detectado)}</span>
-                  </div>
-                  <button class="btn btn-secondary conflict-jump">Ir →</button>
-                </div>`;
-              }).join('')}
-            </div>
-          ` : ''}
-        </div>
-      </div>
+      ${this._kpiRow(k)}
 
       <div class="section-head">
         <div>
@@ -144,6 +106,98 @@ const Calendar = {
     `;
 
     this._wire();
+  },
+
+  // Fila de KPI superior. El admin ve el termómetro del centro;
+  // el terapeuta ve sus propios indicadores, no las cards de coordinación.
+  _kpiRow(k) {
+    if (State.role === 'terapeuta') return this._kpiRowTerapeuta();
+    return `<div class="kpi-row">
+        <div class="kpi kpi-featured">
+          <div class="kpi-label">Ocupación semanal</div>
+          <div class="kpi-value">${k.ocup}<span class="kpi-unit">%</span></div>
+          <div class="kpi-meta"><span class="delta up">↑ 4%</span><span>vs semana anterior</span></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Sesiones hoy</div>
+          <div class="kpi-value">${k.hoy.total}</div>
+          <div class="kpi-meta">${k.hoy.manana} mañana · ${k.hoy.tarde} tarde</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Salas activas</div>
+          <div class="kpi-value">${k.salas.activas}<span class="kpi-unit">/${k.salas.total}</span></div>
+          <div class="kpi-meta">${k.salas.saturadas.length ? k.salas.saturadas.slice(0,3).join(' · ') + ' saturadas' : 'Distribución pareja'}</div>
+        </div>
+        <div class="kpi ${k.conf.count ? 'kpi-alert kpi-clickable' : ''}" id="kpiConflict" ${k.conf.count ? 'role="button" tabindex="0"' : ''}>
+          <div class="kpi-label">${k.conf.count ? '<span class="alert-dot"></span>' : ''}Conflictos detectados</div>
+          <div class="kpi-value">${k.conf.count}</div>
+          <div class="kpi-meta">${k.conf.count ? 'Click para ver detalle' : 'Sin conflictos'}</div>
+          ${k.conf.count ? `
+            <div class="kpi-expand" id="kpiConflictExpand">
+              ${k.conf.list.map(s => {
+                const ter = Data.terapeuta(s.id_terapeuta);
+                return `<div class="conflict-row" data-id="${s.id_sesion}">
+                  <div class="conflict-row-head">
+                    <b>${UI.esc(s.nino_visible)}</b> con <b>${UI.esc(ter?.nombre_visible || '—')}</b>
+                  </div>
+                  <div class="conflict-row-meta">
+                    ${UI.esc(s.tipo_terapia)} · Sala ${UI.esc(s.sala_nombre)} · ${UI.esc(s.dia_semana)} ${UI.esc(s.hora_inicio)}<br>
+                    <span class="conflict-reason">⚠ ${UI.esc(s.conflicto_detectado)}</span>
+                  </div>
+                  <button class="btn btn-secondary conflict-jump">Ir →</button>
+                </div>`;
+              }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </div>`;
+  },
+
+  _kpiRowTerapeuta() {
+    const tid = DEMO_USERS.terapeuta?.id_terapeuta;
+    const esMio = (s) => s.id_terapeuta === tid || s.id_terapeuta_secundario === tid;
+    // Próxima sesión agendada de hoy en adelante
+    const futuras = State.data.sesiones
+      .filter(s => esMio(s) && s.estado === 'Agendada' && s.fecha >= HOY_ISO)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.hora_inicio).localeCompare(String(b.hora_inicio)));
+    const prox = futuras[0];
+    // Sesiones de la semana (sesionesVisibles ya viene filtrado por rol)
+    const sem = Data.sesionesSemana().length;
+    // Fichas con nota pendiente
+    const notasPend = Main._notasFaltantes(tid).length;
+    // Horas realizadas del mes
+    const realizadasMes = State.data.sesiones.filter(s => esMio(s) && s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
+    let min = 0;
+    realizadasMes.forEach(s => { const b = Data.bloque(s.id_bloque); min += b?.duracion_minutos || 35; });
+    const horasMes = (min / 60).toFixed(1);
+
+    const proxVal = prox ? UI.esc(prox.nino_visible) : '—';
+    const proxMeta = prox
+      ? `${UI.esc(UI.fmtFecha(prox.fecha))} · ${UI.esc(prox.hora_inicio)} · Sala ${UI.esc(prox.sala_nombre || '—')}`
+      : 'No tienes sesiones próximas';
+
+    return `<div class="kpi-row">
+        <div class="kpi kpi-featured">
+          <div class="kpi-label">Próxima sesión</div>
+          <div class="kpi-value" style="font-size:24px;line-height:1.2">${proxVal}</div>
+          <div class="kpi-meta">${proxMeta}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Sesiones de tu semana</div>
+          <div class="kpi-value">${sem}</div>
+          <div class="kpi-meta">en tu agenda</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Fichas con nota pendiente</div>
+          <div class="kpi-value">${notasPend}</div>
+          <div class="kpi-meta">${notasPend > 0 ? 'sesiones sin nota clínica' : 'todo al día'}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Horas acumuladas · mayo</div>
+          <div class="kpi-value">${horasMes}</div>
+          <div class="kpi-meta">${realizadasMes.length} sesión${realizadasMes.length === 1 ? '' : 'es'} realizada${realizadasMes.length === 1 ? '' : 's'}</div>
+        </div>
+      </div>`;
   },
 
   _descConflictos(list) {
