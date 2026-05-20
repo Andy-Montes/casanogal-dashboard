@@ -1,5 +1,9 @@
 // Módulo Calendario
 const Calendar = {
+  view: 'semana',     // 'semana' | 'dia' | 'mes'
+  dayDate: null,      // ISO; null = HOY_ISO
+  monthAnchor: null,  // ISO dentro del mes; null = mes de weekStart
+
   render() {
     const main = document.getElementById('main');
     const k = {
@@ -8,10 +12,10 @@ const Calendar = {
       salas: Data.kpiSalasActivas(),
       conf: Data.kpiConflictos(),
     };
-    const semana = Data.sesionesSemana();
-    const ninosSet = new Set(semana.map(s => s.id_nino));
-    const terSet = new Set(semana.map(s => s.id_terapeuta));
-    const salasSet = new Set(semana.map(s => s.id_sala));
+    const vista = this._sesionesDeVista();
+    const ninosSet = new Set(vista.map(s => s.id_nino));
+    const terSet = new Set(vista.map(s => s.id_terapeuta));
+    const salasSet = new Set(vista.map(s => s.id_sala));
     const conteo = Data.conteoPorPrograma();
 
     const eyebrow = State.role === 'coordinacion'
@@ -19,6 +23,11 @@ const Calendar = {
       : State.role === 'terapeuta'
       ? `Vista terapeuta · ${UI.esc(DEMO_USERS.terapeuta?.short || '—')}`
       : `Vista familia · ${UI.esc(Data.nino(DEMO_USERS.padres?.id_nino)?.nombre_visible || '—')}`;
+
+    const tituloSeccion = this.view === 'dia' ? 'Agenda del día' : this.view === 'mes' ? 'Vista mensual' : 'Agenda semanal';
+    const subSeccion = this.view === 'mes'
+      ? `${vista.length} sesiones en el mes · click en un día para ver su agenda`
+      : `${vista.length} sesiones${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'}</b> detectado${k.conf.count===1?'':'s'}` : ''} · click en celda vacía para crear · drag para mover`;
 
     main.innerHTML = `
       <section class="hero">
@@ -36,11 +45,11 @@ const Calendar = {
         <div class="hero-inner">
           <div>
             <div class="hero-eyebrow">${UI.esc(eyebrow)}</div>
-            <h1 class="hero-title">Semana del <span class="accent">${UI.fmtRangoSemana()}</span></h1>
+            <h1 class="hero-title">${this._heroTitulo()}</h1>
             <div class="hero-meta">
               <div class="hero-meta-item">
                 <span class="hero-meta-label">Sesiones</span>
-                <span class="hero-meta-value">${semana.length}</span>
+                <span class="hero-meta-value">${vista.length}</span>
               </div>
               <div class="hero-meta-divider"></div>
               <div class="hero-meta-item">
@@ -60,9 +69,9 @@ const Calendar = {
             </div>
           </div>
           <div class="hero-week-nav">
-            <button class="hero-week-btn" id="weekPrev" aria-label="Semana anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-            <span class="hero-week-label">Sem ${State.data.meta.semana_actual} de 6</span>
-            <button class="hero-week-btn" id="weekNext" aria-label="Semana siguiente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <button class="hero-week-btn" id="navPrev" aria-label="Anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <span class="hero-week-label">${this._navLabel()}</span>
+            <button class="hero-week-btn" id="navNext" aria-label="Siguiente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
           </div>
         </div>
       </section>
@@ -71,10 +80,15 @@ const Calendar = {
 
       <div class="section-head">
         <div>
-          <div class="section-title">Agenda semanal</div>
-          <div class="section-sub">${semana.length} sesiones esta semana${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'} detectado${k.conf.count===1?'':'s'}</b> automáticamente` : ''} · click en celda vacía para crear · drag para mover</div>
+          <div class="section-title">${tituloSeccion}</div>
+          <div class="section-sub">${subSeccion}</div>
         </div>
         <div class="section-actions">
+          <div class="view-switch">
+            <button class="view-btn ${this.view==='semana'?'active':''}" data-view="semana" type="button">Semana</button>
+            <button class="view-btn ${this.view==='dia'?'active':''}" data-view="dia" type="button">Día</button>
+            <button class="view-btn ${this.view==='mes'?'active':''}" data-view="mes" type="button">Mes</button>
+          </div>
           <button class="btn btn-secondary" id="todayBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="14"/></svg>
             Hoy
@@ -106,6 +120,38 @@ const Calendar = {
     `;
 
     this._wire();
+  },
+
+  // Sesiones según la vista activa (semana / día / mes), filtradas por rol
+  _sesionesDeVista() {
+    if (this.view === 'dia') {
+      const f = this.dayDate || HOY_ISO;
+      return Data.sesionesVisibles().filter(s => s.fecha === f);
+    }
+    if (this.view === 'mes') {
+      const mes = (this.monthAnchor || State.weekStart).slice(0, 7);
+      return Data.sesionesVisibles().filter(s => s.fecha.slice(0, 7) === mes);
+    }
+    return Data.sesionesSemana();
+  },
+
+  _heroTitulo() {
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    if (this.view === 'dia') {
+      return `<span class="accent">${UI.esc(UI.fmtFecha(this.dayDate || HOY_ISO))}</span>`;
+    }
+    if (this.view === 'mes') {
+      const a = this.monthAnchor || State.weekStart;
+      const [y, m] = a.split('-').map(Number);
+      return `<span class="accent">${MESES[m - 1]} ${y}</span>`;
+    }
+    return `Semana del <span class="accent">${UI.fmtRangoSemana()}</span>`;
+  },
+
+  _navLabel() {
+    if (this.view === 'dia') return 'Día';
+    if (this.view === 'mes') return 'Mes';
+    return `Sem ${State.data.meta.semana_actual} de 6`;
   },
 
   // Fila de KPI superior. El admin ve el termómetro del centro;
@@ -207,6 +253,12 @@ const Calendar = {
   },
 
   _renderGrid() {
+    if (this.view === 'dia') return this._renderGridDia();
+    if (this.view === 'mes') return this._renderGridMes();
+    return this._renderGridSemana();
+  },
+
+  _renderGridSemana() {
     const fechas = fechasSemana();
     const hoyIdx = fechas.indexOf(HOY_ISO);
     const feriados = (State.data.meta && State.data.meta.feriados) || [];
@@ -261,6 +313,82 @@ const Calendar = {
       }
     }
 
+    return html;
+  },
+
+  _renderGridDia() {
+    const fecha = this.dayDate || HOY_ISO;
+    const [y, m, d] = fecha.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const diaIdx = (dt.getUTCDay() + 6) % 7;
+    const dia = DIAS[diaIdx] || 'lunes';
+    const feriados = (State.data.meta && State.data.meta.feriados) || [];
+    const esFeriado = feriados.includes(fecha);
+    const isToday = fecha === HOY_ISO;
+    const bloques = State.data.bloques_horarios.slice().sort((a, b) => a.orden - b.orden);
+
+    let html = '<div class="cal-grid cal-grid-dia">';
+    html += `<div class="cal-header-cell" style="border-left:none"></div>`;
+    html += `<div class="cal-header-cell ${isToday ? 'today-col' : ''} ${esFeriado ? 'feriado-col' : ''}">
+      <div class="cal-day-name">${DIAS_ABBR[diaIdx] || ''}</div>
+      ${isToday ? `<div class="today-badge">${d}</div>` : `<div class="cal-day-date">${d}</div>`}
+      ${esFeriado ? '<div class="cal-feriado-tag">Feriado</div>' : ''}
+    </div>`;
+    let prevPeriodo = null;
+    bloques.forEach(b => {
+      const cambioPeriodo = prevPeriodo !== null && prevPeriodo !== b.periodo;
+      prevPeriodo = b.periodo;
+      const divCls = cambioPeriodo ? ' cal-period-start' : '';
+      html += `<div class="cal-time${divCls}">
+        <span>${b.hora_inicio}</span>
+        <span class="cal-time-period">${b.periodo === 'Mañana' ? 'AM' : 'PM'}</span>
+      </div>`;
+      const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque).filter(s => this._matchPrograma(s));
+      const cellCls = `cal-cell ${isToday ? 'today-col' : ''} ${sesiones.length === 0 ? 'empty' : ''}${divCls}${esFeriado ? ' cal-feriado' : ''}`;
+      html += `<div class="${cellCls}" data-dia="${dia}" data-bloque="${b.id_bloque}" data-fecha="${fecha}">`;
+      sesiones.forEach((s, idx) => { html += this._renderSesion(s, idx); });
+      html += `</div>`;
+    });
+    html += '</div>';
+    return html;
+  },
+
+  _renderGridMes() {
+    const anchor = this.monthAnchor || State.weekStart;
+    const [y, m] = anchor.split('-').map(Number);
+    const feriados = (State.data.meta && State.data.meta.feriados) || [];
+    const porFecha = {};
+    Data.sesionesVisibles().filter(s => this._matchPrograma(s)).forEach(s => {
+      (porFecha[s.fecha] = porFecha[s.fecha] || []).push(s);
+    });
+    const ultimo = new Date(Date.UTC(y, m, 0));
+    const inicio = new Date(Date.UTC(y, m - 1, 1));
+    inicio.setUTCDate(inicio.getUTCDate() - ((inicio.getUTCDay() + 6) % 7));
+
+    let html = '<div class="cal-mes-grid">';
+    DIAS_LABEL.forEach(d => { html += `<div class="cal-mes-head">${d}</div>`; });
+    const cur = new Date(inicio);
+    while (cur <= ultimo) {
+      for (let i = 0; i < 5; i++) {
+        const cd = new Date(cur);
+        cd.setUTCDate(cur.getUTCDate() + i);
+        const iso = cd.toISOString().slice(0, 10);
+        const inMonth = cd.getUTCMonth() === m - 1;
+        const ses = porFecha[iso] || [];
+        const isToday = iso === HOY_ISO;
+        const esFeriado = feriados.includes(iso);
+        const esps = [...new Set(ses.map(s => s.tipo_terapia))].slice(0, 6);
+        html += `<div class="cal-mes-cell${inMonth ? '' : ' fuera'}${isToday ? ' today-col' : ''}${esFeriado ? ' cal-feriado' : ''}" data-fecha="${iso}">
+          <div class="cal-mes-num">${cd.getUTCDate()}</div>
+          ${esFeriado ? '<div class="cal-feriado-tag">Feriado</div>'
+            : ses.length ? `<div class="cal-mes-count">${ses.length} ses.</div>
+                <div class="cal-mes-dots">${esps.map(e => `<span class="cal-mes-dot" style="background:${(ESPECIALIDAD_VAR[e] && ESPECIALIDAD_VAR[e].main) || 'var(--cn-azul)'}"></span>`).join('')}</div>`
+            : (inMonth ? '<div class="cal-mes-empty">Sin sesiones</div>' : '')}
+        </div>`;
+      }
+      cur.setUTCDate(cur.getUTCDate() + 7);
+    }
+    html += '</div>';
     return html;
   },
 
@@ -348,11 +476,23 @@ const Calendar = {
 
     // Botón hoy / nav semana
     document.getElementById('todayBtn')?.addEventListener('click', () => {
-      State.weekStart = '2026-05-18';
+      if (this.view === 'dia') this.dayDate = HOY_ISO;
+      else if (this.view === 'mes') this.monthAnchor = HOY_ISO;
+      else State.weekStart = '2026-05-18';
       this.render();
     });
-    document.getElementById('weekPrev')?.addEventListener('click', () => this._navWeek(-7));
-    document.getElementById('weekNext')?.addEventListener('click', () => this._navWeek(7));
+    document.getElementById('navPrev')?.addEventListener('click', () => this._nav(-1));
+    document.getElementById('navNext')?.addEventListener('click', () => this._nav(1));
+    document.querySelectorAll('.view-switch .view-btn').forEach(b => {
+      b.addEventListener('click', () => { this.view = b.dataset.view; this.render(); });
+    });
+    document.querySelectorAll('.cal-mes-cell').forEach(c => {
+      c.addEventListener('click', () => {
+        this.view = 'dia';
+        this.dayDate = c.dataset.fecha;
+        this.render();
+      });
+    });
 
     // Chips de filtro
     document.querySelectorAll('.cal-toolbar [data-prog]').forEach(b => {
@@ -432,10 +572,21 @@ const Calendar = {
     });
   },
 
-  _navWeek(deltaDays) {
-    const [y, m, d] = State.weekStart.split('-').map(Number);
-    const dt = new Date(Date.UTC(y, m - 1, d + deltaDays));
-    State.weekStart = dt.toISOString().slice(0, 10);
+  _nav(dir) {
+    if (this.view === 'dia') {
+      const f = this.dayDate || HOY_ISO;
+      const [y, m, d] = f.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      do { dt.setUTCDate(dt.getUTCDate() + dir); } while (((dt.getUTCDay() + 6) % 7) > 4);
+      this.dayDate = dt.toISOString().slice(0, 10);
+    } else if (this.view === 'mes') {
+      const a = this.monthAnchor || State.weekStart;
+      const [y, m] = a.split('-').map(Number);
+      this.monthAnchor = new Date(Date.UTC(y, m - 1 + dir, 1)).toISOString().slice(0, 10);
+    } else {
+      const [y, m, d] = State.weekStart.split('-').map(Number);
+      State.weekStart = new Date(Date.UTC(y, m - 1, d + dir * 7)).toISOString().slice(0, 10);
+    }
     this.render();
   },
 };
