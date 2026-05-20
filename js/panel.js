@@ -23,7 +23,8 @@ const Panel = {
     const showNotas = State.role !== 'padres';
     const esTerapeuta = State.role === 'terapeuta';
     const esAdmin = State.role === 'coordinacion';
-    const editable = esTerapeuta;
+    // Las notas se registran en la ficha del niño; al pinchar el horario solo se visualizan.
+    const editable = false;
     const storedNotas = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
     const notaRaw = storedNotas[sesion.id_sesion];
     // Backwards compat: si es string plano, asumir autor terapeuta legacy
@@ -109,20 +110,9 @@ const Panel = {
             ${nota?.avance_percibido != null ? `
               <div style="margin-top:10px;font-size:12px;color:var(--text-3)"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></div>
             ` : ''}
-            ${esAdmin ? `
-              <button class="btn btn-ghost panel-admin-note-btn" id="notaAdminBtn" type="button" style="margin-top:12px">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-                ${notaTexto ? 'Editar nota administrativa' : 'Agregar nota administrativa'}
-              </button>
-              <div id="notaAdminEditor" style="display:none;margin-top:10px">
-                <div class="nota-admin-hint">Las notas administrativas quedan marcadas y visibles para el terapeuta del niño.</div>
-                <textarea id="notaAdminTextarea" class="panel-notes-textarea" placeholder="Nota administrativa de coordinación…">${UI.esc(notaAutor === 'admin' ? notaTexto : '')}</textarea>
-                <div class="panel-notes-actions">
-                  <button class="btn btn-ghost" id="notaAdminCancelBtn" type="button">Cancelar</button>
-                  <button class="btn btn-accent" id="notaAdminSaveBtn" type="button">Guardar nota administrativa</button>
-                </div>
-              </div>
-            ` : ''}
+            <div class="nota-where-hint" style="margin-top:12px">
+              La nota de cada sesión se registra y edita en la ficha del niño → sección <b>Historial de sesiones</b>.
+            </div>
           </div>
         `}
       ` : ''}

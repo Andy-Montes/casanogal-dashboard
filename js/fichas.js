@@ -199,9 +199,46 @@ const Fichas = {
       });
       head?.addEventListener('click', (e) => {
         if (e.target.closest('.timeline-caret')) return;
+        if (e.target.closest('.timeline-body')) return;
         const sid = item.dataset.sesionId;
         const s = State.data.sesiones.find(x => x.id_sesion === sid);
         if (s) Panel.open(s);
+      });
+    });
+    // Registro de nota por sesión, dentro de la ficha del niño
+    document.querySelectorAll('.timeline-nota-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const form = document.getElementById('notaForm-' + btn.dataset.sid);
+        if (!form) return;
+        const vis = form.style.display !== 'none';
+        form.style.display = vis ? 'none' : 'block';
+        if (!vis) form.querySelector('textarea')?.focus();
+      });
+    });
+    document.querySelectorAll('.timeline-nota-cancel').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const form = document.getElementById('notaForm-' + btn.dataset.sid);
+        if (form) form.style.display = 'none';
+      });
+    });
+    document.querySelectorAll('.timeline-nota-save').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sid = btn.dataset.sid;
+        const input = document.getElementById('notaInput-' + sid);
+        const txt = (input?.value || '').trim();
+        const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+        if (txt) {
+          store[sid] = { texto: txt, autor: State.role === 'coordinacion' ? 'admin' : 'terapeuta', autor_nombre: State.currentUser?.name || null };
+        } else {
+          delete store[sid];
+        }
+        localStorage.setItem('casanogal_notas', JSON.stringify(store));
+        UI.toast(txt ? 'Nota guardada en la ficha' : 'Nota eliminada', 'success');
+        Main.renderPendientes();
+        this._renderDetalle(n.id_nino);
       });
     });
     document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
@@ -316,13 +353,22 @@ const Fichas = {
 
   _seccionHistorial(sesiones) {
     const ordered = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio || '').localeCompare(a.hora_inicio || ''));
+    // El terapeuta y coordinación registran aquí la nota de cada sesión.
+    const puedeAnotar = State.role === 'terapeuta' || State.role === 'coordinacion';
+    const stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+    const sinNota = ordered.filter(s => s.estado === 'Realizada' && !Data.notaPorSesion(s.id_sesion) && !stored[s.id_sesion]).length;
     return `<section class="ficha-section">
-      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${ordered.length}</span> <span class="ficha-section-hint">últimas 30 mostradas</span></h2>
+      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${ordered.length}</span> <span class="ficha-section-hint">${sinNota > 0 ? sinNota + ' sin nota · ' : ''}últimas 30 mostradas</span></h2>
       ${ordered.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin historial</div></div>` : `
         <div class="timeline">
           ${ordered.slice(0, 30).map(s => {
-            const nota = Data.notaPorSesion(s.id_sesion);
+            const notaData = Data.notaPorSesion(s.id_sesion);
+            const notaLocalRaw = stored[s.id_sesion];
+            const notaLocal = typeof notaLocalRaw === 'string' ? { texto: notaLocalRaw } : notaLocalRaw;
+            const notaTexto = (notaLocal && notaLocal.texto) || (notaData && notaData.notas_libres) || '';
+            const hayNota = !!notaTexto;
             const ter = Data.terapeuta(s.id_terapeuta);
+            const editable = puedeAnotar && s.estado === 'Realizada';
             return `<div class="timeline-item" data-sesion-id="${UI.esc(s.id_sesion)}">
               <div class="timeline-head">
                 <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
@@ -330,17 +376,30 @@ const Fichas = {
                   <div style="font-weight:600">${UI.esc(s.tipo_terapia)} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}</div>
                   <div style="font-size:11px;color:var(--text-3)">${UI.esc(ter?.nombre_visible || '—')} · Sala ${UI.esc(s.sala_nombre)}</div>
                 </div>
+                ${editable && !hayNota ? '<span class="badge" style="background:var(--cn-mostaza-bg);color:var(--cn-mostaza-deep)">Nota pendiente</span>' : ''}
                 <span class="estado-pill ${UI.estadoClass(s.estado)}">${UI.esc(s.estado)}</span>
                 <button class="timeline-caret" type="button" aria-label="Expandir notas" title="Ver/ocultar notas">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
               </div>
               <div class="timeline-body">
-                ${nota ? `
-                  <p>${UI.esc(nota.notas_libres || 'Sin notas.')}</p>
-                  ${nota.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${nota.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
-                  ${nota.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${nota.avance_percibido}/10</span></p>` : ''}
-                ` : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin notas registradas para esta sesión.</p>`}
+                ${hayNota ? `
+                  <p>${UI.esc(notaTexto)}</p>
+                  ${notaData?.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${notaData.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
+                  ${notaData?.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${notaData.avance_percibido}/10</span></p>` : ''}
+                ` : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin nota registrada para esta sesión.</p>`}
+                ${editable ? `
+                  <button class="btn btn-ghost timeline-nota-toggle" type="button" data-sid="${UI.esc(s.id_sesion)}" style="margin-top:8px;height:30px;padding:0 12px;font-size:12px">
+                    ${hayNota ? 'Editar nota' : 'Registrar nota de la sesión'}
+                  </button>
+                  <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="display:none;margin-top:8px">
+                    <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="¿Qué se trabajó en esta sesión?">${UI.esc(notaTexto)}</textarea>
+                    <div class="panel-notes-actions">
+                      <button class="btn btn-ghost timeline-nota-cancel" type="button" data-sid="${UI.esc(s.id_sesion)}">Cancelar</button>
+                      <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
+                    </div>
+                  </div>
+                ` : ''}
               </div>
             </div>`;
           }).join('')}
