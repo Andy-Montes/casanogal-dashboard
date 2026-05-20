@@ -17,17 +17,25 @@ const bloques = data.bloques_horarios;
 const porEsp = {};
 terapeutas.forEach(t => { (porEsp[t.especialidad] = porEsp[t.especialidad] || []).push(t); });
 
-const ESP_PRIO = ['Terapia Ocupacional', 'Fonoaudiología', 'Psicología', 'Cognitivo', 'Kinesiología', 'RDI', 'Habilidad Adaptativa'];
 const tamanoEquipo = (idPrograma) => idPrograma === 'PROG-INT' ? 5 : idPrograma === 'PROG-CONT' ? 4 : 3;
+// Núcleo presente en todo equipo + especialidades extra que ROTAN entre niños,
+// para que todos los terapeutas (incluidos RDI y Habilidad Adaptativa) reciban niños.
+const CORE = ['Terapia Ocupacional', 'Fonoaudiología', 'Psicología'].filter(e => porEsp[e] && porEsp[e].length);
+const EXTRA = ['Cognitivo', 'Kinesiología', 'RDI', 'Habilidad Adaptativa'].filter(e => porEsp[e] && porEsp[e].length);
 
 // ---- 1. Equipo fijo por niño, balanceando carga entre terapeutas ----
 const carga = {}; terapeutas.forEach(t => carga[t.id_terapeuta] = 0);
 const menosCargado = (lista) => lista.slice().sort((a, b) => carga[a.id_terapeuta] - carga[b.id_terapeuta])[0];
 
+let rot = 0;
 const equipoDe = {};
 data.ninos.forEach(n => {
   const N = tamanoEquipo(n.id_programa);
-  const esps = ESP_PRIO.filter(e => porEsp[e] && porEsp[e].length).slice(0, N);
+  const esps = CORE.slice(0, N);
+  while (esps.length < N && EXTRA.length) {
+    esps.push(EXTRA[rot % EXTRA.length]);
+    rot++;
+  }
   equipoDe[n.id_nino] = esps.map(e => {
     const t = menosCargado(porEsp[e]);
     carga[t.id_terapeuta]++;
