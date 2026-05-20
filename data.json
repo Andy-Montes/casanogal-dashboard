@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generado_en": "2026-05-15T23:58:13.472Z",
+    "generado_en": "2026-05-16T23:30:00",
     "cliente": "Casa Nogal",
     "descripcion": "Data sintética del sistema clínico para dashboard de demo",
     "semana_actual": 2,
@@ -57,15 +57,16 @@
       "sesiones": 3078,
       "sesion_notas": 173,
       "objetivos_terapeuticos": 108,
-      "equipo_asignado": 138,
+      "equipo_asignado": 546,
       "documentos_nino": 60,
       "usuarios": 25,
       "conflictos_detectados": 2,
       "duplas_intencionales": 1,
       "sesiones_realizadas": 1272,
-      "sesiones_canceladas": 98,
+      "sesiones_canceladas": 83,
       "sesiones_no_asistio": 103,
-      "sesiones_agendadas": 1605
+      "sesiones_agendadas": 1620,
+      "ninos_activos": 38
     }
   },
   "terapeutas": [

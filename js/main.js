@@ -125,7 +125,7 @@ const Main = {
         this._renderModule();
       });
     });
-    document.getElementById('searchInput').addEventListener('input', (e) => {
+    document.getElementById('searchInput')?.addEventListener('input', (e) => {
       State.searchQuery = e.target.value;
       if (State.module === 'fichas' || State.module === 'ninos' || State.module === 'equipo') {
         this._renderModule();
@@ -396,6 +396,7 @@ const Main = {
   _injectRoleBanner() {
     const main = document.getElementById('main');
     if (!main) return;
+    main.querySelectorAll(':scope > .role-banner').forEach(el => el.remove());
     let html = '';
     if (State.role === 'terapeuta') {
       const tid = DEMO_USERS.terapeuta.id_terapeuta;
@@ -531,11 +532,11 @@ const Main = {
     if (State.role === 'padres') {
       const n = Data.nino(DEMO_USERS.padres.id_nino) || {};
       return [
-        { id:'p-pago',    t:'warn',  msg:'Pago boleta mayo pendiente',           detail:`La boleta del mes de mayo de ${UI.esc(n.nombre_completo || 'tu hijo')} está pendiente de pago.`, action:'El detalle del monto y los datos de transferencia los recibirás por correo desde coordinación.' },
         { id:'p-prox',    t:'ok',    msg:'Próxima sesión esta semana',           detail:'Hay sesiones agendadas en los próximos días.', action:'Revisa el calendario semanal arriba para ver día, hora y tipo de terapia.' },
         { id:'p-informe', t:'warn',  msg:'Informe mensual disponible',           detail:'El informe de avance del último mes está listo.', action:'Coordinación te lo envía por correo. También aparecerá en el botón Descargar PDF de esta vista.' },
         { id:'p-reu',     t:'ok',    msg:'Reunión con el equipo terapéutico',    detail:'Reunión bimensual programada para revisar avances y objetivos.', action:'Confirma la asistencia respondiendo al correo enviado por coordinación.' },
         { id:'p-conf',    t:'warn',  msg:'Confirmar asistencia próxima semana',  detail:'Necesitamos confirmar la asistencia para los días de la próxima semana.', action:'Responde al correo de coordinación indicando los días disponibles.' },
+        { id:'p-pago',    t:'warn',  msg:'Boleta de mayo pendiente',             detail:`La boleta del mes de mayo de ${UI.esc(n.nombre_completo || 'tu hijo')} está pendiente.`, action:'El detalle del monto y los datos de transferencia los recibirás por correo desde coordinación.' },
       ];
     }
     if (State.role === 'terapeuta') {
@@ -551,8 +552,8 @@ const Main = {
         pend.push({
           id: 't-notas',
           t: 'warn',
-          msg: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} sin nota todavía`,
-          detail: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica registrada. Ejemplos: ${ejemplos}.`,
+          msg: `${faltantes.length} sesión${faltantes.length===1?'':'es'} pendiente${faltantes.length===1?'':'s'} de nota`,
+          detail: `Hay ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica registrada. Ejemplos: ${ejemplos}.`,
           action: 'Abre la sesión desde tu Calendario o desde la ficha del niño y registra la nota en el panel lateral.',
         });
       }
@@ -582,17 +583,13 @@ const Main = {
     if (notasFaltantes.length > 0) {
       const porTer = {};
       notasFaltantes.forEach(s => { porTer[s.id_terapeuta] = (porTer[s.id_terapeuta] || 0) + 1; });
-      const top = Object.entries(porTer)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([tid, n]) => `${Data.terapeuta(tid)?.nombre_visible || tid}: ${n}`)
-        .join(' · ');
+      const totalTer = Object.keys(porTer).length;
       pend.push({
         id: 'c-notas-faltantes',
         t: 'warn',
-        msg: `${notasFaltantes.length} sesión${notasFaltantes.length===1?'':'es'} realizada${notasFaltantes.length===1?'':'s'} sin nota clínica`,
-        detail: `En los últimos 14 días hay ${notasFaltantes.length} sesiones realizadas que aún no tienen nota clínica registrada. Distribución por terapeuta (top 3): ${top}.`,
-        action: 'Avisa al terapeuta correspondiente. Si es urgente, agrega una nota administrativa desde el panel lateral de la sesión.',
+        msg: `${notasFaltantes.length} sesión${notasFaltantes.length===1?'':'es'} pendiente${notasFaltantes.length===1?'':'s'} de registro de nota`,
+        detail: `En los últimos 14 días hay ${notasFaltantes.length} sesiones realizadas que aún no tienen nota clínica registrada, distribuidas en ${totalTer} terapeuta${totalTer===1?'':'s'}.`,
+        action: 'Abre el panel lateral de cada sesión para ver de qué terapeuta se trata y conversarlo en persona.',
       });
     }
     pend.push(

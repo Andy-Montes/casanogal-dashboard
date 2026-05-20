@@ -104,7 +104,7 @@ const Data = {
   },
   kpiSesionesHoy() {
     const hoy = this.sesionesVisibles().filter(s => s.fecha === HOY_ISO);
-    const manana = hoy.filter(s => parseInt(s.hora_inicio) < 13).length;
+    const manana = hoy.filter(s => parseInt(String(s.hora_inicio).split(':')[0], 10) < 13).length;
     const tarde = hoy.length - manana;
     return { total: hoy.length, manana, tarde };
   },

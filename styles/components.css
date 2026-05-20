@@ -131,9 +131,11 @@
   overflow: hidden;
 }
 .kpi:hover { box-shadow: var(--sh-2); transform: translateY(-2px); border-color: var(--border-strong); }
-.kpi-featured { background: var(--cn-mostaza-bg); border-color: var(--cn-mostaza); }
+.kpi-featured { background: var(--bg); border-left: 3px solid var(--cn-mostaza); }
 .kpi-featured:hover { box-shadow: var(--sh-mostaza); }
-.kpi-alert { background: var(--alert-bg); border-color: rgba(214,59,48,0.4); }
+.kpi-alert { background: var(--alert); border-color: var(--alert); color: #fff; }
+.kpi-alert .kpi-meta { color: rgba(255,255,255,0.85); }
+.kpi-alert .kpi-expand { border-top-color: rgba(255,255,255,0.25); }
 .kpi-clickable { cursor: pointer; }
 .kpi-clickable .kpi-meta::after {
   content: '▾';
@@ -168,6 +170,13 @@
 .conflict-row-head { font-size: 13px; color: var(--text); font-weight: 600; }
 .conflict-row-meta { font-size: 11.5px; color: var(--text-3); margin-top: 2px; line-height: 1.4; grid-column: 1; }
 .conflict-reason { color: var(--alert); font-weight: 600; }
+.kpi-alert .conflict-row { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+.kpi-alert .conflict-row:hover { background: rgba(255,255,255,0.2); border-color: #fff; box-shadow: none; }
+.kpi-alert .conflict-row-head { color: #fff; }
+.kpi-alert .conflict-row-meta { color: rgba(255,255,255,0.85); }
+.kpi-alert .conflict-reason { color: #fff; }
+.kpi-alert .conflict-jump { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); color: #fff; }
+.kpi-alert .conflict-jump:hover { background: #fff; color: var(--alert); }
 .conflict-jump { height: 30px; padding: 0 10px; font-size: 12px; grid-column: 2; grid-row: 1 / 3; }
 .kpi-label {
   font-size: 11px;
@@ -180,7 +189,8 @@
   align-items: center;
   gap: 8px;
 }
-.kpi-alert .kpi-label { color: var(--alert); }
+.kpi-alert .kpi-label { color: #fff; }
+.kpi-alert .alert-dot { background: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
 .kpi-featured .kpi-label { color: var(--cn-mostaza-deep); }
 .alert-dot {
   width: 8px; height: 8px;
@@ -201,7 +211,7 @@
   margin-bottom: 8px;
 }
 .kpi-featured .kpi-value { color: var(--cn-mostaza-deep); }
-.kpi-alert .kpi-value { color: var(--alert); }
+.kpi-alert .kpi-value { color: #fff; }
 .kpi-unit { font-size: 22px; font-weight: 600; }
 .kpi-meta {
   font-size: 12px;

@@ -242,7 +242,7 @@ const PDFPadres = {
 
     return `
       <section class="pdf-section">
-        <h2 class="pdf-h2">Tus espacios para conversar</h2>
+        <h2 class="pdf-h2">Espacios para conversar</h2>
         ${cuerpo}
       </section>
     `;

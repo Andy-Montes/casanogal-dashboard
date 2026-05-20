@@ -27,10 +27,20 @@ const Login = {
     screen.className = 'login-screen';
     screen.innerHTML = this._html();
     document.body.appendChild(screen);
+    ['appHeader', 'appSidebar', 'main', 'detailPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
+    });
     this._wire();
   },
 
-  hide() { document.getElementById('loginScreen')?.remove(); },
+  hide() {
+    document.getElementById('loginScreen')?.remove();
+    ['appHeader', 'appSidebar', 'main', 'detailPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+    });
+  },
 
   logout() {
     this.clear();
