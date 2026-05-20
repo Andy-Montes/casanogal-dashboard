@@ -165,6 +165,12 @@ const Onboarding = {
         body: 'Cuando necesites enviar el horario semanal a una familia, entra a <b>Padres</b>. Eliges al niño, revisas qué información va a recibir, y mandas el PDF por mail con un click. Esta vista <b>no la ven los apoderados</b>: es solo para coordinación.',
       },
       {
+        target: '[data-module="equipo"]',
+        position: 'right',
+        title: 'Equipo terapéutico',
+        body: 'En <b>Equipo</b> ves a todos los profesionales del centro: su especialidad, tipo de contrato y la carga de niños que llevan. Es la vista para saber quién está disponible y quién está al tope de su capacidad.',
+      },
+      {
         target: '[data-module="config"]',
         position: 'right',
         title: 'Configuración',

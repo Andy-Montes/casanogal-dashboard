@@ -241,6 +241,11 @@ const Fichas = {
         this._renderDetalle(n.id_nino);
       });
     });
+    const proxMasBtn = document.getElementById('proxMasBtn');
+    proxMasBtn?.addEventListener('click', () => {
+      const extra = document.getElementById('proxExtra');
+      if (extra) { extra.style.display = 'block'; proxMasBtn.style.display = 'none'; }
+    });
     document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
     document.querySelectorAll('.reu-delete').forEach(b => {
       b.addEventListener('click', (e) => {
@@ -352,64 +357,96 @@ const Fichas = {
   },
 
   _seccionHistorial(sesiones) {
-    const ordered = [...sesiones].sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio || '').localeCompare(a.hora_inicio || ''));
     // El terapeuta y coordinación registran aquí la nota de cada sesión.
     const puedeAnotar = State.role === 'terapeuta' || State.role === 'coordinacion';
     const stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
-    const sinNota = ordered.filter(s => s.estado === 'Realizada' && !Data.notaPorSesion(s.id_sesion) && !stored[s.id_sesion]).length;
+    const proximas = sesiones
+      .filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    // Historial: lo ya ocurrido, más reciente primero
+    const pasadas = sesiones
+      .filter(s => !(s.estado === 'Agendada' && s.fecha >= HOY_ISO))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio || '').localeCompare(a.hora_inicio || ''));
+    const sinNota = pasadas.filter(s => s.estado === 'Realizada' && !Data.notaPorSesion(s.id_sesion) && !stored[s.id_sesion]).length;
+
+    const proxRow = (s) => {
+      const ter = Data.terapeuta(s.id_terapeuta);
+      return `<div class="prox-row">
+        <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${UI.esc(s.tipo_terapia)} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}</div>
+          <div style="font-size:11px;color:var(--text-3)">${UI.esc(ter?.nombre_visible || '—')} · Sala ${UI.esc(s.sala_nombre)}</div>
+        </div>
+        <span class="estado-pill agendada">Agendada</span>
+      </div>`;
+    };
+
+    const histItem = (s) => {
+      const notaData = Data.notaPorSesion(s.id_sesion);
+      const notaLocalRaw = stored[s.id_sesion];
+      const notaLocal = typeof notaLocalRaw === 'string' ? { texto: notaLocalRaw } : notaLocalRaw;
+      const notaTexto = (notaLocal && notaLocal.texto) || (notaData && notaData.notas_libres) || '';
+      const hayNota = !!notaTexto;
+      const ter = Data.terapeuta(s.id_terapeuta);
+      const editable = puedeAnotar && s.estado === 'Realizada';
+      const faltaNota = editable && !hayNota;
+      return `<div class="timeline-item${faltaNota ? ' open nota-pendiente' : ''}" data-sesion-id="${UI.esc(s.id_sesion)}">
+        <div class="timeline-head">
+          <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
+          <div>
+            <div style="font-weight:600">${UI.esc(s.tipo_terapia)} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}</div>
+            <div style="font-size:11px;color:var(--text-3)">${UI.esc(ter?.nombre_visible || '—')} · Sala ${UI.esc(s.sala_nombre)}</div>
+          </div>
+          ${faltaNota ? '<span class="badge" style="background:var(--alert);color:#fff">Sin nota</span>' : ''}
+          <span class="estado-pill ${UI.estadoClass(s.estado)}">${UI.esc(s.estado)}</span>
+          <button class="timeline-caret" type="button" aria-label="Expandir notas" title="Ver/ocultar notas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div class="timeline-body">
+          ${hayNota ? `
+            <p>${UI.esc(notaTexto)}</p>
+            ${notaData?.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${notaData.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
+            ${notaData?.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${notaData.avance_percibido}/10</span></p>` : ''}
+          ` : (editable ? '' : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin nota registrada para esta sesión.</p>`)}
+          ${editable && hayNota ? `
+            <button class="btn btn-ghost timeline-nota-toggle" type="button" data-sid="${UI.esc(s.id_sesion)}" style="margin-top:8px;height:30px;padding:0 12px;font-size:12px">Editar nota</button>
+            <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="display:none;margin-top:8px">
+              <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="¿Qué se trabajó en esta sesión?">${UI.esc(notaTexto)}</textarea>
+              <div class="panel-notes-actions">
+                <button class="btn btn-ghost timeline-nota-cancel" type="button" data-sid="${UI.esc(s.id_sesion)}">Cancelar</button>
+                <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
+              </div>
+            </div>
+          ` : ''}
+          ${faltaNota ? `
+            <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="margin-top:6px">
+              <div style="font-size:12.5px;font-weight:700;color:var(--alert);margin-bottom:6px">✍ Registra acá lo que trabajaste en esta sesión</div>
+              <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="Ej: trabajamos juego simbólico y turnos; respondió bien a la mediación con apoyo visual…"></textarea>
+              <div class="panel-notes-actions">
+                <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>`;
+    };
+
     return `<section class="ficha-section">
-      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${ordered.length}</span> <span class="ficha-section-hint">${sinNota > 0 ? sinNota + ' sin nota · ' : ''}últimas 30 mostradas</span></h2>
-      ${ordered.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin historial</div></div>` : `
+      <h2 class="ficha-section-title">Historial de sesiones <span class="ficha-section-count">${pasadas.length}</span>${sinNota > 0 ? ` <span class="ficha-section-hint" style="color:var(--alert)">${sinNota} sin nota</span>` : ''}</h2>
+      ${proximas.length ? `
+        <div class="prox-block">
+          <div class="prox-title">Próximas sesiones agendadas · ${proximas.length}</div>
+          ${proximas.slice(0, 3).map(proxRow).join('')}
+          ${proximas.length > 3 ? `
+            <div class="prox-extra" id="proxExtra" style="display:none">${proximas.slice(3).map(proxRow).join('')}</div>
+            <button class="btn btn-ghost" id="proxMasBtn" type="button" style="margin-top:4px;height:30px;font-size:12px">Mostrar ${proximas.length - 3} agendadas más</button>
+          ` : ''}
+        </div>
+      ` : ''}
+      ${pasadas.length === 0 ? `<div class="empty-state"><div class="empty-state-title">Sin sesiones realizadas aún</div></div>` : `
         <div class="timeline">
-          ${ordered.slice(0, 30).map(s => {
-            const notaData = Data.notaPorSesion(s.id_sesion);
-            const notaLocalRaw = stored[s.id_sesion];
-            const notaLocal = typeof notaLocalRaw === 'string' ? { texto: notaLocalRaw } : notaLocalRaw;
-            const notaTexto = (notaLocal && notaLocal.texto) || (notaData && notaData.notas_libres) || '';
-            const hayNota = !!notaTexto;
-            const ter = Data.terapeuta(s.id_terapeuta);
-            const editable = puedeAnotar && s.estado === 'Realizada';
-            return `<div class="timeline-item${editable && !hayNota ? ' open' : ''}" data-sesion-id="${UI.esc(s.id_sesion)}">
-              <div class="timeline-head">
-                <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
-                <div>
-                  <div style="font-weight:600">${UI.esc(s.tipo_terapia)} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}</div>
-                  <div style="font-size:11px;color:var(--text-3)">${UI.esc(ter?.nombre_visible || '—')} · Sala ${UI.esc(s.sala_nombre)}</div>
-                </div>
-                ${editable && !hayNota ? '<span class="badge" style="background:var(--cn-mostaza-bg);color:var(--cn-mostaza-deep)">Nota pendiente</span>' : ''}
-                <span class="estado-pill ${UI.estadoClass(s.estado)}">${UI.esc(s.estado)}</span>
-                <button class="timeline-caret" type="button" aria-label="Expandir notas" title="Ver/ocultar notas">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-              </div>
-              <div class="timeline-body">
-                ${hayNota ? `
-                  <p>${UI.esc(notaTexto)}</p>
-                  ${notaData?.objetivos_trabajados?.length ? `<p style="margin-top:8px"><b>Objetivos trabajados:</b> ${notaData.objetivos_trabajados.map(UI.esc).join(' · ')}</p>` : ''}
-                  ${notaData?.avance_percibido != null ? `<p style="margin-top:6px"><b>Avance percibido:</b> <span class="mono">${notaData.avance_percibido}/10</span></p>` : ''}
-                ` : (editable ? '' : `<p class="empty" style="color:var(--text-3);font-style:italic">Sin nota registrada para esta sesión.</p>`)}
-                ${editable && hayNota ? `
-                  <button class="btn btn-ghost timeline-nota-toggle" type="button" data-sid="${UI.esc(s.id_sesion)}" style="margin-top:8px;height:30px;padding:0 12px;font-size:12px">Editar nota</button>
-                  <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="display:none;margin-top:8px">
-                    <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="¿Qué se trabajó en esta sesión?">${UI.esc(notaTexto)}</textarea>
-                    <div class="panel-notes-actions">
-                      <button class="btn btn-ghost timeline-nota-cancel" type="button" data-sid="${UI.esc(s.id_sesion)}">Cancelar</button>
-                      <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
-                    </div>
-                  </div>
-                ` : ''}
-                ${editable && !hayNota ? `
-                  <div class="timeline-nota-form" id="notaForm-${UI.esc(s.id_sesion)}" style="margin-top:6px">
-                    <div style="font-size:12.5px;font-weight:700;color:var(--cn-mostaza-deep);margin-bottom:6px">✍ Registra acá lo que trabajaste en esta sesión</div>
-                    <textarea class="panel-notes-textarea" id="notaInput-${UI.esc(s.id_sesion)}" placeholder="Ej: trabajamos juego simbólico y turnos; respondió bien a la mediación con apoyo visual…"></textarea>
-                    <div class="panel-notes-actions">
-                      <button class="btn btn-primary timeline-nota-save" type="button" data-sid="${UI.esc(s.id_sesion)}">Guardar nota</button>
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-            </div>`;
-          }).join('')}
+          ${pasadas.slice(0, 25).map(histItem).join('')}
         </div>
       `}
     </section>`;

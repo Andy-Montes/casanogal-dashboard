@@ -214,6 +214,28 @@
 .cal-mes-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: auto; }
 .cal-mes-dot { width: 7px; height: 7px; border-radius: 50%; }
 
+/* Próximas sesiones agendadas en la ficha */
+.prox-block { margin-bottom: 18px; }
+.prox-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.prox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  margin-bottom: 6px;
+}
+/* Sesión realizada sin nota: marcada en rojo */
+.timeline-item.nota-pendiente { box-shadow: inset 3px 0 0 var(--alert); }
+
 /* Sesión píldora */
 .session {
   padding: 5px 7px;
