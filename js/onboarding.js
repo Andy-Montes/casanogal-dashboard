@@ -138,7 +138,7 @@ const Onboarding = {
         target: '.sidebar',
         position: 'right',
         title: 'Navegación principal',
-        body: 'Desde el menú lateral entras a <b>Calendario</b>, <b>Fichas clínicas</b>, <b>Reportes y boletas</b>, <b>Equipo</b>, <b>Niños</b>, <b>Salas</b>, <b>Configuración</b> y <b>Permisos</b>. Cada sección está pensada para un momento del día.',
+        body: 'Desde el menú lateral entras a <b>Calendario</b>, <b>Fichas clínicas</b>, <b>Reportes</b>, <b>Boletas</b>, <b>Equipo</b>, <b>Niños</b>, <b>Salas</b>, <b>Configuración</b> y <b>Permisos</b>. Cada sección está pensada para un momento del día.',
       },
       {
         target: '#roleSwitcher',

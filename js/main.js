@@ -194,8 +194,8 @@ const Main = {
   },
 
   _renderModule() {
-    // Terapeuta: bloquear acceso a config y permisos (solo admin)
-    if (State.session?.tipo === 'terapeuta' && ['config','permisos'].includes(State.module)) {
+    // Terapeuta: bloquear acceso a config, permisos y reportes (solo admin)
+    if (State.session?.tipo === 'terapeuta' && ['config','permisos','reportes'].includes(State.module)) {
       State.module = 'calendario';
       this.activateNav('calendario');
     }
@@ -208,6 +208,7 @@ const Main = {
       case 'calendario': Calendar.render(); break;
       case 'fichas':     Fichas.render(); break;
       case 'reportes':   Reportes.render(); break;
+      case 'boletas':    Reportes.renderBoletas(); break;
       case 'equipo':     Recursos.renderEquipo(); break;
       case 'ninos':      Recursos.renderNinosTable(); break;
       case 'salas':      Recursos.renderSalas(); break;
@@ -224,7 +225,7 @@ const Main = {
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
       padres:    ['reportes','boletas','equipo','ninos','salas','config','permisos'],
-      terapeuta: ['config','permisos'],
+      terapeuta: ['config','permisos','reportes'],
     };
     const ocultar = ocultosPorRol[State.role] || [];
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -584,7 +585,7 @@ const Main = {
       pend.push(
         { id:'t-obj',   t:'warn',  msg:'Revisar objetivos del mes',              detail:'Los objetivos terapéuticos de tus niños asignados deben revisarse mensualmente.', action:'En Fichas clínicas abre la ficha de cada niño asignado y revisa la pestaña Objetivos.' },
         { id:'t-reu',   t:'ok',    msg:'Reunión de equipo programada',           detail:'Reunión de coordinación del programa Intensivo esta semana.', action:'Revisa el detalle en el correo del centro.' },
-        { id:'t-horas', t:'ok',    msg:'Tu hoja de horas está lista',            detail:`Tus horas trabajadas en mayo están calculadas, ${UI.esc(tName)}.`, action:'En el módulo Reportes y boletas, abajo aparece tu fila con horas, valor y monto.' },
+        { id:'t-horas', t:'ok',    msg:'Tu hoja de horas está lista',            detail:`Tus horas trabajadas en mayo están calculadas, ${UI.esc(tName)}.`, action:'En el módulo Boletas ves tu resumen de horas, valor hora y liquidación.' },
       );
       return pend;
     }
@@ -617,7 +618,7 @@ const Main = {
       });
     }
     pend.push(
-      { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'Hay 5 boletas del mes con sesiones realizadas y monto calculado automáticamente.', action:'En el módulo Reportes y boletas se ve la tabla completa para emitir.' },
+      { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'Hay 5 boletas del mes con sesiones realizadas y monto calculado automáticamente.', action:'En el módulo Boletas se ve la tabla completa para emitir.' },
       { id:'c-equi',  t:'warn',  msg:'3 fichas con equipo incompleto',         detail:'Hay 3 niños que aún no tienen todo el equipo terapéutico asignado.', action:'En Fichas clínicas abre la ficha del niño y revisa la pestaña Equipo.' },
       { id:'c-cierre',t:'ok',    msg:'Cierre semanal del Intensivo · viernes', detail:'Hoy viernes corresponde el cierre semanal del programa Intensivo 40.', action:'Revisa la semana completa en el módulo Calendario.' },
       { id:'c-eval',  t:'ok',    msg:'2 nuevas evaluaciones esta semana',      detail:'Se sumaron 2 niños al programa de Evaluación inicial.', action:'En Fichas clínicas aparecen en el grupo "Otros programas".' },

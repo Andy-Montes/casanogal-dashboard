@@ -1,4 +1,4 @@
-// Módulo Reportes y boletas
+// Módulos Reportes (estadísticas) y Boletas (facturación y pagos)
 const Reportes = {
   VALOR_BLOQUE: 35000,
 
@@ -45,8 +45,91 @@ const Reportes = {
     return this._construirBoletas().filter(b => b.id_nino === idNino).sort((a, b) => b.mes.localeCompare(a.mes));
   },
 
+  // Módulo Reportes: estadísticas de actividad del centro (solo coordinación)
   render() {
-    // Rol terapeuta: solo ve su propio pago (sin boletas ni totales generales)
+    const ses = State.data.sesiones;
+    const cuenta = (e) => ses.filter(s => s.estado === e).length;
+    const realizadas = cuenta('Realizada');
+    const agendadas  = cuenta('Agendada');
+    const canceladas = cuenta('Cancelada');
+    const noAsistio  = cuenta('No Asistió');
+    const cerradas = realizadas + canceladas + noAsistio;
+    const asistencia = cerradas ? Math.round(realizadas / cerradas * 100) : 0;
+    const ocup = Data.kpiOcupacion();
+    const ninosActivos = State.data.ninos.filter(n => n.estado === 'Activo').length;
+
+    const estados = [
+      { label: 'Realizadas', n: realizadas, color: 'var(--success)' },
+      { label: 'Agendadas',  n: agendadas,  color: 'var(--cn-azul)' },
+      { label: 'No asistió', n: noAsistio,  color: 'var(--cn-mostaza)' },
+      { label: 'Canceladas', n: canceladas, color: 'var(--alert)' },
+    ];
+    const totEstados = estados.reduce((a, e) => a + e.n, 0) || 1;
+
+    const PROG_LABEL = { 'PROG-INT':'Intensivo', 'PROG-CONT':'Continuo', 'PROG-EVAL':'Evaluación', 'PROG-APR':'Apraxia', 'PROG-AT':'Atención temprana' };
+    const prog = {};
+    ses.forEach(s => { const p = s.id_programa || '—'; prog[p] = (prog[p] || 0) + 1; });
+    const progRows = Object.entries(prog).sort((a, b) => b[1] - a[1]);
+    const totProg = progRows.reduce((a, r) => a + r[1], 0) || 1;
+
+    const esp = {};
+    ses.forEach(s => { esp[s.tipo_terapia] = (esp[s.tipo_terapia] || 0) + 1; });
+    const espRows = Object.entries(esp).sort((a, b) => b[1] - a[1]);
+    const totEsp = espRows.reduce((a, r) => a + r[1], 0) || 1;
+
+    const bar = (label, n, total, color) => {
+      const pct = total ? Math.round(n / total * 100) : 0;
+      return `<div style="display:grid;grid-template-columns:150px 1fr 52px;gap:12px;align-items:center;margin-bottom:9px">
+        <div style="font-size:13px;color:var(--text-2)">${UI.esc(label)}</div>
+        <div style="height:10px;background:var(--bg-soft);border-radius:999px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:999px;transition:width .3s var(--ease)"></div></div>
+        <div style="font-size:13px;font-weight:700;text-align:right;font-family:'JetBrains Mono',monospace">${n}</div>
+      </div>`;
+    };
+
+    document.getElementById('main').innerHTML = `
+      <div class="section-head">
+        <div>
+          <div class="section-title">Reportes del centro</div>
+          <div class="section-sub">Resumen de actividad clínica · ${ses.length} sesiones registradas</div>
+        </div>
+      </div>
+      <div class="reportes-summary">
+        <div class="summary-card" style="background:var(--cn-azul-bg);border-color:var(--cn-azul)">
+          <div class="summary-label" style="color:var(--cn-azul-deep)">Ocupación semanal</div>
+          <div class="summary-value" style="color:var(--cn-azul-deep)">${ocup}%</div>
+        </div>
+        <div class="summary-card" style="background:var(--success-bg);border-color:var(--success)">
+          <div class="summary-label" style="color:var(--success)">Asistencia</div>
+          <div class="summary-value" style="color:var(--success)">${asistencia}%</div>
+          <div style="font-size:11px;color:var(--success);margin-top:4px">${realizadas} de ${cerradas} sesiones cerradas</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Sesiones realizadas</div>
+          <div class="summary-value">${realizadas}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Niños activos</div>
+          <div class="summary-value">${ninosActivos}</div>
+        </div>
+      </div>
+      <div class="ficha-section">
+        <h2 class="ficha-section-title">Sesiones por estado</h2>
+        ${estados.map(e => bar(e.label, e.n, totEstados, e.color)).join('')}
+      </div>
+      <div class="ficha-section">
+        <h2 class="ficha-section-title">Sesiones por programa</h2>
+        ${progRows.map(([p, n]) => bar(PROG_LABEL[p] || p, n, totProg, 'var(--cn-azul)')).join('')}
+      </div>
+      <div class="ficha-section">
+        <h2 class="ficha-section-title">Sesiones por especialidad</h2>
+        ${espRows.map(([e, n]) => bar(e, n, totEsp, (ESPECIALIDAD_VAR[e] && ESPECIALIDAD_VAR[e].main) || 'var(--cn-mostaza)')).join('')}
+      </div>
+    `;
+  },
+
+  // Módulo Boletas: facturación a familias + pago a profesionales.
+  // El terapeuta ve solo su propia liquidación.
+  renderBoletas() {
     if (State.role === 'terapeuta') {
       this._renderTerapeutaView();
       return;
