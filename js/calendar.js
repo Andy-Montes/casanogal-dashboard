@@ -182,13 +182,15 @@ const Calendar = {
             <div class="kpi-expand" id="kpiConflictExpand">
               ${k.conf.list.map(s => {
                 const ter = Data.terapeuta(s.id_terapeuta);
+                const ci = this._conflictoInfo(s);
                 return `<div class="conflict-row" data-id="${s.id_sesion}">
                   <div class="conflict-row-head">
                     <b>${UI.esc(s.nino_visible)}</b> con <b>${UI.esc(ter?.nombre_visible || '—')}</b>
                   </div>
                   <div class="conflict-row-meta">
                     ${UI.esc(s.tipo_terapia)} · Sala ${UI.esc(s.sala_nombre)} · ${UI.esc(s.dia_semana)} ${UI.esc(s.hora_inicio)}<br>
-                    <span class="conflict-reason">⚠ ${UI.esc(s.conflicto_detectado)}</span>
+                    <span class="conflict-reason">⚠ ${ci.motivo}</span>
+                    ${ci.sug ? `<br><span style="display:inline-block;margin-top:3px;font-size:11.5px;color:#fff;font-weight:600">💡 Sugerencia: mover a <b>${UI.esc(ci.sug)}</b> (bloque libre)</span>` : ''}
                   </div>
                   <button class="btn btn-secondary conflict-jump">Ir →</button>
                 </div>`;
@@ -250,6 +252,37 @@ const Calendar = {
     const s = list[0];
     const ter = Data.terapeuta(s.id_terapeuta);
     return `${ter?.nombre_visible || '—'} · ${s.sala_nombre} · ${s.dia_semana}`;
+  },
+
+  // Detecta el tipo de choque (sala / profesional) y sugiere un bloque libre
+  _conflictoInfo(s) {
+    const otras = State.data.sesiones.filter(o =>
+      o.fecha === s.fecha && o.id_bloque === s.id_bloque && o.id_sesion !== s.id_sesion);
+    let motivo;
+    if (otras.some(o => o.id_sala === s.id_sala)) {
+      motivo = `Choque de <b>sala</b> · ${UI.esc(s.sala_nombre)} ya está ocupada en ese bloque`;
+    } else if (otras.some(o => o.id_terapeuta === s.id_terapeuta)) {
+      const t = Data.terapeuta(s.id_terapeuta);
+      motivo = `Choque de <b>profesional</b> · ${UI.esc(t?.nombre_visible || '—')} ya tiene otra sesión en ese bloque`;
+    } else {
+      motivo = UI.esc(s.conflicto_detectado || 'Conflicto detectado');
+    }
+    // Sugerir un bloque libre de la semana (de hoy en adelante, sin choques)
+    const fechas = fechasSemana();
+    const feriados = (State.data.meta && State.data.meta.feriados) || [];
+    const bloques = State.data.bloques_horarios.slice().sort((a, b) => a.orden - b.orden);
+    let sug = null;
+    for (let di = 0; di < fechas.length && !sug; di++) {
+      const f = fechas[di];
+      if (f < HOY_ISO || feriados.includes(f)) continue;
+      for (const b of bloques) {
+        if (f === s.fecha && b.id_bloque === s.id_bloque) continue;
+        const choca = State.data.sesiones.some(o => o.fecha === f && o.id_bloque === b.id_bloque && o.id_sesion !== s.id_sesion &&
+          (o.id_sala === s.id_sala || o.id_terapeuta === s.id_terapeuta || o.id_nino === s.id_nino));
+        if (!choca) { sug = `${DIAS_LABEL[di]} ${b.hora_inicio}`; break; }
+      }
+    }
+    return { motivo, sug };
   },
 
   _renderGrid() {

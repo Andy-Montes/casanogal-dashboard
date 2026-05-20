@@ -120,6 +120,8 @@
   grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
   gap: 14px;
   margin-bottom: 28px;
+  position: relative;
+  z-index: 10; /* sobre la cabecera sticky del calendario */
 }
 .kpi {
   background: var(--bg);
