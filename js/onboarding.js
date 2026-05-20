@@ -28,6 +28,7 @@ const Onboarding = {
 
   _run(steps, idx) {
     document.getElementById('tourLayer')?.remove();
+    document.getElementById('tourPop')?.remove();
     if (idx >= steps.length) {
       this._markDone();
       UI.toast('Listo. Puedes volver al recorrido desde "¿Qué es Casa Nogal?" en el sidebar.', 'success');
@@ -46,36 +47,46 @@ const Onboarding = {
 
   _paintStep(steps, idx, step) {
     const target = step.target ? document.querySelector(step.target) : null;
+
+    // Capa de fondo (solo oscurece). El popover va aparte, por encima de todo.
     const layer = document.createElement('div');
     layer.id = 'tourLayer';
     layer.className = 'tour-layer';
-    layer.innerHTML = `
-      <div class="tour-backdrop"></div>
-      <div class="tour-pop" id="tourPop">
-        <div class="tour-step-count">Paso ${idx + 1} de ${steps.length}</div>
-        <div class="tour-title">${UI.esc(step.title)}</div>
-        <div class="tour-body">${step.body}</div>
-        <div class="tour-foot">
-          <a href="#" class="tour-skip" id="tourSkip">Saltar recorrido</a>
-          <div class="tour-nav">
-            ${idx > 0 ? '<button class="btn btn-ghost btn-xs" id="tourBack">← Atrás</button>' : ''}
-            <button class="btn btn-primary btn-xs" id="tourNext">${idx === steps.length - 1 ? 'Listo' : 'Siguiente →'}</button>
-          </div>
+    layer.innerHTML = '<div class="tour-backdrop"></div>';
+    document.body.appendChild(layer);
+
+    // Highlight del target ANTES de medir, para que el scroll ya esté aplicado
+    if (target) {
+      target.classList.add('tour-highlight');
+      target.scrollIntoView({ block: 'center' });
+    }
+
+    // Popover: elemento de nivel página, z-index sobre el highlight
+    const pop = document.createElement('div');
+    pop.id = 'tourPop';
+    pop.className = 'tour-pop';
+    pop.innerHTML = `
+      <div class="tour-step-count">Paso ${idx + 1} de ${steps.length}</div>
+      <div class="tour-title">${UI.esc(step.title)}</div>
+      <div class="tour-body">${step.body}</div>
+      <div class="tour-foot">
+        <a href="#" class="tour-skip" id="tourSkip">Saltar recorrido</a>
+        <div class="tour-nav">
+          ${idx > 0 ? '<button class="btn btn-ghost btn-xs" id="tourBack">← Atrás</button>' : ''}
+          <button class="btn btn-primary btn-xs" id="tourNext">${idx === steps.length - 1 ? 'Listo' : 'Siguiente →'}</button>
         </div>
       </div>
     `;
-    document.body.appendChild(layer);
+    document.body.appendChild(pop);
 
-    // Highlight del target
-    if (target) {
-      target.classList.add('tour-highlight');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // Posicionar el popover
     this._positionPop(target, step.position);
 
-    // Wire
+    const cerrar = () => {
+      target?.classList.remove('tour-highlight');
+      document.getElementById('tourLayer')?.remove();
+      document.getElementById('tourPop')?.remove();
+    };
+
     document.getElementById('tourNext').addEventListener('click', () => {
       target?.classList.remove('tour-highlight');
       this._run(steps, idx + 1);
@@ -86,8 +97,7 @@ const Onboarding = {
     });
     document.getElementById('tourSkip').addEventListener('click', (e) => {
       e.preventDefault();
-      target?.classList.remove('tour-highlight');
-      document.getElementById('tourLayer')?.remove();
+      cerrar();
       this._markDone();
     });
   },
