@@ -87,7 +87,7 @@
   font-size: 10.5px;
   font-weight: 600;
   color: var(--text-3);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -106,7 +106,7 @@
 }
 .cal-cell {
   border-left: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
   padding: 4px;
   min-height: 56px;
   display: flex;
@@ -130,6 +130,9 @@
 }
 .cal-cell.drag-over { background: var(--cn-azul-bg); outline: 2px dashed var(--cn-azul); outline-offset: -3px; }
 .cal-cell.drag-over-conflict { background: var(--alert-bg); outline: 2px solid var(--alert); outline-offset: -3px; }
+/* Separación visual entre la franja de mañana y la de tarde */
+.cal-period-start { border-top: 3px solid var(--border-strong); }
+.cal-time.cal-period-start { background: var(--bg-soft); }
 
 /* Sesión píldora */
 .session {

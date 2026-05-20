@@ -172,8 +172,12 @@ const Calendar = {
     });
 
     // Filas: bloques
+    let prevPeriodo = null;
     bloques.forEach(b => {
-      html += `<div class="cal-time">
+      const cambioPeriodo = prevPeriodo !== null && prevPeriodo !== b.periodo;
+      prevPeriodo = b.periodo;
+      const divCls = cambioPeriodo ? ' cal-period-start' : '';
+      html += `<div class="cal-time${divCls}">
         <span>${b.hora_inicio}</span>
         <span class="cal-time-period">${b.periodo === 'Mañana' ? 'AM' : 'PM'}</span>
       </div>`;
@@ -182,7 +186,7 @@ const Calendar = {
         const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque)
           .filter(s => this._matchPrograma(s));
         const isToday = i === hoyIdx;
-        const cellCls = `cal-cell ${isToday?'today-col':''} ${sesiones.length===0?'empty':''}`;
+        const cellCls = `cal-cell ${isToday?'today-col':''} ${sesiones.length===0?'empty':''}${divCls}`;
         html += `<div class="${cellCls}" data-dia="${dia}" data-bloque="${b.id_bloque}" data-fecha="${fecha}">`;
         sesiones.forEach((s, idx) => {
           html += this._renderSesion(s, idx);

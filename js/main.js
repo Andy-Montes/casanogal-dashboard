@@ -220,12 +220,15 @@ const Main = {
   },
 
   _aplicarVisibilidadSidebar() {
-    const isPadre = State.role === 'padres';
-    // En rol padres: solo calendario y fichas (su hijo) visibles
+    // Módulos ocultos según rol. El terapeuta no ve nada del área Sistema
+    // (configuración ni permisos); padres solo ve calendario y fichas.
+    const ocultosPorRol = {
+      padres:    ['reportes','boletas','equipo','ninos','salas','config','permisos'],
+      terapeuta: ['config','permisos'],
+    };
+    const ocultar = ocultosPorRol[State.role] || [];
     document.querySelectorAll('.nav-item').forEach(item => {
-      const mod = item.dataset.module;
-      const ocultar = isPadre && ['reportes','equipo','ninos','salas','config','permisos'].includes(mod);
-      item.style.display = ocultar ? 'none' : '';
+      item.style.display = ocultar.includes(item.dataset.module) ? 'none' : '';
     });
     document.querySelectorAll('.nav-section').forEach(sec => {
       const visibles = sec.querySelectorAll('.nav-item:not([style*="display: none"])').length;
