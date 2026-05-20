@@ -511,9 +511,10 @@ const Main = {
             </div>
             <button class="panel-close" id="pmClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
-          <div class="pendiente-modal-body">
+          <div class="pendiente-modal-body"${p.lista && p.lista.length ? ' style="max-height:55vh;overflow-y:auto"' : ''}>
             <p>${UI.esc(p.detail || p.msg)}</p>
             ${p.action ? `<p class="pendiente-action"><b>Sugerencia:</b> ${UI.esc(p.action)}</p>` : ''}
+            ${p.lista && p.lista.length ? Main._listaPendienteHtml(p.lista) : ''}
           </div>
           <div class="pendiente-modal-foot">
             <button class="btn btn-ghost" id="pmCancel">Cerrar</button>
@@ -527,6 +528,13 @@ const Main = {
     document.getElementById('pmClose').addEventListener('click', close);
     document.getElementById('pmCancel').addEventListener('click', close);
     document.getElementById('pmOverlay').addEventListener('click', (e) => { if (e.target.id === 'pmOverlay') close(); });
+    document.querySelectorAll('#pmOverlay .pendiente-sesion-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const s = State.data.sesiones.find(x => x.id_sesion === row.dataset.id);
+        close();
+        if (s) Panel.open(s);
+      });
+    });
     document.getElementById('pmResolve').addEventListener('click', () => {
       const resueltos = JSON.parse(localStorage.getItem('casanogal_pend_resueltos') || '[]');
       resueltos.push(p.id);
@@ -535,6 +543,32 @@ const Main = {
       close();
       Main.renderPendientes();
     });
+  },
+
+  // Convierte una sesión en un item para la lista del aviso de pendientes
+  _itemNota(s) {
+    return {
+      id_sesion: s.id_sesion,
+      nino: s.nino_visible,
+      terapeuta: Data.terapeuta(s.id_terapeuta)?.nombre_visible || s.id_terapeuta,
+      fecha: s.fecha,
+      tipo: s.tipo_terapia,
+    };
+  },
+
+  // Lista de sesiones del aviso, agrupada por terapeuta y clicable
+  _listaPendienteHtml(lista) {
+    const grupos = {};
+    lista.forEach(it => { (grupos[it.terapeuta] = grupos[it.terapeuta] || []).push(it); });
+    return `<div class="pendiente-lista">
+      ${Object.entries(grupos).map(([ter, items]) => `
+        <div class="pendiente-lista-ter">${UI.esc(ter)} · ${items.length} sesión${items.length === 1 ? '' : 'es'}</div>
+        ${items.map(it => `<button class="pendiente-sesion-row" type="button" data-id="${UI.esc(it.id_sesion)}">
+          <span><b>${UI.esc(it.nino)}</b> · ${UI.esc(it.tipo)}</span>
+          <span class="mono" style="color:var(--text-3);font-size:11.5px">${UI.esc(UI.fmtFechaCorta(it.fecha))}</span>
+        </button>`).join('')}
+      `).join('')}
+    </div>`;
   },
 
   _notasFaltantes(filtroTerapeuta) {
@@ -573,13 +607,13 @@ const Main = {
         { id:'t-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} en tu agenda`, detail:`Hay ${conf.count} sesiones que chocan con otra terapeuta o sala en tu agenda de esta semana.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver el detalle.' },
       ];
       if (faltantes.length > 0) {
-        const ejemplos = faltantes.slice(0, 4).map(s => `${UI.fmtFecha(s.fecha)} ${s.hora_inicio} · ${s.nino_visible}`).join(' · ');
         pend.push({
           id: 't-notas',
           t: 'warn',
           msg: `${faltantes.length} sesión${faltantes.length===1?'':'es'} pendiente${faltantes.length===1?'':'s'} de nota`,
-          detail: `Hay ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica registrada. Ejemplos: ${ejemplos}.`,
-          action: 'Abre la sesión desde tu Calendario o desde la ficha del niño y registra la nota en el panel lateral.',
+          detail: `Tienes ${faltantes.length} sesión${faltantes.length===1?'':'es'} realizada${faltantes.length===1?'':'s'} en los últimos 14 días sin nota clínica. Acá está cada una:`,
+          action: 'Haz clic en una sesión para abrirla; desde su panel entras a la ficha del niño a registrar la nota.',
+          lista: faltantes.map(s => Main._itemNota(s)),
         });
       }
       pend.push(
@@ -613,8 +647,9 @@ const Main = {
         id: 'c-notas-faltantes',
         t: 'warn',
         msg: `${notasFaltantes.length} sesión${notasFaltantes.length===1?'':'es'} pendiente${notasFaltantes.length===1?'':'s'} de registro de nota`,
-        detail: `En los últimos 14 días hay ${notasFaltantes.length} sesiones realizadas que aún no tienen nota clínica registrada, distribuidas en ${totalTer} terapeuta${totalTer===1?'':'s'}.`,
-        action: 'Abre el panel lateral de cada sesión para ver de qué terapeuta se trata y conversarlo en persona.',
+        detail: `En los últimos 14 días hay ${notasFaltantes.length} sesiones realizadas sin nota clínica, en ${totalTer} terapeuta${totalTer===1?'':'s'}. Acá está cada una, agrupada por terapeuta:`,
+        action: 'Haz clic en una sesión para abrirla y coordinar el registro de la nota con su terapeuta.',
+        lista: notasFaltantes.map(s => Main._itemNota(s)),
       });
     }
     pend.push(
