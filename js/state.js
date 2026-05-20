@@ -5,7 +5,7 @@ const State = {
   role: 'coordinacion',          // coordinacion | terapeuta | padres
   currentUser: null,             // usuario activo según rol
   module: 'calendario',          // módulo activo
-  weekStart: '2026-05-11',       // semana visible (lunes)
+  weekStart: '2026-05-18',       // semana visible (lunes 18 may)
   filterPrograma: 'INT',         // default: Intensivo (producto estrella). all | INT | CONT | EVAL | APR | AT
   filterFicha: 'all',
   fichaActiva: null,             // id_nino abierto en vista B
@@ -43,7 +43,7 @@ const ESPECIALIDAD_VAR = {
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const DIAS_ABBR = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
-const HOY_ISO = '2026-05-15'; // viernes 15 mayo 2026
+const HOY_ISO = '2026-05-20'; // miércoles 20 mayo 2026
 const HOY_HORA = 10.5; // 10:30 — para la línea "ahora"
 
 function fechaDeDia(dia) {

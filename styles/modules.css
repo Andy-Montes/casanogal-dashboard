@@ -84,31 +84,31 @@
 .cal-time {
   padding: 8px 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-3);
-  border-bottom: 1px solid var(--border-strong);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  border-bottom: 2px solid var(--border-strong);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   background: var(--bg-panel);
   text-align: center;
 }
 .cal-time-period {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-4);
+  color: var(--text-3);
   font-weight: 700;
   font-family: 'Manrope', sans-serif;
 }
 .cal-cell {
   border-left: 1px solid var(--border);
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 2px solid var(--border-strong);
   padding: 4px;
-  min-height: 56px;
+  min-height: 62px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -133,6 +133,23 @@
 /* Separación visual entre la franja de mañana y la de tarde */
 .cal-period-start { border-top: 3px solid var(--border-strong); }
 .cal-time.cal-period-start { background: var(--bg-soft); }
+/* Día feriado: columna apagada, sin afordancia de crear */
+.cal-header-cell.feriado-col { background: var(--bg-soft); }
+.cal-feriado-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cn-mostaza-deep);
+  background: var(--cn-mostaza-bg);
+  border-radius: var(--r-pill);
+}
+.cal-cell.cal-feriado { background: var(--bg-soft); }
+.cal-cell.cal-feriado.empty:hover { background: var(--bg-soft); cursor: default; }
+.cal-cell.cal-feriado.empty:hover::after { content: none; }
 
 /* Sesión píldora */
 .session {

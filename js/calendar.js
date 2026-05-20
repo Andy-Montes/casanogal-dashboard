@@ -167,9 +167,8 @@ const Calendar = {
     const notasPend = Main._notasFaltantes(tid).length;
     // Horas realizadas del mes
     const realizadasMes = State.data.sesiones.filter(s => esMio(s) && s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
-    let min = 0;
-    realizadasMes.forEach(s => { const b = Data.bloque(s.id_bloque); min += b?.duracion_minutos || 35; });
-    const horasMes = (min / 60).toFixed(1);
+    // 1 sesión = 1 hora terapéutica de 45 min: las horas equivalen a las sesiones
+    const horasMes = realizadasMes.length;
 
     const proxVal = prox ? UI.esc(prox.nino_visible) : '—';
     const proxMeta = prox
@@ -193,9 +192,9 @@ const Calendar = {
           <div class="kpi-meta">${notasPend > 0 ? 'sesiones sin nota clínica' : 'todo al día'}</div>
         </div>
         <div class="kpi">
-          <div class="kpi-label">Horas acumuladas · mayo</div>
+          <div class="kpi-label">Horas terapéuticas · mayo</div>
           <div class="kpi-value">${horasMes}</div>
-          <div class="kpi-meta">${realizadasMes.length} sesión${realizadasMes.length === 1 ? '' : 'es'} realizada${realizadasMes.length === 1 ? '' : 's'}</div>
+          <div class="kpi-meta">1 sesión = 1 hora de 45 min</div>
         </div>
       </div>`;
   },
@@ -210,6 +209,7 @@ const Calendar = {
   _renderGrid() {
     const fechas = fechasSemana();
     const hoyIdx = fechas.indexOf(HOY_ISO);
+    const feriados = (State.data.meta && State.data.meta.feriados) || [];
     const bloques = State.data.bloques_horarios.sort((a, b) => a.orden - b.orden);
 
     let html = '<div class="cal-grid">';
@@ -219,9 +219,11 @@ const Calendar = {
       const fecha = fechas[i];
       const dayNum = Number(fecha.slice(-2));
       const isToday = fecha === HOY_ISO;
-      html += `<div class="cal-header-cell ${isToday?'today-col':''}">
+      const isFeriado = feriados.includes(fecha);
+      html += `<div class="cal-header-cell ${isToday?'today-col':''} ${isFeriado?'feriado-col':''}">
         <div class="cal-day-name">${DIAS_ABBR[i]}</div>
         ${isToday ? `<div class="today-badge">${dayNum}</div>` : `<div class="cal-day-date">${dayNum}</div>`}
+        ${isFeriado ? '<div class="cal-feriado-tag">Feriado</div>' : ''}
       </div>`;
     });
 
@@ -240,7 +242,7 @@ const Calendar = {
         const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque)
           .filter(s => this._matchPrograma(s));
         const isToday = i === hoyIdx;
-        const cellCls = `cal-cell ${isToday?'today-col':''} ${sesiones.length===0?'empty':''}${divCls}`;
+        const cellCls = `cal-cell ${isToday?'today-col':''} ${sesiones.length===0?'empty':''}${divCls}${feriados.includes(fecha)?' cal-feriado':''}`;
         html += `<div class="${cellCls}" data-dia="${dia}" data-bloque="${b.id_bloque}" data-fecha="${fecha}">`;
         sesiones.forEach((s, idx) => {
           html += this._renderSesion(s, idx);
@@ -346,7 +348,7 @@ const Calendar = {
 
     // Botón hoy / nav semana
     document.getElementById('todayBtn')?.addEventListener('click', () => {
-      State.weekStart = '2026-05-11';
+      State.weekStart = '2026-05-18';
       this.render();
     });
     document.getElementById('weekPrev')?.addEventListener('click', () => this._navWeek(-7));
@@ -424,6 +426,7 @@ const Calendar = {
       cell.addEventListener('click', (e) => {
         if (e.target.closest('.session')) return;
         if (cell.querySelector('.session')) return;
+        if (cell.classList.contains('cal-feriado')) return;
         Modal.openCreate({ dia: cell.dataset.dia, id_bloque: cell.dataset.bloque, fecha: cell.dataset.fecha });
       });
     });

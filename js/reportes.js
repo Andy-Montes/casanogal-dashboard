@@ -286,9 +286,8 @@ const Reportes = {
       return;
     }
     const sesiones = State.data.sesiones.filter(s => s.id_terapeuta === tid && s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
-    let minutos = 0;
-    sesiones.forEach(s => { const b = Data.bloque(s.id_bloque); minutos += b?.duracion_minutos || 35; });
-    const horas = minutos / 60;
+    // 1 sesión = 1 hora terapéutica de 45 min
+    const horas = sesiones.length;
     const monto = t.tipo_contrato === 'Planta' ? null : Math.round(horas * (t.valor_hora || 0));
 
     document.getElementById('main').innerHTML = `
@@ -299,9 +298,8 @@ const Reportes = {
         </div>
       </div>
       <div class="ficha-quick-stats">
-        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--success)">${sesiones.length}</div><div class="quick-stat-l">Sesiones realizadas</div></div>
-        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--cn-azul-deep)">${horas.toFixed(1)}</div><div class="quick-stat-l">Horas trabajadas</div></div>
-        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--text-3)">${t.tipo_contrato === 'Planta' ? '—' : UI.fmtCLP(t.valor_hora || 0)}</div><div class="quick-stat-l">Valor hora</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--success)">${sesiones.length}</div><div class="quick-stat-l">Sesiones realizadas · ${horas} horas terapéuticas</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--text-3)">${t.tipo_contrato === 'Planta' ? '—' : UI.fmtCLP(t.valor_hora || 0)}</div><div class="quick-stat-l">Valor hora terapéutica</div></div>
         <div class="quick-stat" style="background:var(--cn-mostaza-bg);border-color:var(--cn-mostaza)"><div class="quick-stat-v" style="color:var(--cn-mostaza-deep)">${t.tipo_contrato === 'Planta' ? 'Sueldo fijo' : UI.fmtCLP(monto)}</div><div class="quick-stat-l" style="color:var(--cn-mostaza-deep)">${t.tipo_contrato === 'Planta' ? 'Contrato' : 'Tu liquidación'}</div></div>
       </div>
       <div class="ficha-section">
@@ -311,8 +309,8 @@ const Reportes = {
         </p>
         <p style="font-size:13.5px;color:var(--text-2);line-height:1.6;margin-top:8px">
           ${t.tipo_contrato === 'Planta'
-            ? 'Tu contrato es <b>de Planta</b>: tu sueldo está fijado mensualmente independiente del número de sesiones. Estas horas son referenciales para informe interno.'
-            : `Tu liquidación de mayo se calcula como <b>horas trabajadas × valor hora</b> (${UI.fmtCLP(t.valor_hora)}). Coordinación te confirmará la fecha de pago.`}
+            ? 'Tu contrato es <b>de Planta</b>: tu sueldo está fijado mensualmente, independiente del número de sesiones. Las sesiones quedan como referencia para informe interno.'
+            : `Tu liquidación de mayo se calcula como <b>sesiones realizadas × valor hora</b> (${UI.fmtCLP(t.valor_hora)}). Cada sesión equivale a una hora terapéutica de 45 minutos. Coordinación te confirmará la fecha de pago.`}
         </p>
       </div>
     `;
@@ -327,29 +325,24 @@ const Reportes = {
   _renderPagos() {
     const sesiones = State.data.sesiones.filter(s => s.estado === 'Realizada' && s.fecha.startsWith('2026-05'));
     const porTer = {};
-    sesiones.forEach(s => {
-      porTer[s.id_terapeuta] = porTer[s.id_terapeuta] || { sesiones: 0, minutos: 0 };
-      porTer[s.id_terapeuta].sesiones++;
-      const b = Data.bloque(s.id_bloque);
-      porTer[s.id_terapeuta].minutos += b?.duracion_minutos || 35;
-    });
+    sesiones.forEach(s => { porTer[s.id_terapeuta] = (porTer[s.id_terapeuta] || 0) + 1; });
 
+    // 1 sesión = 1 hora terapéutica de 45 min → el pago es sesiones × valor hora
     const rows = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').map(t => {
-      const stats = porTer[t.id_terapeuta] || { sesiones: 0, minutos: 0 };
-      const horas = stats.minutos / 60;
+      const nSes = porTer[t.id_terapeuta] || 0;
       const esPlanta = t.tipo_contrato === 'Planta';
-      const monto = esPlanta ? null : Math.round(horas * (t.valor_hora || 0));
-      return { t, sesiones: stats.sesiones, horas, monto, esPlanta };
-    }).sort((a, b) => b.horas - a.horas);
+      const monto = esPlanta ? null : Math.round(nSes * (t.valor_hora || 0));
+      return { t, sesiones: nSes, monto, esPlanta };
+    }).sort((a, b) => b.sesiones - a.sesiones);
 
-    const totalHoras = rows.reduce((a, r) => a + r.horas, 0);
+    const totalSes = rows.reduce((a, r) => a + r.sesiones, 0);
     const totalHonorarios = rows.filter(r => !r.esPlanta).reduce((a, r) => a + (r.monto || 0), 0);
     const planta = rows.filter(r => r.esPlanta).length;
     const honor = rows.filter(r => !r.esPlanta).length;
 
     return `
       <div class="reportes-summary">
-        <div class="summary-card"><div class="summary-label">Total horas mes</div><div class="summary-value">${totalHoras.toFixed(1)}</div></div>
+        <div class="summary-card"><div class="summary-label">Horas terapéuticas mes</div><div class="summary-value">${totalSes}</div></div>
         <div class="summary-card"><div class="summary-label">Profesionales Planta</div><div class="summary-value">${planta}</div></div>
         <div class="summary-card"><div class="summary-label">Profesionales Honorarios</div><div class="summary-value">${honor}</div></div>
         <div class="summary-card" style="background:var(--cn-azul-bg);border-color:var(--cn-azul)">
@@ -365,8 +358,7 @@ const Reportes = {
               <th>Profesional</th>
               <th>Especialidad</th>
               <th>Contrato</th>
-              <th class="num">Sesiones</th>
-              <th class="num">Horas</th>
+              <th class="num">Sesiones / horas</th>
               <th class="num">Valor hora</th>
               <th class="num">Monto (CLP)</th>
             </tr>
@@ -380,15 +372,13 @@ const Reportes = {
                 <td><span class="badge" style="background:${c.bg};color:${c.text}">${UI.esc(r.t.especialidad)}</span></td>
                 <td>${UI.esc(r.t.tipo_contrato)}</td>
                 <td class="num">${r.sesiones}</td>
-                <td class="num">${r.horas.toFixed(1)}</td>
                 <td class="num">${r.esPlanta ? '—' : UI.fmtCLP(r.t.valor_hora)}</td>
                 <td class="num">${r.esPlanta ? '<span style="color:var(--text-3)">Sueldo fijo</span>' : UI.fmtCLP(r.monto)}</td>
               </tr>`;
             }).join('')}
             <tr class="total-row">
               <td colspan="4">Total honorarios</td>
-              <td class="num">${rows.reduce((a,r)=>a+r.sesiones,0)}</td>
-              <td class="num">${totalHoras.toFixed(1)}</td>
+              <td class="num">${totalSes}</td>
               <td class="num">—</td>
               <td class="num">${UI.fmtCLP(totalHonorarios)}</td>
             </tr>
