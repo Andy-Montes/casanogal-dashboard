@@ -1,0 +1,1614 @@
+{
+  "ISA": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "KRA": {
+    "lun": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "AO": {
+    "lun": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "PT": {
+    "lun": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "CLA": {
+    "lun": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "ANT": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "VS": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "NP": {
+    "lun": [
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "ND": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "MF": {
+    "lun": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "RJ": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    "jue": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "RM": {
+    "lun": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "COL": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "PA": {
+    "lun": [
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "FV": {
+    "lun": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "PO": {
+    "lun": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "CS": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "EST": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "BA": {
+    "lun": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "mie": [
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "AA": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "FD": {
+    "lun": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "FER": {
+    "lun": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "CB": {
+    "lun": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true
+    ],
+    "jue": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "GP": {
+    "lun": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "GLO": {
+    "lun": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "LP": {
+    "lun": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mar": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "mie": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "jue": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "vie": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "sab": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  }
+}

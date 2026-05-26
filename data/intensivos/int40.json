@@ -1,0 +1,404 @@
+{
+  "id": "INT 40",
+  "fecha_inicio": "2026-04-20",
+  "fecha_fin": "2026-05-29",
+  "semanas": 6,
+  "niños": [
+    {
+      "nombre": "LEON",
+      "encargado": "Paula Andrades",
+      "kids_semanal": 5,
+      "total_ses_semanal": 30,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "KRA",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "PT",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "NP",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "RJ",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "PA",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "COG",
+          "rol": "COT",
+          "sigla": "PO",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "FD",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "GP",
+          "sesiones": 3
+        }
+      ]
+    },
+    {
+      "nombre": "SANTI",
+      "encargado": "Isa Hernández",
+      "kids_semanal": 5,
+      "total_ses_semanal": 25,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "ISA",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "ANT",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "KRA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "ND",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "PO",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "AA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "CB",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "PAPAS",
+          "sigla": "CB",
+          "sesiones": 1
+        }
+      ]
+    },
+    {
+      "nombre": "BALTAZAR",
+      "encargado": "Nati Palatnic",
+      "kids_semanal": 5,
+      "total_ses_semanal": 29,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "PT",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "AO",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "NP",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "RM",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "FV",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "COG",
+          "rol": "COT",
+          "sigla": "PO",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "CB",
+          "sesiones": 1
+        }
+      ]
+    },
+    {
+      "nombre": "FIORELLA",
+      "encargado": "Clau Beltrami",
+      "kids_semanal": 5,
+      "total_ses_semanal": 30,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "CLA",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "ISA",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "MF",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "RM",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "PO",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "AA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "FER",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "COT",
+          "sigla": "CB",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "PAPAS",
+          "sigla": "CB",
+          "sesiones": 1
+        }
+      ]
+    },
+    {
+      "nombre": "AMELIA",
+      "encargado": "Nati Delgado",
+      "kids_semanal": 5,
+      "total_ses_semanal": 31,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "AO",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "ANT",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "KRA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "ND",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "RJ",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "FV",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "COG",
+          "rol": "COT",
+          "sigla": "PA",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "AA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "FER",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "PAPAS",
+          "sigla": "FER",
+          "sesiones": 1
+        }
+      ]
+    },
+    {
+      "nombre": "SOFIA",
+      "encargado": "Marce Frías",
+      "kids_semanal": 5,
+      "total_ses_semanal": 30,
+      "asignaciones": [
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "ISA",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "CLA",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "MF",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "ND",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "PA",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "FD",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "AULA",
+          "sigla": "AA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "TUTOR",
+          "sigla": "CB",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "COT",
+          "sigla": "FER",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "PSI",
+          "rol": "PAPAS",
+          "sigla": "CB",
+          "sesiones": 1
+        }
+      ]
+    }
+  ]
+}
