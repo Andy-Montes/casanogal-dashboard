@@ -284,10 +284,16 @@ const Armador = {
     `;
   },
 
-  // Calendario mensual: filas = semanas, columnas = días
+  // Calendario 2D · una sola grilla con horas a la izquierda y días arriba.
+  // Las semanas se apilan como secciones separadoras dentro de la misma grid.
   _calendarioHtml(intensivo, catalogo) {
-    const { dias, franjas } = catalogo;
+    const { dias: diasCatalogo, franjas } = catalogo;
     const F = franjas.length;
+    const esReal = this._fuente === 'real';
+    // En modo real, sáb está vacío → no lo mostramos
+    const dias = esReal ? diasCatalogo.filter(d => d !== 'sab') : diasCatalogo;
+    // Mapeo dia visible → índice en catálogo (para indexar grid del scheduler)
+    const diaIdxOrig = dias.map(d => diasCatalogo.indexOf(d));
     const semanas = this._resultadoActivo().semanas || [];
     const semsAMostrar = this._filtroSemana === -1
       ? semanas.map((sem, si) => ({ sem, si }))
@@ -296,88 +302,117 @@ const Armador = {
     const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const inicialNino = (nombre) => nombre.charAt(0).toUpperCase() + (nombre.charAt(1)?.toLowerCase() || '');
 
-    // Header con días (compartido para todas las filas)
-    const headerDias = `
-      <div class="armador-cal-header">
-        <div class="armador-cal-header-sem"></div>
-        ${dias.map(d => `<div class="armador-cal-header-dia">${diaLabels[d]}</div>`).join('')}
-      </div>
+    // Header global (sticky top) — días una sola vez
+    const headerHtml = `
+      <div class="cal-corner"></div>
+      ${dias.map(d => `<div class="cal-day-head">${diaLabels[d]}</div>`).join('')}
     `;
 
-    const filas = semsAMostrar.map(({ sem, si }) => {
+    // Por cada semana: section header + 8 rows de franjas
+    const semanasHtml = semsAMostrar.map(({ sem, si }) => {
       const inicioSem = this._fechaSemana(si);
+      const finSem = new Date(inicioSem);
+      finSem.setDate(inicioSem.getDate() + dias.length - 1);
+      const rangoFechas = `${inicioSem.getDate()} ${meses[inicioSem.getMonth()]} – ${finSem.getDate()} ${meses[finSem.getMonth()]}`;
       const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
 
-      const celdas = dias.map((d, di) => {
-        const fechaDia = new Date(inicioSem);
-        fechaDia.setDate(inicioSem.getDate() + di);
-        const labelFecha = `${fechaDia.getDate()} ${meses[fechaDia.getMonth()]}`;
-
-        // Recolectar sesiones del día (filtradas por niño si aplica)
-        const sesiones = [];
-        const niñosAMostrar = this._filtroNino === -1
-          ? intensivo.niños.map((n, ni) => ({ n, ni }))
-          : [{ n: intensivo.niños[this._filtroNino], ni: this._filtroNino }];
-
-        niñosAMostrar.forEach(({ n, ni }) => {
-          if (!sem.grid[ni]) return;
-          sem.grid[ni].forEach((sig, slotIdx) => {
-            if (!sig) return;
-            const dia = Math.floor(slotIdx / F);
-            if (dia !== di) return;
-            const franja = slotIdx % F;
-            const esKids = sig === 'GP' && kidsSet.has(slotIdx);
-            // Si esKids y todos los niños están visibles, agregar UNA sola vez (no 6 veces)
-            if (esKids && this._filtroNino === -1 && ni !== 0) return;
-            sesiones.push({
-              sig, hora: franjas[franja].split('-')[0],
-              niño: n.nombre, niInicial: inicialNino(n.nombre),
-              disc: catalogo.terapeutas[sig]?.disciplina,
-              esKids,
-              slotIdx,
-              terapeutaNombre: catalogo.terapeutas[sig]?.nombre || sig,
-              sala: catalogo.terapeutas[sig]?.sala || '',
-            });
-          });
-        });
-        sesiones.sort((a, b) => a.hora.localeCompare(b.hora) || a.niño.localeCompare(b.niño));
-
-        // En modo "Todos los niños" agrupamos por slot horario para reducir repetición.
-        // En modo "un niño" usamos los bloques individuales.
-        let bloques;
-        if (!sesiones.length) {
-          bloques = `<div class="armador-cal-empty">Sin sesiones</div>`;
-        } else if (this._filtroNino === -1) {
-          bloques = this._gruposPorSlotHtml(sesiones);
-        } else {
-          bloques = sesiones.map(s => this._bloqueHtml(s)).join('');
-        }
-
-        return `
-          <div class="armador-cal-day">
-            <div class="armador-cal-day-head">
-              <span class="armador-cal-day-name">${diaLabels[d]}</span>
-              <span class="armador-cal-day-date">${labelFecha}</span>
-            </div>
-            <div class="armador-cal-day-body">${bloques}</div>
-          </div>
-        `;
-      }).join('');
-
-      return `
-        <div class="armador-cal-week">
-          <div class="armador-cal-sem-label">SEM ${si + 1}</div>
-          ${celdas}
+      // Header de semana span across all columns
+      const semHeader = `
+        <div class="cal-sem-row">
+          <span class="cal-sem-num">SEM ${si + 1}</span>
+          <span class="cal-sem-range">${rangoFechas}</span>
         </div>
       `;
+
+      // Por cada franja: una row con celda de hora + N celdas de días
+      const rows = franjas.map((franja, fi) => {
+        const horaCorta = franja.split('-')[0];
+        const horaHtml = `<div class="cal-time">${horaCorta}</div>`;
+
+        const celdas = diaIdxOrig.map((diaOrig) => {
+          const slotIdx = diaOrig * F + fi;
+          const sesiones = this._sesionesEnSlot(intensivo, catalogo, sem, slotIdx, kidsSet, inicialNino);
+          const contenido = sesiones.length ? this._renderCelda(sesiones) : '';
+          return `<div class="cal-slot">${contenido}</div>`;
+        }).join('');
+
+        return horaHtml + celdas;
+      }).join('');
+
+      return semHeader + rows;
     }).join('');
 
     return `
-      <div class="armador-calendar">
-        ${headerDias}
-        ${filas}
+      <div class="armador-cal-grid" style="--cal-col-count:${dias.length}">
+        ${headerHtml}
+        ${semanasHtml}
       </div>
     `;
+  },
+
+  // Devuelve las sesiones de UN slot (sem×día×franja), respetando filtroNino y KIDS grupal
+  _sesionesEnSlot(intensivo, catalogo, sem, slotIdx, kidsSet, inicialNino) {
+    const sesiones = [];
+    const niñosAMostrar = this._filtroNino === -1
+      ? intensivo.niños.map((n, ni) => ({ n, ni }))
+      : [{ n: intensivo.niños[this._filtroNino], ni: this._filtroNino }];
+    niñosAMostrar.forEach(({ n, ni }) => {
+      if (!sem.grid[ni]) return;
+      const sig = sem.grid[ni][slotIdx];
+      if (!sig) return;
+      const esKids = sig === 'GP' && kidsSet.has(slotIdx);
+      if (esKids && this._filtroNino === -1 && ni !== 0) return; // 1 sola vez
+      sesiones.push({
+        sig,
+        niño: n.nombre,
+        niInicial: inicialNino(n.nombre),
+        disc: catalogo.terapeutas[sig]?.disciplina,
+        esKids,
+        slotIdx,
+        terapeutaNombre: catalogo.terapeutas[sig]?.nombre || sig,
+        sala: catalogo.terapeutas[sig]?.sala || '',
+      });
+    });
+    return sesiones.sort((a, b) => a.niño.localeCompare(b.niño));
+  },
+
+  _renderCelda(sesiones) {
+    // KIDS grupal: una sola etiqueta centrada
+    if (sesiones.length === 1 && sesiones[0].esKids) {
+      const s = sesiones[0];
+      const titulo = `Sesión grupal KIDS · todos los niños con Gloria`;
+      const resaltado = this._terapeutaResaltado === 'GP' ? ' is-resaltado' : '';
+      const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== 'GP' ? ' is-atenuado' : '';
+      return `<button class="cal-item cal-item-kids${resaltado}${atenuado}" data-sigla="GP" title="${UI.esc(titulo)}">KIDS</button>`;
+    }
+    // Solo 1 sesión (niño filtrado, o solo 1 niño activo en el slot)
+    if (sesiones.length === 1) {
+      const s = sesiones[0];
+      const token = this._disciplinaToken(s.disc);
+      const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
+      const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
+      const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}`;
+      const mostrarNino = this._filtroNino === -1;
+      return `
+        <button class="cal-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" data-disc="${token}" title="${UI.esc(titulo)}">
+          ${mostrarNino ? `<span class="cal-item-nino">${UI.esc(s.niInicial)}</span>` : ''}
+          <span class="cal-item-sigla">${UI.esc(s.sig)}</span>
+        </button>
+      `;
+    }
+    // Múltiples sesiones: lista compacta vertical
+    return sesiones.map(s => {
+      const token = this._disciplinaToken(s.disc);
+      const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
+      const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
+      const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}`;
+      return `
+        <button class="cal-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" data-disc="${token}" title="${UI.esc(titulo)}">
+          <span class="cal-item-nino">${UI.esc(s.niInicial)}</span>
+          <span class="cal-item-sigla">${UI.esc(s.sig)}</span>
+        </button>
+      `;
+    }).join('');
   },
 
   // Render agrupado: una "tarjeta" por slot horario con la hora una vez
@@ -613,7 +648,7 @@ const Armador = {
       this._terapeutaResaltado = this._terapeutaResaltado === sigla ? null : sigla;
       this.render();
     };
-    document.querySelectorAll('.armador-cal-block[data-sigla], .armador-cal-group-item[data-sigla]').forEach(btn => {
+    document.querySelectorAll('.cal-item[data-sigla]').forEach(btn => {
       btn.addEventListener('click', () => resaltar(btn.dataset.sigla));
     });
     document.querySelectorAll('.armador-equipo-pill').forEach(btn => {
