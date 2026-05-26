@@ -937,135 +937,50 @@ const Armador = {
     }
 
     const steps = [
-      // === Parte 1: Bienvenida ===
       {
-        title: 'Hola Trini, bienvenida al Armador',
-        body: 'Esta página arma el horario completo del intensivo en segundos. Lo que antes hacías a mano en Excel ahora se distribuye solo, respetando que ningún terapeuta esté en dos lados a la vez y cumpliendo las sesiones que definiste para cada niño.<br><br>Te voy a mostrar todo en <b>17 pasos cortos</b>. Puedes saltar el recorrido en cualquier momento o devolverte con el botón "Atrás". Tarda 2 minutos.',
+        title: 'Hola Trini',
+        body: 'El Armador distribuye solo el horario del intensivo respetando que nadie esté en dos lados a la vez. Te muestro lo esencial en <b>8 pasos</b>, menos de 1 minuto.',
       },
-
-      // === Parte 2: Hero y estado ===
       {
         target: '.armador-hero',
         position: 'below',
-        title: 'Estado del horario en una frase',
-        body: 'Acá arriba siempre ves <b>en una frase</b> cómo está el horario:<br><br>• <b>"Horario listo para enviar a las familias"</b> → todo OK<br>• <b>"N niños sin horario completo"</b> → faltan sesiones por asignar<br>• <b>"El horario tiene conflictos sin resolver"</b> → hay choques que arreglar<br><br>El badge a la derecha (verde, amarillo o rojo) lo confirma con un número.',
+        title: 'Estado del horario',
+        body: 'Arriba ves en una frase si el horario está <b>listo</b>, <b>incompleto</b>, o con <b>conflictos</b>. El badge a la derecha lo confirma con número.',
       },
-
-      // === Parte 3: Toggle Real vs Generado ===
       {
         target: '.armador-fuente-toggle',
         position: 'below',
-        title: '¿De dónde viene el horario que ves?',
-        body: 'Tienes dos vistas:<br><br>• <b>Real</b> · es lo que armaste a mano en tu Excel del INT 40<br>• <b>Generado</b> · es la propuesta del sistema con los mismos inputs (mismos niños, mismos terapeutas asignados, mismas sesiones por semana)<br><br>Sirven para <b>comparar</b>: ver si la propuesta del sistema te ahorra trabajo o si tu distribución funciona mejor.',
+        title: 'Real vs. Generado',
+        body: '<b>Real</b> = lo que armaste en tu Excel. <b>Generado</b> = la propuesta del sistema con los mismos inputs. Sirven para comparar.',
         wait: 200,
       },
       {
-        target: '[data-fuente="real"]',
-        position: 'below',
-        title: 'Vista Real',
-        body: 'Click acá y ves <b>exactamente lo que tú armaste</b>. Se llenó leyendo el sheet RESUMEN del Excel que mandaste. Esta vista no tiene botón "Regenerar" porque no se cambia: es lo tuyo.',
-      },
-      {
-        target: '[data-fuente="generado"]',
-        position: 'below',
-        title: 'Vista Generado',
-        body: 'Click acá y el sistema te muestra <b>su propuesta</b>. Cada vez que aprietas "Regenerar", arma una distribución distinta válida. Te quedas con la que más te convenza.',
-      },
-
-      // === Parte 4: Filtros ===
-      {
         target: '#armadorFiltroNino',
         position: 'below',
-        title: 'Filtrar por niño',
-        body: 'Por defecto ves a <b>los 6 niños juntos</b> en el calendario (denso pero útil para detectar problemas). <br><br>Cambia este selector para ver <b>solo a un niño</b> — queda mucho más limpio para revisar su semana y mandarle el PDF a su familia.',
+        title: 'Filtros',
+        body: 'Por defecto ves a los <b>6 niños juntos</b>. Filtra por niño o por semana para enfocarte en algo específico.',
       },
-      {
-        target: '#armadorFiltroSem',
-        position: 'below',
-        title: 'Filtrar por semana',
-        body: 'Default: las <b>6 semanas apiladas</b> (todo el intensivo de un vistazo). Cambia a "Semana 1", "Semana 2", etc., si quieres enfocarte en una sola. Útil para imprimir solo esa semana.',
-      },
-
-      // === Parte 5: Leer el calendario ===
       {
         target: '.armador-calendar',
         position: 'auto',
-        title: 'Cómo leer el calendario',
-        body: 'Cada <b>fila es una semana</b> (SEM 1 a SEM 6, marcadas a la izquierda). Cada <b>columna es un día</b> (Lun a Sáb, con fecha real arriba).<br><br>Dentro de cada celda de día, los bloques son las sesiones — apiladas verticalmente por hora.',
+        title: 'Leer el calendario',
+        body: 'Cada fila es una <b>semana</b>, cada columna un <b>día</b>. Los bloques son sesiones, coloreados por disciplina (TO, FONO, COG, KINE, PSI, RDI, KIDS).<br><br>Cada bloque muestra hora, sigla del terapeuta e inicial del niño. <b>Click en un bloque resalta a ese terapeuta</b> en todo el calendario.',
       },
       {
-        target: '.armador-cal-block',
-        position: 'auto',
-        title: 'Cada bloque es una sesión',
-        body: 'Un bloque tiene 3 datos:<br><br>• <b>Hora</b> de inicio (ej. 8:35)<br>• <b>Sigla del terapeuta</b> (ej. KRA = Krasna)<br>• <b>Inicial del niño</b> (L, S, B, F, A, So) — solo aparece cuando ves a todos los niños juntos<br><br>El <b>color y la barra lateral</b> indican la disciplina: verde TO, naranja FONO, azul COG, gris KINE, mostaza PSI, violeta RDI, turquesa KIDS grupal.',
-      },
-      {
-        target: '.armador-cal-block',
-        position: 'auto',
-        title: 'Click en un bloque = resaltar terapeuta',
-        body: 'Si quieres ver <b>todas las sesiones que tiene un terapeuta</b> en el intensivo, haz click en cualquier bloque con su sigla. El resto del calendario se atenúa y queda solo lo de esa persona resaltado en azul fuerte.<br><br>Vuelve a hacer click para quitar el resaltado.',
-      },
-
-      // === Parte 6: Panel Equipo ===
-      {
-        target: '.armador-side .armador-card:first-child',
+        target: '.armador-side',
         position: 'left',
-        title: 'Panel Equipo',
-        body: 'Acá en la derecha tienes a <b>todos los terapeutas del centro</b>, agrupados por disciplina, con la traducción de cada sigla a su nombre real (KRA = Krasna, NP = Nati P, etc.).<br><br>Sirve como leyenda mientras lees el calendario.',
-      },
-      {
-        target: '.armador-equipo-pill',
-        position: 'left',
-        title: 'Click en un terapeuta del panel',
-        body: 'Si quieres ver <b>dónde aparece cada terapeuta</b> sin tener que cazar su sigla en el calendario, click directo en su pill del panel Equipo. Mismo efecto que clickear un bloque: resalta sus sesiones en todo el horario.',
-      },
-
-      // === Parte 7: Panel Cumplimiento ===
-      {
-        target: '.armador-side .armador-card:nth-child(2)',
-        position: 'left',
-        title: 'Panel Cumplimiento por niño',
-        body: 'Cada niño tiene su <b>barra de progreso</b> mostrando si tiene todas sus sesiones individuales asignadas. Verde = 100%, amarillo ≥ 80%, rojo < 80%.<br><br>Abajo del nombre ves el conteo: "25/25 individuales · 5 en KIDS" significa 25 de 25 sesiones individuales colocadas, más 5 grupales KIDS.',
-      },
-      {
-        target: '.armador-side .armador-card:nth-child(2) .armador-cumpl-row:first-child',
-        position: 'left',
-        title: 'Click en un niño = filtra el calendario',
-        body: 'Si quieres <b>aislar el horario de un niño</b> rápido, click en su fila de Cumplimiento. El calendario se filtra a solo sus sesiones. Click de nuevo para volver a ver a todos.',
-      },
-
-      // === Parte 8: Badge "revisar con Trini" ===
-      {
-        target: '.armador-cumpl-badge-rev',
-        position: 'left',
-        title: 'Cosas que necesitan tu confirmación',
-        body: 'Cuando ves un <b>badge mostaza ⚑ "revisar con Trini"</b>, significa que detectamos algo en la data del intensivo que necesita tu visto bueno antes de dar por cerrado el horario.<br><br>Haz <b>hover</b> sobre el badge y aparece el detalle de la pregunta exacta (con qué terapeuta, cuántas sesiones, qué duda hay).',
-      },
-
-      // === Parte 9: Acciones ===
-      {
-        target: '#armadorRegenBtn',
-        position: 'below',
-        title: 'Botón Regenerar',
-        body: 'Solo aparece en modo "Generado". Cada click arma una <b>distribución alternativa</b> válida. Útil cuando la propuesta actual te deja un día muy cargado y quieres ver otra opción.<br><br>Los inputs (niños, terapeutas, sesiones) se mantienen iguales — solo cambia el orden dentro de la semana.',
-      },
-      {
-        target: '#armadorAddBtn',
-        position: 'below',
-        title: 'Botón Agregar niño',
-        body: 'Para meter un <b>niño nuevo a la cohorte</b>: abre un formulario donde pones su nombre, encargado, y el equipo terapéutico (TUTOR + CO-T por disciplina con nº de sesiones). El sistema regenera el horario solo incluyéndolo.<br><br>Los niños agregados quedan marcados con badge <b>"nuevo"</b> en Cumplimiento y los puedes quitar después con el botón de papelera.',
+        title: 'Paneles laterales',
+        body: 'A la derecha tienes <b>Equipo</b> (leyenda de siglas → nombre) y <b>Cumplimiento</b> (barra de progreso por niño + badges "revisar con Trini" para data dudosa).<br><br>Click en un niño del panel = filtra el calendario.',
       },
       {
         target: '#armadorExportBtn',
         position: 'below',
-        title: 'Botón Exportar PDF',
-        body: 'Genera un <b>PDF profesional por niño</b> con tu logo Casa Nogal, todas las 6 semanas del intensivo, y el equipo asignado. Listo para imprimir o adjuntar al mail de la familia.<br><br>Si tienes filtrado un niño, exporta directo el suyo. Si no, abre un selector para elegir.',
+        title: 'Acciones',
+        body: '<b>Regenerar</b> arma una distribución alternativa válida. <b>Agregar niño</b> abre formulario para meter uno nuevo. <b>Exportar PDF</b> genera el horario profesional por niño para mandarle a la familia.',
       },
-
-      // === Cierre ===
       {
-        title: 'Listo ✓',
-        body: 'Ya viste todo. Para volver a este recorrido en cualquier momento, usa el botón <b>"Ver recorrido"</b> que está siempre arriba a la derecha del armador.<br><br>Para volver al tour general del sistema (no solo del armador), usa el link <b>"Volver al tour guiado"</b> al pie del menú lateral izquierdo.<br><br>Si encuentras algo raro o tienes una pregunta, escríbele a Andy.',
+        title: 'Listo',
+        body: 'Vuelves al recorrido cuando quieras con el botón <b>"Ver recorrido"</b> arriba a la derecha.',
       },
     ];
 

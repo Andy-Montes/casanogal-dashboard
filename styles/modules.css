@@ -287,14 +287,13 @@
   box-shadow: 0 1px 3px rgba(10,16,24,0.10);
 }
 /* Color por disciplina · pill full color con borde sólido del color */
-.cal-item[data-disc="to"]    { --disc-bg: var(--to-bg);    --disc-text: var(--to-text);    --disc-border: var(--to-text); }
-.cal-item[data-disc="fono"]  { --disc-bg: var(--fono-bg);  --disc-text: var(--fono-text);  --disc-border: var(--fono-text); }
-.cal-item[data-disc="cog"]   { --disc-bg: var(--cog-bg);   --disc-text: var(--cog-text);   --disc-border: var(--cog-text); }
-.cal-item[data-disc="kine"]  { --disc-bg: var(--kine-bg);  --disc-text: var(--kine-text);  --disc-border: var(--kine-text); }
-.cal-item[data-disc="psico"] { --disc-bg: var(--psico-bg); --disc-text: var(--psico-text); --disc-border: var(--psico-text); }
-.cal-item[data-disc="rdi"]   { --disc-bg: var(--rdi-bg);   --disc-text: var(--rdi-text);   --disc-border: var(--rdi-text); }
-.cal-item[data-disc="kids"]  { --disc-bg: var(--kids-bg);  --disc-text: var(--kids-text);  --disc-border: var(--kids-text); }
-.cal-item { border-color: color-mix(in srgb, var(--disc-border, transparent) 35%, transparent); }
+.cal-item[data-disc="to"]    { background: var(--to-bg)    !important; color: var(--to-text)    !important; border-color: var(--to-text)    !important; }
+.cal-item[data-disc="fono"]  { background: var(--fono-bg)  !important; color: var(--fono-text)  !important; border-color: var(--fono-text)  !important; }
+.cal-item[data-disc="cog"]   { background: var(--cog-bg)   !important; color: var(--cog-text)   !important; border-color: var(--cog-text)   !important; }
+.cal-item[data-disc="kine"]  { background: var(--kine-bg)  !important; color: var(--kine-text)  !important; border-color: var(--kine-text)  !important; }
+.cal-item[data-disc="psico"] { background: var(--psico-bg) !important; color: var(--psico-text) !important; border-color: var(--psico-text) !important; }
+.cal-item[data-disc="rdi"]   { background: var(--rdi-bg)   !important; color: var(--rdi-text)   !important; border-color: var(--rdi-text)   !important; }
+.cal-item[data-disc="kids"]  { background: var(--kids-bg)  !important; color: var(--kids-text)  !important; border-color: var(--kids-text)  !important; }
 
 .cal-item:active { transform: scale(0.97); }
 
