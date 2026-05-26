@@ -3,6 +3,8 @@
 const Armador = {
   _cache: null,
   _resultado: null,
+  _resultadoReal: null,         // horario real de Trini (sheet RESUMEN)
+  _fuente: 'generado',          // 'generado' | 'real'
   _semilla: 1,
   _filtroNino: -1,              // -1 = todos los niños, 0..N = índice del niño
   _filtroSemana: -1,            // -1 = todas las semanas, 0..5 = una semana
@@ -12,18 +14,30 @@ const Armador = {
 
   KEY_BANNER: 'casanogal_armador_banner',
   KEY_TOUR: 'casanogal_armador_tour',
+  KEY_FUENTE: 'casanogal_armador_fuente',
 
   async _cargar() {
     if (this._cache) return this._cache;
-    const [intensivo, catalogo, disponibilidad, salasCapacidad] = await Promise.all([
+    const [intensivo, catalogo, disponibilidad, salasCapacidad, real] = await Promise.all([
       fetch('data/intensivos/int40.json').then(r => r.json()),
       fetch('data/intensivos/catalogo.json').then(r => r.json()),
       fetch('data/intensivos/disponibilidad.json').then(r => r.json()),
       fetch('data/intensivos/salas_capacidad.json').then(r => r.json()),
+      fetch('data/intensivos/int40_real.json').then(r => r.json()).catch(() => null),
     ]);
     this._cache = { intensivo, catalogo, disponibilidad, salasCapacidad };
+    this._resultadoReal = real;
     this._bannerCerrado = localStorage.getItem(this.KEY_BANNER) === '1';
+    const fuenteGuardada = localStorage.getItem(this.KEY_FUENTE);
+    if (fuenteGuardada === 'real' || fuenteGuardada === 'generado') this._fuente = fuenteGuardada;
     return this._cache;
+  },
+
+  // Devuelve el resultado activo según _fuente
+  _resultadoActivo() {
+    return this._fuente === 'real' && this._resultadoReal
+      ? this._resultadoReal
+      : this._resultado;
   },
 
   async render() {
@@ -76,11 +90,12 @@ const Armador = {
 
   _cumplimientoAgregado() {
     const { intensivo } = this._cache;
+    const res = this._resultadoActivo();
     const incompletos = [];
     let cumplidoT = 0, esperadoT = 0;
     intensivo.niños.forEach((n, ni) => {
       let cumplido = 0, esperado = 0;
-      this._resultado.semanas?.forEach((sem) => {
+      res.semanas?.forEach((sem) => {
         const conteo = {};
         sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
         n.asignaciones.forEach((a) => {
@@ -112,8 +127,10 @@ const Armador = {
   // ===== Render =====
   _html(data) {
     const { intensivo, catalogo } = data;
-    const res = this._resultado;
+    const res = this._resultadoActivo();
     const agg = this._cumplimientoAgregado();
+    // Re-computar kidsSlots para la fuente activa
+    this._kidsSlotsPorSemana = this._computarKidsSlots(res);
 
     return `
       ${this._heroHtml(intensivo, agg, res)}
@@ -135,14 +152,21 @@ const Armador = {
   _heroHtml(intensivo, agg, res) {
     let titulo, subtitulo, badgeClass, badgeIcon, badgeText;
     const totalSes = res.semanas?.reduce((sum, s) => sum + s.sesionesPlanificadas, 0) || 0;
-    if (!res.ok) {
+    const esReal = this._fuente === 'real';
+
+    if (esReal) {
+      titulo = 'Horario real de Trini';
+      subtitulo = `Este es el horario que Trini armó a mano en el Excel. ${intensivo.niños.length} niños · ${totalSes} sesiones por semana · base que se repite en las ${intensivo.semanas} semanas.`;
+      badgeClass = 'ok'; badgeIcon = this._icons.check;
+      badgeText = 'Fuente: Excel original';
+    } else if (!res.ok) {
       titulo = 'El horario tiene conflictos sin resolver';
       subtitulo = `El sistema no pudo asignar todas las sesiones. Revisa el detalle a la derecha y prueba otra distribución.`;
       badgeClass = 'ko'; badgeIcon = this._icons.alert;
       badgeText = `${res.conflictos?.length || 0} conflicto${res.conflictos?.length === 1 ? '' : 's'}`;
     } else if (agg.incompletos.length === 0) {
-      titulo = 'Horario listo para enviar a las familias';
-      subtitulo = `${intensivo.niños.length} niños · ${totalSes} sesiones distribuidas en ${intensivo.semanas} semanas · sin conflictos.`;
+      titulo = 'Horario generado por el sistema';
+      subtitulo = `Distribución calculada automáticamente con los inputs reales del INT 40. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = 'Completo · 100%';
     } else {
@@ -152,6 +176,8 @@ const Armador = {
       badgeText = `${agg.totalPct}% cumplido`;
     }
 
+    const tieneReal = !!this._resultadoReal;
+
     return `
       <div class="armador-hero">
         <div class="armador-hero-info">
@@ -160,11 +186,23 @@ const Armador = {
           <p class="armador-subtitle">${subtitulo}</p>
         </div>
         <div class="armador-hero-cta">
+          ${tieneReal ? `
+            <div class="armador-fuente-toggle" role="tablist" aria-label="Fuente del horario">
+              <button class="armador-fuente-btn ${esReal ? 'active' : ''}" data-fuente="real" role="tab" title="Mostrar el horario que Trini armó a mano">
+                ${this._icons.user}<span>Real</span>
+              </button>
+              <button class="armador-fuente-btn ${!esReal ? 'active' : ''}" data-fuente="generado" role="tab" title="Mostrar el horario generado por el motor">
+                ${this._icons.cpu}<span>Generado</span>
+              </button>
+            </div>
+          ` : ''}
           <span class="armador-badge ${badgeClass}">${badgeIcon}${badgeText}</span>
-          <button class="btn btn-primary" id="armadorRegenBtn" title="Generar otra distribución del horario">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Regenerar
-          </button>
+          ${!esReal ? `
+            <button class="btn btn-primary" id="armadorRegenBtn" title="Generar otra distribución del horario">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Regenerar
+            </button>
+          ` : ''}
           <button class="btn btn-ghost" id="armadorExportBtn" title="Bajar el horario como PDF por niño">
             ${this._icons.pdf}Exportar PDF
           </button>
@@ -219,7 +257,7 @@ const Armador = {
   _calendarioHtml(intensivo, catalogo) {
     const { dias, franjas } = catalogo;
     const F = franjas.length;
-    const semanas = this._resultado.semanas || [];
+    const semanas = this._resultadoActivo().semanas || [];
     const semsAMostrar = this._filtroSemana === -1
       ? semanas.map((sem, si) => ({ sem, si }))
       : [{ sem: semanas[this._filtroSemana], si: this._filtroSemana }];
@@ -356,9 +394,10 @@ const Armador = {
   },
 
   _cumplimientoHtml(intensivo, agg) {
+    const res = this._resultadoActivo();
     const rows = intensivo.niños.map((n, ni) => {
       let cumplido = 0, esperado = 0, kids = 0;
-      this._resultado.semanas?.forEach((sem) => {
+      res.semanas?.forEach((sem) => {
         const conteo = {};
         sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
         n.asignaciones.forEach((a) => {
@@ -445,6 +484,18 @@ const Armador = {
 
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
 
+    // Toggle fuente real/generado
+    document.querySelectorAll('.armador-fuente-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const f = btn.dataset.fuente;
+        if (f === this._fuente) return;
+        this._fuente = f;
+        localStorage.setItem(this.KEY_FUENTE, f);
+        this.render();
+        UI.toast(f === 'real' ? 'Mostrando el horario real de Trini' : 'Mostrando el horario generado por el motor', 'success');
+      });
+    });
+
     document.getElementById('armadorBannerClose')?.addEventListener('click', () => {
       localStorage.setItem(this.KEY_BANNER, '1');
       this._bannerCerrado = true;
@@ -487,7 +538,7 @@ const Armador = {
 
   _exportPDF() {
     const { intensivo, catalogo } = this._cache;
-    const semanas = this._resultado.semanas || [];
+    const semanas = this._resultadoActivo().semanas || [];
     if (!semanas.length) { UI.toast('Nada que exportar', 'error'); return; }
 
     // Si hay un niño filtrado → exportar directo
@@ -602,5 +653,7 @@ const Armador = {
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
     team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     pdf: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    cpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="15" x2="4" y2="15"/></svg>',
   },
 };
