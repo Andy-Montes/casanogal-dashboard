@@ -105,19 +105,24 @@ const Armador = {
     const fechaIni = intensivo.fecha_inicio;
     const fechaFin = intensivo.fecha_fin;
 
+    const iconOk = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    const iconAlert = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    const iconWarn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    const iconInfo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+
     let badge;
     if (!res.ok) {
-      badge = `<span class="armador-badge ko">⚠ Conflictos sin resolver (${res.conflictos?.length || 0})</span>`;
+      badge = `<span class="armador-badge ko">${iconAlert}Conflictos sin resolver · ${res.conflictos?.length || 0}</span>`;
     } else if (agg.incompletos.length === 0) {
       const totalSes = res.semanas.reduce((sum, s) => sum + s.sesionesPlanificadas, 0);
-      badge = `<span class="armador-badge ok">✓ Horario completo · ${totalSes} sesiones · ${intensivo.semanas} semanas</span>`;
+      badge = `<span class="armador-badge ok">${iconOk}Horario completo · ${totalSes} sesiones · ${intensivo.semanas} semanas</span>`;
     } else {
-      badge = `<span class="armador-badge warn">${agg.incompletos.length} niño${agg.incompletos.length === 1 ? '' : 's'} incompleto${agg.incompletos.length === 1 ? '' : 's'} · ${agg.totalPct}% cumplido</span>`;
+      badge = `<span class="armador-badge warn">${iconWarn}${agg.incompletos.length} niño${agg.incompletos.length === 1 ? '' : 's'} incompleto${agg.incompletos.length === 1 ? '' : 's'} · ${agg.totalPct}% cumplido</span>`;
     }
 
     return `
       <div class="armador-hero">
-        <div>
+        <div class="armador-hero-info">
           <div class="armador-eyebrow">Programa Intensivo · Cohorte</div>
           <h2 class="armador-title">${UI.esc(intensivo.id)}</h2>
           <div class="armador-meta">
@@ -136,7 +141,7 @@ const Armador = {
 
       <div class="armador-toolbar">
         <div class="armador-legend">${this._legend()}</div>
-        <div class="armador-toolbar-hint">Las 6 semanas se muestran apiladas. Cada niño tiene 6 sub-filas (SEM 1 a SEM 6).</div>
+        <div class="armador-toolbar-hint">${iconInfo}Las 6 semanas están apiladas. Cada niño tiene 6 sub-filas SEM 1 a 6.</div>
       </div>
 
       <div class="armador-layout">
@@ -184,14 +189,15 @@ const Armador = {
 
     let headerDias = '<tr><th class="armador-corner" colspan="2">Niño · Semana</th>';
     dias.forEach((d) => {
-      headerDias += `<th class="armador-day" colspan="${F}">${diaLabels[d] || d}</th>`;
+      headerDias += `<th class="armador-day day-start" colspan="${F}">${diaLabels[d] || d}</th>`;
     });
     headerDias += '</tr>';
 
     let headerFranjas = '<tr><th colspan="2"></th>';
     dias.forEach(() => {
-      franjas.forEach((f) => {
-        headerFranjas += `<th class="armador-franja">${f}</th>`;
+      franjas.forEach((f, fi) => {
+        const ds = fi === 0 ? ' day-start' : '';
+        headerFranjas += `<th class="armador-franja${ds}">${f}</th>`;
       });
     });
     headerFranjas += '</tr>';
@@ -200,15 +206,17 @@ const Armador = {
       const subRows = semanas.map((sem, si) => {
         const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
         const cells = sem.grid[ni].map((sig, slotIdx) => {
-          if (!sig) return `<td class="armador-cell empty"></td>`;
+          const franja = slotIdx % F;
+          const dia = Math.floor(slotIdx / F);
+          const dayStart = franja === 0 ? ' day-start' : '';
+          if (!sig) return `<td class="armador-cell empty${dayStart}"></td>`;
           const t = terapeutas[sig];
           const disc = t?.disciplina;
           const esKids = sig === 'GP' && kidsSet.has(slotIdx);
           const token = esKids ? 'kids' : this._disciplinaToken(disc);
-          const dia = Math.floor(slotIdx / F);
-          const franja = slotIdx % F;
-          const titulo = t ? `${sig} · ${t.nombre} · ${disc} · sala ${t.sala}\n${diaLabels[dias[dia]]} ${franjas[franja]}${esKids ? ' · sesión grupal' : ''}` : sig;
-          return `<td class="armador-cell" style="background:var(--${token}-bg);color:var(--${token}-text);border-left:3px solid var(--${token})" title="${UI.esc(titulo)}">${UI.esc(sig)}</td>`;
+          const titulo = t ? `${sig} · ${t.nombre} · ${disc} · sala ${t.sala}\n${diaLabels[dias[dia]]} ${franjas[franja]}${esKids ? ' · sesión grupal KIDS' : ''}` : sig;
+          const label = esKids ? 'KIDS' : sig;
+          return `<td class="armador-cell${dayStart}" style="background:var(--${token}-bg);color:var(--${token}-text)" title="${UI.esc(titulo)}">${UI.esc(label)}</td>`;
         }).join('');
         const ninoCell = si === 0
           ? `<th class="armador-niño" rowspan="${semanas.length}">${UI.esc(n.nombre)}</th>`
