@@ -185,27 +185,28 @@
   z-index: 5;
 }
 .cal-day-head {
-  background: var(--cn-azul-bg-soft);
-  padding: 8px 8px 7px;
+  background: var(--cn-azul-deep);
+  padding: 10px 8px 8px;
   font-family: 'Manrope', sans-serif;
-  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
   text-align: center;
-  border-bottom: 1px solid var(--border-strong);
-  border-left: 1px solid var(--border);
+  border-bottom: 2px solid var(--cn-azul-deep);
+  border-left: 1px solid rgba(255,255,255,0.18);
 }
 .cal-day-head .cal-day-name {
-  font-size: 10px; font-weight: 700;
-  color: var(--cn-azul-deep);
+  font-size: 10.5px; font-weight: 800;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
+  opacity: 0.85;
 }
 .cal-day-head .cal-day-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px; font-weight: 700;
-  color: var(--text);
+  font-size: 14px; font-weight: 700;
+  color: #fff;
   font-variant-numeric: tabular-nums;
 }
-.cal-corner { background: var(--cn-azul-bg-soft); border-bottom: 1px solid var(--border-strong); border-right: 1px solid var(--border); }
+.cal-corner { background: var(--cn-azul-deep); border-bottom: 2px solid var(--cn-azul-deep); border-right: 1px solid rgba(255,255,255,0.18); }
 
 /* Sección de semana · span across all cols */
 .cal-sem-row {
@@ -286,14 +287,14 @@
   filter: brightness(0.96);
   box-shadow: 0 1px 3px rgba(10,16,24,0.10);
 }
-/* Color por disciplina · pill full color con borde sólido del color */
-.cal-item[data-disc="to"]    { background: var(--to-bg)    !important; color: var(--to-text)    !important; border-color: var(--to-text)    !important; }
-.cal-item[data-disc="fono"]  { background: var(--fono-bg)  !important; color: var(--fono-text)  !important; border-color: var(--fono-text)  !important; }
-.cal-item[data-disc="cog"]   { background: var(--cog-bg)   !important; color: var(--cog-text)   !important; border-color: var(--cog-text)   !important; }
-.cal-item[data-disc="kine"]  { background: var(--kine-bg)  !important; color: var(--kine-text)  !important; border-color: var(--kine-text)  !important; }
-.cal-item[data-disc="psico"] { background: var(--psico-bg) !important; color: var(--psico-text) !important; border-color: var(--psico-text) !important; }
-.cal-item[data-disc="rdi"]   { background: var(--rdi-bg)   !important; color: var(--rdi-text)   !important; border-color: var(--rdi-text)   !important; }
-.cal-item[data-disc="kids"]  { background: var(--kids-bg)  !important; color: var(--kids-text)  !important; border-color: var(--kids-text)  !important; }
+/* Color por disciplina · tonos mid saturados para que se distingan a la vista */
+.cal-item[data-disc="to"]    { background: #C4DFB1 !important; color: #1E3D10 !important; border-color: #8FBE6D !important; }
+.cal-item[data-disc="fono"]  { background: #F5C9A6 !important; color: #5A220A !important; border-color: #E6925A !important; }
+.cal-item[data-disc="cog"]   { background: #B8CFEC !important; color: #102954 !important; border-color: #6C95CC !important; }
+.cal-item[data-disc="kine"]  { background: #C8CDD5 !important; color: #1E232C !important; border-color: #8A93A0 !important; }
+.cal-item[data-disc="psico"] { background: #F2D98A !important; color: #523600 !important; border-color: #D4AE3A !important; }
+.cal-item[data-disc="rdi"]   { background: #DAB8E8 !important; color: #36154A !important; border-color: #A875C2 !important; }
+.cal-item[data-disc="kids"]  { background: #7BCBC4 !important; color: #073835 !important; border-color: #0F857E !important; }
 
 .cal-item:active { transform: scale(0.97); }
 
