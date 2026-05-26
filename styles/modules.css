@@ -283,6 +283,77 @@
 .armador-cal-block.is-atenuado { opacity: 0.25; }
 .armador-cal-block.is-atenuado:hover { opacity: 0.5; }
 
+/* Grupos por slot horario (modo Todos los niños) */
+.armador-cal-group {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 5px 7px;
+  background: var(--bg);
+  border-left: 3px solid var(--border-strong);
+  border-radius: 4px;
+  box-shadow: 0 1px 1px rgba(10,16,24,0.04);
+}
+.armador-cal-group.is-kids {
+  background: var(--kids-bg);
+}
+.armador-cal-group-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.armador-cal-group-items {
+  display: flex; flex-wrap: wrap; gap: 3px;
+}
+.armador-cal-group-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px 2px 5px;
+  background: var(--bg-soft);
+  border: none;
+  border-left: 3px solid currentColor;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: filter 120ms var(--ease), opacity 120ms var(--ease);
+  line-height: 1.4;
+}
+.armador-cal-group-item:hover { filter: brightness(0.92) saturate(1.1); }
+.armador-cal-group-item .grp-nino {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 9.5px;
+  padding: 1px 4px;
+  background: rgba(10,16,24,0.08);
+  border-radius: 2px;
+  min-width: 16px; text-align: center;
+}
+.armador-cal-group-item .grp-sigla {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 10px;
+  letter-spacing: 0.02em;
+}
+.armador-cal-group-item.is-resaltado {
+  outline: 2px solid var(--cn-azul-deep);
+  outline-offset: -1px;
+  filter: none !important;
+}
+.armador-cal-group-item.is-atenuado { opacity: 0.25; }
+.armador-cal-group-item.is-atenuado:hover { opacity: 0.5; }
+.armador-cal-group-kids {
+  background: var(--kids-bg) !important;
+  color: var(--kids-text) !important;
+  border-left-color: var(--kids) !important;
+  width: 100%; justify-content: center;
+  font-weight: 700;
+  padding: 4px 8px;
+}
+.armador-cal-group-kids .grp-kids-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+}
+
 /* SIDEBAR */
 .armador-side { display: flex; flex-direction: column; gap: 10px; }
 .armador-card {

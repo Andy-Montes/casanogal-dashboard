@@ -340,11 +340,18 @@ const Armador = {
             });
           });
         });
-        sesiones.sort((a, b) => a.hora.localeCompare(b.hora));
+        sesiones.sort((a, b) => a.hora.localeCompare(b.hora) || a.niño.localeCompare(b.niño));
 
-        const bloques = sesiones.length
-          ? sesiones.map(s => this._bloqueHtml(s)).join('')
-          : `<div class="armador-cal-empty">Sin sesiones</div>`;
+        // En modo "Todos los niños" agrupamos por slot horario para reducir repetición.
+        // En modo "un niño" usamos los bloques individuales.
+        let bloques;
+        if (!sesiones.length) {
+          bloques = `<div class="armador-cal-empty">Sin sesiones</div>`;
+        } else if (this._filtroNino === -1) {
+          bloques = this._gruposPorSlotHtml(sesiones);
+        } else {
+          bloques = sesiones.map(s => this._bloqueHtml(s)).join('');
+        }
 
         return `
           <div class="armador-cal-day">
@@ -371,6 +378,52 @@ const Armador = {
         ${filas}
       </div>
     `;
+  },
+
+  // Render agrupado: una "tarjeta" por slot horario con la hora una vez
+  // y mini-lista de (inicial niño, sigla terapeuta). Mucho más compacto
+  // cuando se ven los 6 niños juntos.
+  _gruposPorSlotHtml(sesiones) {
+    const porSlot = new Map();
+    sesiones.forEach(s => {
+      if (!porSlot.has(s.slotIdx)) porSlot.set(s.slotIdx, []);
+      porSlot.get(s.slotIdx).push(s);
+    });
+    const slotsOrdenados = Array.from(porSlot.keys()).sort((a, b) => a - b);
+    return slotsOrdenados.map(slotIdx => {
+      const items = porSlot.get(slotIdx);
+      const hora = items[0].hora;
+      const esKidsSlot = items.every(s => s.esKids);
+      if (esKidsSlot) {
+        const token = 'kids';
+        return `
+          <div class="armador-cal-group is-kids" style="border-left-color:var(--${token})">
+            <span class="armador-cal-group-time">${UI.esc(hora)}</span>
+            <button class="armador-cal-group-item armador-cal-group-kids" data-sigla="GP" style="background:var(--${token}-bg);color:var(--${token}-text)" title="Sesión grupal KIDS · todos los niños del intensivo con Gloria">
+              <span class="grp-kids-label">KIDS · todos</span>
+            </button>
+          </div>
+        `;
+      }
+      const itemsHtml = items.map(s => {
+        const token = this._disciplinaToken(s.disc);
+        const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
+        const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
+        const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}\n${hora}`;
+        return `
+          <button class="armador-cal-group-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" style="background:var(--${token}-bg);color:var(--${token}-text);border-left-color:var(--${token})" title="${UI.esc(titulo)}">
+            <span class="grp-nino">${UI.esc(s.niInicial)}</span>
+            <span class="grp-sigla">${UI.esc(s.sig)}</span>
+          </button>
+        `;
+      }).join('');
+      return `
+        <div class="armador-cal-group">
+          <span class="armador-cal-group-time">${UI.esc(hora)}</span>
+          <div class="armador-cal-group-items">${itemsHtml}</div>
+        </div>
+      `;
+    }).join('');
   },
 
   _bloqueHtml(s) {
@@ -560,7 +613,7 @@ const Armador = {
       this._terapeutaResaltado = this._terapeutaResaltado === sigla ? null : sigla;
       this.render();
     };
-    document.querySelectorAll('.armador-cal-block[data-sigla]').forEach(btn => {
+    document.querySelectorAll('.armador-cal-block[data-sigla], .armador-cal-group-item[data-sigla]').forEach(btn => {
       btn.addEventListener('click', () => resaltar(btn.dataset.sigla));
     });
     document.querySelectorAll('.armador-equipo-pill').forEach(btn => {
