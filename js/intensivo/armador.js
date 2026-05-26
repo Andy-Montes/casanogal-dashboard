@@ -302,13 +302,7 @@ const Armador = {
     const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const inicialNino = (nombre) => nombre.charAt(0).toUpperCase() + (nombre.charAt(1)?.toLowerCase() || '');
 
-    // Header global (sticky top) — días una sola vez
-    const headerHtml = `
-      <div class="cal-corner"></div>
-      ${dias.map(d => `<div class="cal-day-head">${diaLabels[d]}</div>`).join('')}
-    `;
-
-    // Por cada semana: section header + 8 rows de franjas
+    // Por cada semana: section header + fila de días + 8 rows de franjas
     const semanasHtml = semsAMostrar.map(({ sem, si }) => {
       const inicioSem = this._fechaSemana(si);
       const finSem = new Date(inicioSem);
@@ -316,12 +310,18 @@ const Armador = {
       const rangoFechas = `${inicioSem.getDate()} ${meses[inicioSem.getMonth()]} – ${finSem.getDate()} ${meses[finSem.getMonth()]}`;
       const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
 
-      // Header de semana span across all columns
+      // Header de semana span across all columns + fila de días anclada a esta semana
       const semHeader = `
         <div class="cal-sem-row">
           <span class="cal-sem-num">SEM ${si + 1}</span>
           <span class="cal-sem-range">${rangoFechas}</span>
         </div>
+        <div class="cal-corner"></div>
+        ${dias.map((d, di) => {
+          const fecha = new Date(inicioSem);
+          fecha.setDate(inicioSem.getDate() + di);
+          return `<div class="cal-day-head"><span class="cal-day-name">${diaLabels[d]}</span><span class="cal-day-num">${fecha.getDate()}</span></div>`;
+        }).join('')}
       `;
 
       // Por cada franja: una row con celda de hora + N celdas de días
@@ -344,7 +344,6 @@ const Armador = {
 
     return `
       <div class="armador-cal-grid" style="--cal-col-count:${dias.length}">
-        ${headerHtml}
         ${semanasHtml}
       </div>
     `;

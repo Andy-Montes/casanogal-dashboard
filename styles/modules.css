@@ -185,21 +185,27 @@
   z-index: 5;
 }
 .cal-day-head {
-  position: sticky; top: 0;
-  background: var(--bg-soft);
-  padding: 10px 8px;
+  background: var(--cn-azul-bg-soft);
+  padding: 8px 8px 7px;
   font-family: 'Manrope', sans-serif;
-  font-size: 10.5px; font-weight: 700;
-  color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
   text-align: center;
   border-bottom: 1px solid var(--border-strong);
   border-left: 1px solid var(--border);
-  box-shadow: 0 1px 0 var(--border);
-  z-index: 4;
 }
-.cal-corner { background: var(--bg-soft); border-bottom: 1px solid var(--border-strong); }
+.cal-day-head .cal-day-name {
+  font-size: 10px; font-weight: 700;
+  color: var(--cn-azul-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.cal-day-head .cal-day-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.cal-corner { background: var(--cn-azul-bg-soft); border-bottom: 1px solid var(--border-strong); border-right: 1px solid var(--border); }
 
 /* Sección de semana · span across all cols */
 .cal-sem-row {
@@ -255,20 +261,19 @@
 }
 .cal-slot:hover { background: var(--bg-soft); }
 
-/* Item dentro de un slot · pill neutra con barra lateral de color por disciplina */
+/* Item dentro de un slot · pill full color por disciplina */
 .cal-item {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 6px 4px 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--disc-bg, var(--border-strong));
+  padding: 4px 7px;
+  background: var(--disc-bg, var(--bg-soft));
+  border: 1px solid var(--disc-border, transparent);
   border-radius: 5px;
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--disc-text, var(--text));
   cursor: pointer;
-  transition: background-color 150ms var(--cal-ease), border-color 150ms var(--cal-ease), opacity 150ms var(--cal-ease), transform 100ms var(--cal-press), box-shadow 150ms var(--cal-ease);
+  transition: filter 150ms var(--cal-ease), opacity 150ms var(--cal-ease), transform 100ms var(--cal-press), box-shadow 150ms var(--cal-ease);
   position: relative;
   text-align: left;
   min-width: 0;
@@ -278,33 +283,34 @@
   text-overflow: ellipsis;
 }
 .cal-item:hover {
-  background: var(--bg-soft);
-  border-color: var(--border-strong);
-  box-shadow: 0 1px 2px rgba(10,16,24,0.04);
+  filter: brightness(0.96);
+  box-shadow: 0 1px 3px rgba(10,16,24,0.10);
 }
-/* Color por disciplina vía data-disc · solo en la barra lateral, texto siempre legible */
-.cal-item[data-disc="to"]    { --disc-bg: var(--to-text); }
-.cal-item[data-disc="fono"]  { --disc-bg: var(--fono-text); }
-.cal-item[data-disc="cog"]   { --disc-bg: var(--cog-text); }
-.cal-item[data-disc="kine"]  { --disc-bg: var(--kine-text); }
-.cal-item[data-disc="psico"] { --disc-bg: var(--psico-text); }
-.cal-item[data-disc="rdi"]   { --disc-bg: var(--rdi-text); }
-.cal-item[data-disc="kids"]  { --disc-bg: var(--kids-text); }
+/* Color por disciplina · pill full color con borde sólido del color */
+.cal-item[data-disc="to"]    { --disc-bg: var(--to-bg);    --disc-text: var(--to-text);    --disc-border: var(--to-text); }
+.cal-item[data-disc="fono"]  { --disc-bg: var(--fono-bg);  --disc-text: var(--fono-text);  --disc-border: var(--fono-text); }
+.cal-item[data-disc="cog"]   { --disc-bg: var(--cog-bg);   --disc-text: var(--cog-text);   --disc-border: var(--cog-text); }
+.cal-item[data-disc="kine"]  { --disc-bg: var(--kine-bg);  --disc-text: var(--kine-text);  --disc-border: var(--kine-text); }
+.cal-item[data-disc="psico"] { --disc-bg: var(--psico-bg); --disc-text: var(--psico-text); --disc-border: var(--psico-text); }
+.cal-item[data-disc="rdi"]   { --disc-bg: var(--rdi-bg);   --disc-text: var(--rdi-text);   --disc-border: var(--rdi-text); }
+.cal-item[data-disc="kids"]  { --disc-bg: var(--kids-bg);  --disc-text: var(--kids-text);  --disc-border: var(--kids-text); }
+.cal-item { border-color: color-mix(in srgb, var(--disc-border, transparent) 35%, transparent); }
 
 .cal-item:active { transform: scale(0.97); }
 
 .cal-item-nino {
   display: inline-block;
-  font-weight: 500;
+  font-weight: 700;
   font-size: 9.5px;
-  color: var(--text-3);
-  letter-spacing: 0.02em;
+  color: currentColor;
+  opacity: 0.7;
+  letter-spacing: 0.04em;
   line-height: 1;
 }
 .cal-item-sigla {
   font-weight: 700;
   font-size: 11px;
-  color: var(--text);
+  color: currentColor;
   letter-spacing: 0.02em;
 }
 
