@@ -70,7 +70,6 @@ const PDFArmador = {
           <div class="pdf-contact-name">Trinidad Cervero</div>
           <div class="pdf-contact-role">Coordinación clínica</div>
           <div class="pdf-contact-line">contacto@casanogal.cl</div>
-          <div class="pdf-contact-line">+56 9 7654 3210</div>
         </div>
 
         <div class="pdf-foot">Documento informativo<br>Las horas son referenciales y pueden ajustarse semana a semana.</div>

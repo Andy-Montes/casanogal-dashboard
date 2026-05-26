@@ -64,6 +64,8 @@ const Scheduler = (() => {
     const salasUsadas = new Set(Object.values(catalogo.terapeutas).map((t) => t.sala));
     salasUsadas.forEach((s) => { ocupadoSala[s] = new Uint8Array(totalSlots); });
 
+    const conflictos = [];
+
     // === Fase 0: sesiones grupales KIDS ===
     // Cada niño con kids_semanal > 0 participa de N sesiones grupales con GP en sala KIDS.
     // Todos los niños del intensivo comparten el mismo slot. Solo cuenta 1 ocupación de GP y 1 de sala.
@@ -136,8 +138,6 @@ const Scheduler = (() => {
     // Contadores por día niño-terapeuta para enforcement de maxPorDia
     // key: `${ni}_${sigla}_${diaIdx}` → count
     const porDia = new Map();
-
-    const conflictos = [];
 
     function intentar(i) {
       if (i >= demandas.length) return true;

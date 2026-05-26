@@ -115,6 +115,7 @@ const Armador = {
     intensivo.niños.forEach((n, ni) => {
       let cumplido = 0, esperado = 0;
       res.semanas?.forEach((sem) => {
+        if (!sem.grid[ni]) return;  // niño extra sin fila en horario real
         const conteo = {};
         sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
         n.asignaciones.forEach((a) => {
@@ -206,13 +207,16 @@ const Armador = {
         </div>
         <div class="armador-hero-cta">
           ${tieneReal ? `
-            <div class="armador-fuente-toggle" role="tablist" aria-label="Fuente del horario">
-              <button class="armador-fuente-btn ${esReal ? 'active' : ''}" data-fuente="real" role="tab" title="Mostrar el horario que Trini armó a mano">
-                ${this._icons.user}<span>Real</span>
-              </button>
-              <button class="armador-fuente-btn ${!esReal ? 'active' : ''}" data-fuente="generado" role="tab" title="Mostrar el horario generado por el motor">
-                ${this._icons.cpu}<span>Generado</span>
-              </button>
+            <div class="armador-fuente-wrap">
+              <div class="armador-fuente-toggle" role="tablist" aria-label="Fuente del horario">
+                <button class="armador-fuente-btn ${esReal ? 'active' : ''}" data-fuente="real" role="tab" title="Lo que Trini armó a mano en Excel">
+                  ${this._icons.user}<span>Real</span>
+                </button>
+                <button class="armador-fuente-btn ${!esReal ? 'active' : ''}" data-fuente="generado" role="tab" title="Propuesta del sistema con los mismos inputs">
+                  ${this._icons.cpu}<span>Generado</span>
+                </button>
+              </div>
+              <div class="armador-fuente-hint">${esReal ? 'Lo que armaste en Excel' : 'Propuesta del sistema'}</div>
             </div>
           ` : ''}
           <span class="armador-badge ${badgeClass}">${badgeIcon}${badgeText}</span>
@@ -313,6 +317,7 @@ const Armador = {
           : [{ n: intensivo.niños[this._filtroNino], ni: this._filtroNino }];
 
         niñosAMostrar.forEach(({ n, ni }) => {
+          if (!sem.grid[ni]) return;
           sem.grid[ni].forEach((sig, slotIdx) => {
             if (!sig) return;
             const dia = Math.floor(slotIdx / F);
@@ -422,6 +427,7 @@ const Armador = {
     const rows = intensivo.niños.map((n, ni) => {
       let cumplido = 0, esperado = 0, kids = 0;
       res.semanas?.forEach((sem) => {
+        if (!sem.grid[ni]) return;  // niño extra sin fila en horario real
         const conteo = {};
         sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
         n.asignaciones.forEach((a) => {
@@ -727,7 +733,9 @@ const Armador = {
     intensivo.niños.splice(ni, 1);
     const extras = this._ninosExtraGuardados().filter(n => n.nombre !== nino.nombre);
     this._persistirNinosExtra(extras);
-    if (this._filtroNino === ni) this._filtroNino = -1;
+    // Reset SIEMPRE el filtro, no solo si coincidía con el índice eliminado:
+    // los índices superiores al eliminado se corrieron y el filtro queda desincronizado.
+    this._filtroNino = -1;
     this._generar();
     this.render();
     UI.toast(`${nino.nombre} quitado del intensivo`, 'success');
@@ -792,8 +800,17 @@ const Armador = {
   },
 
   _imprimirPDF(ninoIdx, intensivo, semanas, catalogo) {
+    if (this._imprimiendo) return;  // bloquea doble-click
+    this._imprimiendo = true;
+    const btn = document.getElementById('armadorExportBtn');
+    if (btn) btn.disabled = true;
     const ok = PDFArmador.render(ninoIdx, intensivo, semanas, catalogo);
-    if (!ok) { UI.toast('No se pudo generar el PDF', 'error'); return; }
+    if (!ok) {
+      UI.toast('No se pudo generar el PDF', 'error');
+      this._imprimiendo = false;
+      if (btn) btn.disabled = false;
+      return;
+    }
     document.body.classList.add('printing-padres');
     UI.toast('Preparando PDF del horario', 'success');
     setTimeout(() => {
@@ -801,6 +818,8 @@ const Armador = {
       setTimeout(() => {
         document.body.classList.remove('printing-padres');
         PDFArmador.cleanup();
+        this._imprimiendo = false;
+        if (btn) btn.disabled = false;
       }, 800);
     }, 250);
   },
@@ -832,7 +851,7 @@ const Armador = {
       },
       {
         title: 'Listo',
-        body: 'Ya conoces el armador. Si querés volver al recorrido, busca el link al pie del menú lateral.<br><br>El sistema recuerda si ya viste este tour — no aparece de nuevo.',
+        body: 'Ya conoces el armador. Si quieres volver al recorrido, busca el link al pie del menú lateral.<br><br>El sistema recuerda si ya viste este tour — no aparece de nuevo.',
       },
     ];
     if (typeof Onboarding !== 'undefined') {

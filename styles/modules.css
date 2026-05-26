@@ -35,6 +35,13 @@
 .armador-hero-cta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* TOGGLE Fuente: Real / Generado */
+.armador-fuente-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+.armador-fuente-hint {
+  font-size: 10.5px;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
 .armador-fuente-toggle {
   display: inline-flex;
   background: var(--bg-soft);
