@@ -15,6 +15,7 @@ const Armador = {
   KEY_BANNER: 'casanogal_armador_banner',
   KEY_TOUR: 'casanogal_armador_tour',
   KEY_FUENTE: 'casanogal_armador_fuente',
+  KEY_NINOS_EXTRA: 'casanogal_armador_ninos_extra',
 
   async _cargar() {
     if (this._cache) return this._cache;
@@ -25,12 +26,30 @@ const Armador = {
       fetch('data/intensivos/salas_capacidad.json').then(r => r.json()),
       fetch('data/intensivos/int40_real.json').then(r => r.json()).catch(() => null),
     ]);
+    // Aplicar niños extra guardados en localStorage
+    try {
+      const extras = JSON.parse(localStorage.getItem(this.KEY_NINOS_EXTRA) || '[]');
+      if (Array.isArray(extras) && extras.length) {
+        intensivo.niños = intensivo.niños.concat(extras);
+      }
+    } catch {}
     this._cache = { intensivo, catalogo, disponibilidad, salasCapacidad };
     this._resultadoReal = real;
     this._bannerCerrado = localStorage.getItem(this.KEY_BANNER) === '1';
     const fuenteGuardada = localStorage.getItem(this.KEY_FUENTE);
     if (fuenteGuardada === 'real' || fuenteGuardada === 'generado') this._fuente = fuenteGuardada;
     return this._cache;
+  },
+
+  _ninosExtraGuardados() {
+    try {
+      const e = JSON.parse(localStorage.getItem(this.KEY_NINOS_EXTRA) || '[]');
+      return Array.isArray(e) ? e : [];
+    } catch { return []; }
+  },
+
+  _persistirNinosExtra(arr) {
+    localStorage.setItem(this.KEY_NINOS_EXTRA, JSON.stringify(arr));
   },
 
   // Devuelve el resultado activo según _fuente
@@ -206,6 +225,11 @@ const Armador = {
           <button class="btn btn-ghost" id="armadorExportBtn" title="Bajar el horario como PDF por niño">
             ${this._icons.pdf}Exportar PDF
           </button>
+          ${!esReal ? `
+            <button class="btn btn-secondary" id="armadorAddBtn" title="Agregar un niño a la cohorte y regenerar el horario">
+              ${this._icons.plus}Agregar niño
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -412,11 +436,17 @@ const Armador = {
       const pct = esperado ? Math.round((cumplido / esperado) * 100) : 100;
       const cls = pct === 100 ? 'ok' : pct >= 80 ? 'warn' : 'ko';
       const activo = this._filtroNino === ni ? ' is-active' : '';
+      const extra = n._extra ? ' is-extra' : '';
+      const badgeExtra = n._extra ? `<span class="armador-cumpl-badge-extra" title="Agregado a mano · click en el ícono para quitar">nuevo</span>` : '';
+      const btnDel = n._extra ? `<span class="armador-cumpl-del" data-ni-del="${ni}" title="Quitar este niño">${this._icons.trash}</span>` : '';
       return `
-        <button class="armador-cumpl-row${activo}" data-ni="${ni}">
+        <button class="armador-cumpl-row${activo}${extra}" data-ni="${ni}">
           <div class="armador-cumpl-head">
-            <span class="armador-cumpl-name">${UI.esc(n.nombre)}</span>
-            <span class="armador-cumpl-pct ${cls}">${pct}%</span>
+            <span class="armador-cumpl-name">${UI.esc(n.nombre)}${badgeExtra}</span>
+            <span class="armador-cumpl-right">
+              <span class="armador-cumpl-pct ${cls}">${pct}%</span>
+              ${btnDel}
+            </span>
           </div>
           <div class="armador-cumpl-meta">${cumplido}/${esperado} individuales · ${kids} en KIDS</div>
           <div class="armador-cumpl-bar"><div class="armador-cumpl-fill ${cls}" style="width:${pct}%"></div></div>
@@ -483,6 +513,7 @@ const Armador = {
     document.getElementById('armadorRegenInlineBtn')?.addEventListener('click', regenerar);
 
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
+    document.getElementById('armadorAddBtn')?.addEventListener('click', () => this._abrirFormNino());
 
     // Toggle fuente real/generado
     document.querySelectorAll('.armador-fuente-btn').forEach(btn => {
@@ -528,12 +559,178 @@ const Armador = {
 
     // Click en fila de cumplimiento = filtrar por ese niño
     document.querySelectorAll('.armador-cumpl-row[data-ni]').forEach(row => {
-      row.addEventListener('click', () => {
+      row.addEventListener('click', (e) => {
+        // Si el click fue en el botón eliminar, no togglar filtro
+        if (e.target.closest('[data-ni-del]')) return;
         const ni = parseInt(row.dataset.ni, 10);
         this._filtroNino = (this._filtroNino === ni) ? -1 : ni;
         this.render();
       });
     });
+    document.querySelectorAll('[data-ni-del]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ni = parseInt(btn.dataset.niDel, 10);
+        this._quitarNinoExtra(ni);
+      });
+    });
+  },
+
+  // ===== Form Agregar Niño =====
+  _abrirFormNino() {
+    const { catalogo } = this._cache;
+    // Agrupar terapeutas del catálogo por disciplina mapeada a las 5 secciones del form
+    const SECCIONES = [
+      { key: 'TO',   label: 'T.O.',   match: (d) => d === 'TO' },
+      { key: 'FONO', label: 'Fono',   match: (d) => d === 'FONO' },
+      { key: 'COG',  label: 'Cog',    match: (d) => d === 'ED COG' || d === 'COG' || d === 'F.EJEC' },
+      { key: 'KINE', label: 'Kine',   match: (d) => d === 'KINE' },
+      { key: 'PSI',  label: 'PSI',    match: (d) => d === 'PSIC' || d === 'PSI' || d === 'RDI' },
+    ];
+    const terapeutasDe = (matchFn) => Object.entries(catalogo.terapeutas)
+      .filter(([_, t]) => matchFn(t.disciplina))
+      .map(([sigla, t]) => ({ sigla, nombre: t.nombre }));
+
+    const seccionHtml = (s) => {
+      const ters = terapeutasDe(s.match);
+      const opts = '<option value="">— sin asignar —</option>' +
+        ters.map(t => `<option value="${UI.esc(t.sigla)}">${UI.esc(t.sigla)} · ${UI.esc(t.nombre)}</option>`).join('');
+      return `
+        <div class="armador-form-section">
+          <div class="armador-form-section-title">${s.label}</div>
+          <div class="armador-form-row">
+            <label class="armador-form-rol">TUTOR</label>
+            <select class="armador-form-sel" data-section="${s.key}" data-rol="TUTOR">${opts}</select>
+            <input type="number" class="armador-form-ses" data-section="${s.key}" data-rol="TUTOR" min="0" max="10" placeholder="ses/sem" />
+          </div>
+          <div class="armador-form-row">
+            <label class="armador-form-rol">CO-T</label>
+            <select class="armador-form-sel" data-section="${s.key}" data-rol="COT">${opts}</select>
+            <input type="number" class="armador-form-ses" data-section="${s.key}" data-rol="COT" min="0" max="10" placeholder="ses/sem" />
+          </div>
+        </div>
+      `;
+    };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'pendiente-modal-overlay';
+    overlay.id = 'armadorFormOverlay';
+    overlay.innerHTML = `
+      <div class="pendiente-modal armador-form-modal">
+        <div class="pendiente-modal-head">
+          ${this._icons.plus}
+          <div>
+            <div class="pendiente-modal-title">Agregar niño al intensivo</div>
+            <div class="pendiente-modal-eyebrow">Completa los datos y el sistema regenera el horario solo</div>
+          </div>
+          <button class="panel-close" id="armadorFormClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="pendiente-modal-body armador-form-body">
+          <div class="armador-form-grid">
+            <label class="armador-form-field">
+              <span>Nombre del niño *</span>
+              <input type="text" id="armadorFormNombre" maxlength="40" placeholder="Ej: TOMÁS" required />
+            </label>
+            <label class="armador-form-field">
+              <span>Encargado del caso</span>
+              <input type="text" id="armadorFormEncargado" maxlength="60" placeholder="Ej: Krasna Music" />
+            </label>
+            <label class="armador-form-field armador-form-kids">
+              <span>Sesiones KIDS grupales / semana</span>
+              <input type="number" id="armadorFormKids" min="0" max="10" value="5" />
+            </label>
+          </div>
+          <div class="armador-form-disc-grid">
+            ${SECCIONES.map(seccionHtml).join('')}
+          </div>
+          <div class="armador-form-hint">
+            <b>Tip:</b> Solo completa el nº de sesiones donde el niño realmente tiene un terapeuta asignado. Los espacios en blanco se ignoran.
+          </div>
+        </div>
+        <div class="pendiente-modal-foot">
+          <button class="btn btn-ghost" id="armadorFormCancel">Cancelar</button>
+          <button class="btn btn-primary" id="armadorFormSave">Agregar y regenerar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const cerrar = () => overlay.remove();
+    document.getElementById('armadorFormClose').addEventListener('click', cerrar);
+    document.getElementById('armadorFormCancel').addEventListener('click', cerrar);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
+    setTimeout(() => document.getElementById('armadorFormNombre')?.focus(), 80);
+
+    document.getElementById('armadorFormSave').addEventListener('click', () => {
+      const nombre = document.getElementById('armadorFormNombre').value.trim().toUpperCase();
+      if (!nombre) {
+        UI.toast('Falta el nombre del niño', 'error');
+        document.getElementById('armadorFormNombre').focus();
+        return;
+      }
+      const encargado = document.getElementById('armadorFormEncargado').value.trim();
+      const kids = parseInt(document.getElementById('armadorFormKids').value, 10) || 0;
+      const asignaciones = [];
+      SECCIONES.forEach(s => {
+        ['TUTOR', 'COT'].forEach(rol => {
+          const sel = document.querySelector(`.armador-form-sel[data-section="${s.key}"][data-rol="${rol}"]`);
+          const ses = document.querySelector(`.armador-form-ses[data-section="${s.key}"][data-rol="${rol}"]`);
+          const sigla = sel?.value?.trim();
+          const n = parseInt(ses?.value, 10);
+          if (sigla && n > 0) {
+            const disciplina = catalogo.terapeutas[sigla]?.disciplina || s.key;
+            asignaciones.push({ disciplina, rol, sigla, sesiones: n });
+          }
+        });
+      });
+      if (!asignaciones.length && kids === 0) {
+        UI.toast('Agrega al menos una asignación o sesiones KIDS', 'error');
+        return;
+      }
+      const ninoNuevo = {
+        nombre,
+        encargado,
+        kids_semanal: kids,
+        total_ses_semanal: asignaciones.reduce((s, a) => s + a.sesiones, 0) + kids,
+        asignaciones,
+        _extra: true,  // marcador para distinguir niños agregados a mano
+      };
+      cerrar();
+      this._aplicarNinoNuevo(ninoNuevo);
+    });
+  },
+
+  _aplicarNinoNuevo(nino) {
+    const { intensivo } = this._cache;
+    intensivo.niños.push(nino);
+    const extras = this._ninosExtraGuardados();
+    extras.push(nino);
+    this._persistirNinosExtra(extras);
+    this._generar();
+    if (this._fuente === 'real') {
+      this._fuente = 'generado'; // volver a generado porque el real no incluye este niño
+      localStorage.setItem(this.KEY_FUENTE, 'generado');
+    }
+    this.render();
+    const ok = this._resultado.ok;
+    UI.toast(
+      ok ? `Niño ${nino.nombre} agregado · horario regenerado sin conflictos` : `Niño ${nino.nombre} agregado · revisa los conflictos`,
+      ok ? 'success' : 'warning'
+    );
+  },
+
+  _quitarNinoExtra(ni) {
+    const { intensivo } = this._cache;
+    const nino = intensivo.niños[ni];
+    if (!nino?._extra) return;
+    if (!confirm(`¿Quitar a ${nino.nombre} del intensivo?`)) return;
+    intensivo.niños.splice(ni, 1);
+    const extras = this._ninosExtraGuardados().filter(n => n.nombre !== nino.nombre);
+    this._persistirNinosExtra(extras);
+    if (this._filtroNino === ni) this._filtroNino = -1;
+    this._generar();
+    this.render();
+    UI.toast(`${nino.nombre} quitado del intensivo`, 'success');
   },
 
   _exportPDF() {
@@ -655,5 +852,7 @@ const Armador = {
     pdf: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     cpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="15" x2="4" y2="15"/></svg>',
+    plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    trash: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
   },
 };
