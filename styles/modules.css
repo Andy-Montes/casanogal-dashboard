@@ -401,6 +401,17 @@
   transition: all 150ms var(--ease);
 }
 .armador-cumpl-del:hover { color: var(--alert); background: var(--alert-bg); }
+.armador-cumpl-badge-rev {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px; font-weight: 600;
+  color: var(--cn-mostaza-deep);
+  background: var(--cn-mostaza-bg);
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: help;
+  letter-spacing: 0.02em;
+}
 
 /* ===== Modal Agregar Niño ===== */
 .armador-form-modal { width: min(640px, 94vw); }

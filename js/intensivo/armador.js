@@ -445,6 +445,9 @@ const Armador = {
       const extra = n._extra ? ' is-extra' : '';
       const badgeExtra = n._extra ? `<span class="armador-cumpl-badge-extra" title="Agregado a mano · click en el ícono para quitar">nuevo</span>` : '';
       const btnDel = n._extra ? `<span class="armador-cumpl-del" data-ni-del="${ni}" title="Quitar este niño">${this._icons.trash}</span>` : '';
+      // Marca de revisión: si alguna asignación tiene _revisar, mostrar ⓘ con tooltip
+      const revisar = (n.asignaciones || []).filter(a => a._revisar);
+      const badgeRev = revisar.length ? `<span class="armador-cumpl-badge-rev" title="${UI.esc(revisar.map(r => `• ${r.sigla}: ${r._revisar}`).join('\n'))}">⚑ revisar con Trini</span>` : '';
       return `
         <button class="armador-cumpl-row${activo}${extra}" data-ni="${ni}">
           <div class="armador-cumpl-head">
@@ -456,6 +459,7 @@ const Armador = {
           </div>
           <div class="armador-cumpl-meta">${cumplido}/${esperado} individuales · ${kids} en KIDS</div>
           <div class="armador-cumpl-bar"><div class="armador-cumpl-fill ${cls}" style="width:${pct}%"></div></div>
+          ${badgeRev}
         </button>
       `;
     }).join('');

@@ -8,69 +8,27 @@
       "nombre": "LEON",
       "encargado": "Paula Andrades",
       "kids_semanal": 5,
-      "total_ses_semanal": 30,
+      "total_ses_semanal": 33,
       "asignaciones": [
-        {
-          "disciplina": "TO",
-          "rol": "TUTOR",
-          "sigla": "KRA",
-          "sesiones": 4
-        },
-        {
-          "disciplina": "TO",
-          "rol": "COT",
-          "sigla": "PT",
-          "sesiones": 3
-        },
-        {
-          "disciplina": "FONO",
-          "rol": "TUTOR",
-          "sigla": "NP",
-          "sesiones": 4
-        },
-        {
-          "disciplina": "FONO",
-          "rol": "COT",
-          "sigla": "RJ",
-          "sesiones": 2
-        },
-        {
-          "disciplina": "COG",
-          "rol": "TUTOR",
-          "sigla": "PA",
-          "sesiones": 5
-        },
-        {
-          "disciplina": "COG",
-          "rol": "COT",
-          "sigla": "PO",
-          "sesiones": 2
-        },
-        {
-          "disciplina": "KINE",
-          "rol": "TUTOR",
-          "sigla": "BA",
-          "sesiones": 1
-        },
-        {
-          "disciplina": "KINE",
-          "rol": "COT",
-          "sigla": "FD",
-          "sesiones": 1
-        },
-        {
-          "disciplina": "PSI",
-          "rol": "TUTOR",
-          "sigla": "GP",
-          "sesiones": 3
-        }
+        { "disciplina": "TO",     "rol": "TUTOR", "sigla": "KRA", "sesiones": 4 },
+        { "disciplina": "TO",     "rol": "COT",   "sigla": "PT",  "sesiones": 3 },
+        { "disciplina": "FONO",   "rol": "TUTOR", "sigla": "NP",  "sesiones": 4 },
+        { "disciplina": "FONO",   "rol": "COT",   "sigla": "RJ",  "sesiones": 2 },
+        { "disciplina": "COG",    "rol": "TUTOR", "sigla": "PA",  "sesiones": 5 },
+        { "disciplina": "COG",    "rol": "COT",   "sigla": "PO",  "sesiones": 2 },
+        { "disciplina": "KINE",   "rol": "TUTOR", "sigla": "BA",  "sesiones": 1 },
+        { "disciplina": "KINE",   "rol": "COT",   "sigla": "FD",  "sesiones": 1 },
+        { "disciplina": "HAB AD", "rol": "TUTOR", "sigla": "GP",  "sesiones": 3,
+          "_revisar": "Confirmar con Trini: ¿son 3 sesiones individuales con Gloria, además de las 5 KIDS grupales? El Excel original las tenía como PSI." },
+        { "disciplina": "F.EJEC", "rol": "TUTOR", "sigla": "GLO", "sesiones": 3,
+          "_revisar": "Confirmar con Trini: Glorita (GLO) aparece en el horario real con 3 sesiones a LEON pero no estaba en el input de asignaciones del INT 40." }
       ]
     },
     {
       "nombre": "SANTI",
       "encargado": "Isa Hernández",
       "kids_semanal": 5,
-      "total_ses_semanal": 25,
+      "total_ses_semanal": 26,
       "asignaciones": [
         {
           "disciplina": "TO",
@@ -132,7 +90,7 @@
       "nombre": "BALTAZAR",
       "encargado": "Nati Palatnic",
       "kids_semanal": 5,
-      "total_ses_semanal": 29,
+      "total_ses_semanal": 30,
       "asignaciones": [
         {
           "disciplina": "TO",
@@ -188,7 +146,7 @@
       "nombre": "FIORELLA",
       "encargado": "Clau Beltrami",
       "kids_semanal": 5,
-      "total_ses_semanal": 30,
+      "total_ses_semanal": 31,
       "asignaciones": [
         {
           "disciplina": "TO",
@@ -256,7 +214,7 @@
       "nombre": "AMELIA",
       "encargado": "Nati Delgado",
       "kids_semanal": 5,
-      "total_ses_semanal": 31,
+      "total_ses_semanal": 32,
       "asignaciones": [
         {
           "disciplina": "TO",
@@ -330,7 +288,7 @@
       "nombre": "SOFIA",
       "encargado": "Marce Frías",
       "kids_semanal": 5,
-      "total_ses_semanal": 30,
+      "total_ses_semanal": 31,
       "asignaciones": [
         {
           "disciplina": "TO",
