@@ -1,19 +1,18 @@
 // Módulo Armador de Horarios — Programa Intensivo
-// Usa el motor en js/intensivo/scheduler.js (expuesto en window.Scheduler).
+// Vista calendario mensual (6 semanas × 6 días). Usa el motor en scheduler.js.
 const Armador = {
   _cache: null,
   _resultado: null,
   _semilla: 1,
-  _modo: '1sem',                // '1sem' | '6sem'
-  _semanaActiva: 0,             // 0..5 (cuando _modo === '1sem')
-  _terapeutaResaltado: null,    // sigla | null
+  _filtroNino: -1,              // -1 = todos los niños, 0..N = índice del niño
+  _filtroSemana: -1,            // -1 = todas las semanas, 0..5 = una semana
+  _terapeutaResaltado: null,
   _bannerCerrado: false,
-  _kidsSlotsPorSemana: null,    // Map<semIdx, Set<slotIdx>>
+  _kidsSlotsPorSemana: null,
 
   KEY_BANNER: 'casanogal_armador_banner',
   KEY_TOUR: 'casanogal_armador_tour',
 
-  // --- carga perezosa de los 4 JSON ---
   async _cargar() {
     if (this._cache) return this._cache;
     const [intensivo, catalogo, disponibilidad, salasCapacidad] = await Promise.all([
@@ -40,7 +39,6 @@ const Armador = {
     main.innerHTML = this._html(data);
     this._wire();
 
-    // Tour primera vez en este módulo
     if (!localStorage.getItem(this.KEY_TOUR)) {
       setTimeout(() => this._abrirTour(), 400);
     }
@@ -104,22 +102,14 @@ const Armador = {
     };
   },
 
-  // Devuelve fecha "Lun 20 abr" para cada día visible de la semana activa
-  _fechasSemana(semanaIdx) {
-    const { intensivo, catalogo } = this._cache;
-    const dias = catalogo.dias;
+  _fechaSemana(si) {
+    const { intensivo } = this._cache;
     const base = new Date(intensivo.fecha_inicio + 'T00:00:00');
-    base.setDate(base.getDate() + semanaIdx * 7);
-    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    const labels = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
-    return dias.map((d, i) => {
-      const fecha = new Date(base);
-      fecha.setDate(base.getDate() + i);
-      return `${labels[d]} ${fecha.getDate()} ${meses[fecha.getMonth()]}`;
-    });
+    base.setDate(base.getDate() + si * 7);
+    return base;
   },
 
-  // ===== Render HTML =====
+  // ===== Render =====
   _html(data) {
     const { intensivo, catalogo } = data;
     const res = this._resultado;
@@ -130,8 +120,8 @@ const Armador = {
       ${this._bannerCerrado ? '' : this._bannerHtml()}
       ${this._toolbarHtml(intensivo)}
       <div class="armador-layout">
-        <div class="armador-grid-wrap">
-          ${this._gridHtml(intensivo, catalogo)}
+        <div class="armador-calendar-wrap">
+          ${this._calendarioHtml(intensivo, catalogo)}
         </div>
         <aside class="armador-side">
           ${this._equipoHtml(catalogo)}
@@ -143,27 +133,22 @@ const Armador = {
   },
 
   _heroHtml(intensivo, agg, res) {
-    // Resumen narrativo: una frase clara en lenguaje natural
     let titulo, subtitulo, badgeClass, badgeIcon, badgeText;
     const totalSes = res.semanas?.reduce((sum, s) => sum + s.sesionesPlanificadas, 0) || 0;
-
     if (!res.ok) {
-      titulo = '⚠ El horario tiene conflictos sin resolver';
+      titulo = 'El horario tiene conflictos sin resolver';
       subtitulo = `El sistema no pudo asignar todas las sesiones. Revisa el detalle a la derecha y prueba otra distribución.`;
-      badgeClass = 'ko';
-      badgeIcon = this._icons.alert;
+      badgeClass = 'ko'; badgeIcon = this._icons.alert;
       badgeText = `${res.conflictos?.length || 0} conflicto${res.conflictos?.length === 1 ? '' : 's'}`;
     } else if (agg.incompletos.length === 0) {
-      titulo = '✓ Horario listo para enviar a las familias';
+      titulo = 'Horario listo para enviar a las familias';
       subtitulo = `${intensivo.niños.length} niños · ${totalSes} sesiones distribuidas en ${intensivo.semanas} semanas · sin conflictos.`;
-      badgeClass = 'ok';
-      badgeIcon = this._icons.ok;
+      badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = 'Completo · 100%';
     } else {
       titulo = `${agg.incompletos.length} niño${agg.incompletos.length === 1 ? '' : 's'} sin horario completo`;
-      subtitulo = `Faltan sesiones por asignar a: ${agg.incompletos.map(i => i.niño).join(', ')}. Prueba regenerar o revisa la disponibilidad de los terapeutas.`;
-      badgeClass = 'warn';
-      badgeIcon = this._icons.warn;
+      subtitulo = `Faltan sesiones por asignar a: ${agg.incompletos.map(i => i.niño).join(', ')}. Prueba regenerar o revisa la disponibilidad.`;
+      badgeClass = 'warn'; badgeIcon = this._icons.warn;
       badgeText = `${agg.totalPct}% cumplido`;
     }
 
@@ -180,7 +165,9 @@ const Armador = {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Regenerar
           </button>
-          <button class="btn btn-ghost" id="armadorExportBtn" title="Bajar el horario como CSV (se abre en Excel)">Exportar</button>
+          <button class="btn btn-ghost" id="armadorExportBtn" title="Bajar el horario como PDF por niño">
+            ${this._icons.pdf}Exportar PDF
+          </button>
         </div>
       </div>
     `;
@@ -192,9 +179,9 @@ const Armador = {
         <div class="armador-banner-icon">${this._icons.info}</div>
         <div class="armador-banner-body">
           <b>¿Qué es esta página?</b>
-          Acá se arma automáticamente el horario semanal del programa intensivo. Cada fila es un niño y cada celda es una hora del día con el terapeuta asignado.
-          Las siglas (KRA, NP, FV…) son los nombres cortos del equipo — el panel <b>Equipo</b> a la derecha tiene la lista completa.
-          Click en cualquier sigla para resaltar a ese terapeuta en toda la grilla.
+          Acá se arma automáticamente el horario semanal del programa intensivo. El calendario muestra las 6 semanas completas con todas las sesiones de los niños.
+          Filtra por niño para ver solo el horario de uno. Click en cualquier sigla para resaltar al terapeuta en todo el calendario.
+          Cuando estés conforme, exporta el PDF por niño y mándalo a la familia.
         </div>
         <button class="armador-banner-close" id="armadorBannerClose" aria-label="Cerrar">×</button>
       </div>
@@ -202,22 +189,22 @@ const Armador = {
   },
 
   _toolbarHtml(intensivo) {
-    const tabs = Array.from({ length: intensivo.semanas }, (_, i) => `
-      <button class="armador-week-tab ${i === this._semanaActiva ? 'active' : ''}" data-sem="${i}">Semana ${i + 1}</button>
-    `).join('');
+    const opcionesNino = `<option value="-1">Todos los niños</option>` +
+      intensivo.niños.map((n, i) => `<option value="${i}" ${this._filtroNino === i ? 'selected' : ''}>${UI.esc(n.nombre)}</option>`).join('');
+    const opcionesSem = `<option value="-1">Todas las 6 semanas</option>` +
+      Array.from({ length: intensivo.semanas }, (_, i) => `<option value="${i}" ${this._filtroSemana === i ? 'selected' : ''}>Semana ${i + 1}</option>`).join('');
 
     return `
       <div class="armador-toolbar">
         <div class="armador-toolbar-left">
-          <div class="armador-mode-toggle" role="tablist" aria-label="Modo de visualización">
-            <button class="armador-mode-btn ${this._modo === '1sem' ? 'active' : ''}" data-modo="1sem" role="tab">
-              ${this._icons.layout1}<span>Ver 1 semana</span>
-            </button>
-            <button class="armador-mode-btn ${this._modo === '6sem' ? 'active' : ''}" data-modo="6sem" role="tab">
-              ${this._icons.layout6}<span>Ver las 6 apiladas</span>
-            </button>
-          </div>
-          ${this._modo === '1sem' ? `<div class="armador-week-tabs">${tabs}</div>` : ''}
+          <label class="armador-select">
+            <span class="armador-select-label">Ver niño:</span>
+            <select id="armadorFiltroNino">${opcionesNino}</select>
+          </label>
+          <label class="armador-select">
+            <span class="armador-select-label">Ver:</span>
+            <select id="armadorFiltroSem">${opcionesSem}</select>
+          </label>
         </div>
         ${this._terapeutaResaltado ? `
           <button class="armador-pill-clear" id="armadorClearResaltado" title="Quitar el resaltado del terapeuta">
@@ -228,82 +215,112 @@ const Armador = {
     `;
   },
 
-  // Grilla: si modo=1sem renderiza solo semanaActiva. Si 6sem, apila 6 sub-filas por niño
-  _gridHtml(intensivo, catalogo) {
-    const { franjas, dias, terapeutas } = catalogo;
+  // Calendario mensual: filas = semanas, columnas = días
+  _calendarioHtml(intensivo, catalogo) {
+    const { dias, franjas } = catalogo;
     const F = franjas.length;
     const semanas = this._resultado.semanas || [];
-    const semanasAMostrar = this._modo === '1sem'
-      ? [{ sem: semanas[this._semanaActiva], si: this._semanaActiva }]
-      : semanas.map((sem, si) => ({ sem, si }));
+    const semsAMostrar = this._filtroSemana === -1
+      ? semanas.map((sem, si) => ({ sem, si }))
+      : [{ sem: semanas[this._filtroSemana], si: this._filtroSemana }];
+    const diaLabels = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const inicialNino = (nombre) => nombre.charAt(0).toUpperCase() + (nombre.charAt(1)?.toLowerCase() || '');
 
-    // Si modo=1sem usar fechas reales. Si 6sem, mantener etiquetas genéricas
-    const headers = this._modo === '1sem'
-      ? this._fechasSemana(this._semanaActiva)
-      : ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    // Header con días (compartido para todas las filas)
+    const headerDias = `
+      <div class="armador-cal-header">
+        <div class="armador-cal-header-sem"></div>
+        ${dias.map(d => `<div class="armador-cal-header-dia">${diaLabels[d]}</div>`).join('')}
+      </div>
+    `;
 
-    const cornerColspan = this._modo === '6sem' ? 2 : 1;
-    const cornerLabel = this._modo === '6sem' ? 'Niño · Semana' : 'Niño';
+    const filas = semsAMostrar.map(({ sem, si }) => {
+      const inicioSem = this._fechaSemana(si);
+      const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
 
-    let headerDias = `<tr><th class="armador-corner" colspan="${cornerColspan}">${cornerLabel}</th>`;
-    headers.forEach((h) => {
-      headerDias += `<th class="armador-day day-start" colspan="${F}">${UI.esc(h)}</th>`;
-    });
-    headerDias += '</tr>';
+      const celdas = dias.map((d, di) => {
+        const fechaDia = new Date(inicioSem);
+        fechaDia.setDate(inicioSem.getDate() + di);
+        const labelFecha = `${fechaDia.getDate()} ${meses[fechaDia.getMonth()]}`;
 
-    let headerFranjas = `<tr><th colspan="${cornerColspan}"></th>`;
-    dias.forEach(() => {
-      franjas.forEach((f, fi) => {
-        const ds = fi === 0 ? ' day-start' : '';
-        headerFranjas += `<th class="armador-franja${ds}">${f}</th>`;
-      });
-    });
-    headerFranjas += '</tr>';
+        // Recolectar sesiones del día (filtradas por niño si aplica)
+        const sesiones = [];
+        const niñosAMostrar = this._filtroNino === -1
+          ? intensivo.niños.map((n, ni) => ({ n, ni }))
+          : [{ n: intensivo.niños[this._filtroNino], ni: this._filtroNino }];
 
-    const diaLabelsCorto = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
+        niñosAMostrar.forEach(({ n, ni }) => {
+          sem.grid[ni].forEach((sig, slotIdx) => {
+            if (!sig) return;
+            const dia = Math.floor(slotIdx / F);
+            if (dia !== di) return;
+            const franja = slotIdx % F;
+            const esKids = sig === 'GP' && kidsSet.has(slotIdx);
+            // Si esKids y todos los niños están visibles, agregar UNA sola vez (no 6 veces)
+            if (esKids && this._filtroNino === -1 && ni !== 0) return;
+            sesiones.push({
+              sig, hora: franjas[franja].split('-')[0],
+              niño: n.nombre, niInicial: inicialNino(n.nombre),
+              disc: catalogo.terapeutas[sig]?.disciplina,
+              esKids,
+              slotIdx,
+              terapeutaNombre: catalogo.terapeutas[sig]?.nombre || sig,
+              sala: catalogo.terapeutas[sig]?.sala || '',
+            });
+          });
+        });
+        sesiones.sort((a, b) => a.hora.localeCompare(b.hora));
 
-    const cuerpo = intensivo.niños.map((n, ni) => {
-      const subRows = semanasAMostrar.map(({ sem, si }, idx) => {
-        const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
-        const cells = sem.grid[ni].map((sig, slotIdx) => {
-          const franja = slotIdx % F;
-          const dia = Math.floor(slotIdx / F);
-          const dayStart = franja === 0 ? ' day-start' : '';
-          if (!sig) return `<td class="armador-cell empty${dayStart}"></td>`;
-          const t = terapeutas[sig];
-          const disc = t?.disciplina;
-          const esKids = sig === 'GP' && kidsSet.has(slotIdx);
-          const token = esKids ? 'kids' : this._disciplinaToken(disc);
-          const titulo = t ? `${sig} · ${t.nombre} · ${disc} · sala ${t.sala}\n${diaLabelsCorto[dias[dia]]} ${franjas[franja]}${esKids ? ' · sesión grupal KIDS' : ''}` : sig;
-          const label = esKids ? 'KIDS' : sig;
-          const resaltado = this._terapeutaResaltado === sig ? ' is-resaltado' : '';
-          const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== sig ? ' is-atenuado' : '';
-          return `<td class="armador-cell${dayStart}${resaltado}${atenuado}" data-sigla="${UI.esc(sig)}" style="background:var(--${token}-bg);color:var(--${token}-text)" title="${UI.esc(titulo)}">${UI.esc(label)}</td>`;
-        }).join('');
+        const bloques = sesiones.length
+          ? sesiones.map(s => this._bloqueHtml(s)).join('')
+          : `<div class="armador-cal-empty">Sin sesiones</div>`;
 
-        const ninoCell = idx === 0
-          ? `<th class="armador-niño" rowspan="${semanasAMostrar.length}">${UI.esc(n.nombre)}</th>`
-          : '';
-        const semCell = this._modo === '6sem'
-          ? `<th class="armador-sem">SEM ${si + 1}</th>`
-          : '';
-        const ultima = idx === semanasAMostrar.length - 1;
-        return `<tr class="armador-subrow${ultima ? ' last-subrow' : ''}">${ninoCell}${semCell}${cells}</tr>`;
+        return `
+          <div class="armador-cal-day">
+            <div class="armador-cal-day-head">
+              <span class="armador-cal-day-name">${diaLabels[d]}</span>
+              <span class="armador-cal-day-date">${labelFecha}</span>
+            </div>
+            <div class="armador-cal-day-body">${bloques}</div>
+          </div>
+        `;
       }).join('');
-      return subRows;
+
+      return `
+        <div class="armador-cal-week">
+          <div class="armador-cal-sem-label">SEM ${si + 1}</div>
+          ${celdas}
+        </div>
+      `;
     }).join('');
 
     return `
-      <div class="armador-grid-scroll">
-        <table class="armador-grid">
-          <thead>${headerDias}${headerFranjas}</thead>
-          <tbody>${cuerpo}</tbody>
-        </table>
+      <div class="armador-calendar">
+        ${headerDias}
+        ${filas}
       </div>
     `;
   },
 
-  // Panel Equipo: agrupa terapeutas por disciplina, click resalta en grid
+  _bloqueHtml(s) {
+    const token = this._disciplinaToken(s.esKids ? 'HAB AD' : s.disc);
+    const titulo = s.esKids
+      ? `Sesión grupal KIDS · ${s.hora}\nTodos los niños del intensivo`
+      : `${s.sig} · ${s.terapeutaNombre}\n${s.disc} · sala ${s.sala}\n${s.hora} · ${s.niño}`;
+    const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
+    const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
+    const labelSig = s.esKids ? 'KIDS' : s.sig;
+    const labelNino = (this._filtroNino === -1 && !s.esKids) ? `<span class="armador-cal-block-nino">${UI.esc(s.niInicial)}</span>` : '';
+    return `
+      <button class="armador-cal-block${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" style="background:var(--${token}-bg);color:var(--${token}-text);border-left-color:var(--${token})" title="${UI.esc(titulo)}">
+        <span class="armador-cal-block-time">${UI.esc(s.hora)}</span>
+        <span class="armador-cal-block-sigla">${UI.esc(labelSig)}</span>
+        ${labelNino}
+      </button>
+    `;
+  },
+
   _equipoHtml(catalogo) {
     const disciplinas = {};
     Object.entries(catalogo.terapeutas).forEach(([sigla, t]) => {
@@ -312,7 +329,6 @@ const Armador = {
       if (!disciplinas[key]) disciplinas[key] = { nombre: t.disciplina, token, items: [] };
       disciplinas[key].items.push({ sigla, nombre: t.nombre, sala: t.sala });
     });
-
     const grupos = Object.values(disciplinas)
       .sort((a, b) => b.items.length - a.items.length)
       .map(g => `
@@ -356,15 +372,16 @@ const Armador = {
       });
       const pct = esperado ? Math.round((cumplido / esperado) * 100) : 100;
       const cls = pct === 100 ? 'ok' : pct >= 80 ? 'warn' : 'ko';
+      const activo = this._filtroNino === ni ? ' is-active' : '';
       return `
-        <div class="armador-cumpl-row">
+        <button class="armador-cumpl-row${activo}" data-ni="${ni}">
           <div class="armador-cumpl-head">
             <span class="armador-cumpl-name">${UI.esc(n.nombre)}</span>
             <span class="armador-cumpl-pct ${cls}">${pct}%</span>
           </div>
           <div class="armador-cumpl-meta">${cumplido}/${esperado} individuales · ${kids} en KIDS</div>
           <div class="armador-cumpl-bar"><div class="armador-cumpl-fill ${cls}" style="width:${pct}%"></div></div>
-        </div>
+        </button>
       `;
     }).join('');
     const titulo = agg.incompletos.length
@@ -394,7 +411,7 @@ const Armador = {
         <div class="armador-card-body">
           ${html}
           <div class="armador-conflicto-cta">
-            <p>El motor no pudo asignar estas sesiones. Prueba otra distribución o revisa la disponibilidad de los terapeutas involucrados.</p>
+            <p>El motor no pudo asignar estas sesiones. Prueba otra distribución o revisa la disponibilidad.</p>
             <button class="btn btn-secondary btn-sm" id="armadorRegenInlineBtn">Intentar otra distribución</button>
           </div>
         </div>
@@ -425,37 +442,30 @@ const Armador = {
     };
     document.getElementById('armadorRegenBtn')?.addEventListener('click', regenerar);
     document.getElementById('armadorRegenInlineBtn')?.addEventListener('click', regenerar);
-    document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportCSV());
 
-    // Banner descartable
+    document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
+
     document.getElementById('armadorBannerClose')?.addEventListener('click', () => {
       localStorage.setItem(this.KEY_BANNER, '1');
       this._bannerCerrado = true;
       document.getElementById('armadorBanner')?.remove();
     });
 
-    // Toggle modo
-    document.querySelectorAll('.armador-mode-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this._modo = btn.dataset.modo;
-        this.render();
-      });
+    document.getElementById('armadorFiltroNino')?.addEventListener('change', (e) => {
+      this._filtroNino = parseInt(e.target.value, 10);
+      this.render();
     });
-    // Tabs semana
-    document.querySelectorAll('.armador-week-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this._semanaActiva = +btn.dataset.sem;
-        this.render();
-      });
+    document.getElementById('armadorFiltroSem')?.addEventListener('change', (e) => {
+      this._filtroSemana = parseInt(e.target.value, 10);
+      this.render();
     });
 
-    // Click en celda o en pill del equipo → resalta terapeuta
     const resaltar = (sigla) => {
       this._terapeutaResaltado = this._terapeutaResaltado === sigla ? null : sigla;
       this.render();
     };
-    document.querySelectorAll('.armador-cell[data-sigla]').forEach(td => {
-      td.addEventListener('click', () => resaltar(td.dataset.sigla));
+    document.querySelectorAll('.armador-cal-block[data-sigla]').forEach(btn => {
+      btn.addEventListener('click', () => resaltar(btn.dataset.sigla));
     });
     document.querySelectorAll('.armador-equipo-pill').forEach(btn => {
       btn.addEventListener('click', () => resaltar(btn.dataset.sigla));
@@ -464,6 +474,87 @@ const Armador = {
       this._terapeutaResaltado = null;
       this.render();
     });
+
+    // Click en fila de cumplimiento = filtrar por ese niño
+    document.querySelectorAll('.armador-cumpl-row[data-ni]').forEach(row => {
+      row.addEventListener('click', () => {
+        const ni = parseInt(row.dataset.ni, 10);
+        this._filtroNino = (this._filtroNino === ni) ? -1 : ni;
+        this.render();
+      });
+    });
+  },
+
+  _exportPDF() {
+    const { intensivo, catalogo } = this._cache;
+    const semanas = this._resultado.semanas || [];
+    if (!semanas.length) { UI.toast('Nada que exportar', 'error'); return; }
+
+    // Si hay un niño filtrado → exportar directo
+    if (this._filtroNino !== -1) {
+      this._imprimirPDF(this._filtroNino, intensivo, semanas, catalogo);
+      return;
+    }
+    // Si no, abrir selector
+    this._abrirSelectorPDF(intensivo, semanas, catalogo);
+  },
+
+  _abrirSelectorPDF(intensivo, semanas, catalogo) {
+    const overlay = document.createElement('div');
+    overlay.className = 'pendiente-modal-overlay';
+    overlay.id = 'armadorPdfOverlay';
+    overlay.innerHTML = `
+      <div class="pendiente-modal" style="width:min(420px,92vw)">
+        <div class="pendiente-modal-head">
+          ${this._icons.pdf}
+          <div>
+            <div class="pendiente-modal-title">Exportar PDF</div>
+            <div class="pendiente-modal-eyebrow">Elige el niño cuyo horario quieres bajar</div>
+          </div>
+          <button class="panel-close" id="armadorPdfClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="pendiente-modal-body" style="max-height:50vh;overflow-y:auto;padding:8px 12px">
+          <div class="ter-selector-list">
+            ${intensivo.niños.map((n, i) => `
+              <button class="ter-selector-row" data-ni="${i}">
+                <span class="equipo-avatar" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep)">${UI.esc(n.nombre.charAt(0))}</span>
+                <div style="flex:1;text-align:left">
+                  <div style="font-weight:600">${UI.esc(n.nombre)}</div>
+                  <div style="font-size:11px;color:var(--text-3)">${n.encargado ? 'Encargado: ' + UI.esc(n.encargado) : 'Intensivo'}</div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const cerrar = () => overlay.remove();
+    document.getElementById('armadorPdfClose').addEventListener('click', cerrar);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
+    overlay.querySelectorAll('.ter-selector-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const ni = parseInt(row.dataset.ni, 10);
+        cerrar();
+        this._imprimirPDF(ni, intensivo, semanas, catalogo);
+      });
+    });
+  },
+
+  _imprimirPDF(ninoIdx, intensivo, semanas, catalogo) {
+    const ok = PDFArmador.render(ninoIdx, intensivo, semanas, catalogo);
+    if (!ok) { UI.toast('No se pudo generar el PDF', 'error'); return; }
+    document.body.classList.add('printing-padres');
+    UI.toast('Preparando PDF del horario', 'success');
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-padres');
+        PDFArmador.cleanup();
+      }, 800);
+    }, 250);
   },
 
   // ===== Tour =====
@@ -477,59 +568,32 @@ const Armador = {
         target: '.armador-hero',
         position: 'below',
         title: 'Estado del horario',
-        body: 'Arriba ves de un vistazo si el horario está <b>completo</b>, <b>incompleto</b>, o con <b>conflictos</b>. El texto explica qué pasa y qué hacer.',
+        body: 'Arriba ves de un vistazo si el horario está <b>completo</b>, <b>incompleto</b> o con <b>conflictos</b>. El texto explica qué pasa y qué hacer.',
       },
       {
-        target: '.armador-mode-toggle',
+        target: '#armadorFiltroNino',
         position: 'below',
-        title: 'Ver 1 semana o las 6',
-        body: 'Por defecto ves <b>una semana</b> con sus fechas reales (más fácil de leer). Si necesitas comparar todas, cambia a <b>6 apiladas</b>.',
+        title: 'Filtrar por niño',
+        body: 'Por defecto ves a <b>todos los niños</b> juntos en el calendario. Cambia el filtro para ver solo el horario de uno — queda mucho más limpio para revisar caso por caso.',
       },
       {
-        target: '.armador-side .armador-card:first-child',
-        position: 'left',
-        title: 'Panel Equipo',
-        body: 'Acá ves todos los terapeutas con sus siglas y nombres. <b>Click en una sigla</b> (en la grilla o en el panel) para resaltar a ese terapeuta en todo el horario.',
+        target: '#armadorExportBtn',
+        position: 'below',
+        title: 'Exportar PDF',
+        body: 'Cuando estés conforme, baja el <b>PDF por niño</b> con todo el horario de las 6 semanas y el equipo asignado. Está listo para mandar a la familia.',
       },
       {
         title: 'Listo',
-        body: 'Ya conoces el armador. Cuando estés conforme con el horario, baja con <b>Exportar</b> para enviarlo o imprimirlo.<br><br>El sistema recuerda si ya viste este recorrido — no te aparecerá de nuevo.',
+        body: 'Ya conoces el armador. Si querés volver al recorrido, busca el link al pie del menú lateral.<br><br>El sistema recuerda si ya viste este tour — no aparece de nuevo.',
       },
     ];
-    // Reusar el sistema de tour existente
     if (typeof Onboarding !== 'undefined') {
       Onboarding._run(steps, 0);
       localStorage.setItem(this.KEY_TOUR, '1');
     }
   },
 
-  _exportCSV() {
-    const { intensivo, catalogo } = this._cache;
-    const semanas = this._resultado.semanas || [];
-    if (!semanas.length) { UI.toast('Nada que exportar', 'error'); return; }
-    const { dias, franjas } = catalogo;
-    const diaLabels = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
-    let csv = 'Niño,Semana';
-    dias.forEach((d) => franjas.forEach((f) => { csv += `,${diaLabels[d]} ${f}`; }));
-    csv += '\n';
-    intensivo.niños.forEach((n, ni) => {
-      semanas.forEach((sem, si) => {
-        csv += `"${n.nombre}",SEM ${si + 1}`;
-        sem.grid[ni].forEach((s) => { csv += `,${s || ''}`; });
-        csv += '\n';
-      });
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${intensivo.id.replace(/\s+/g, '_')}_horario_6sem.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    UI.toast(`Exportado ${a.download}`, 'success');
-  },
-
-  // ===== Iconos SVG inline =====
+  // ===== Iconos SVG =====
   _icons: {
     ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
@@ -537,7 +601,6 @@ const Armador = {
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
     team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    layout1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
-    layout6: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>',
+    pdf: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
   },
 };
