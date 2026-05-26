@@ -2,9 +2,9 @@
 // Usa el motor en js/intensivo/scheduler.js (expuesto en window.Scheduler).
 const Armador = {
   _cache: null,
-  _semana: 0,   // 0..5
   _resultado: null,
   _semilla: 1,
+  _kidsSlotsPorSemana: null,   // Map<semIdx, Set<slotIdx>> — pre-computado
 
   // --- carga perezosa de los 4 JSON ---
   async _cargar() {
@@ -40,19 +40,80 @@ const Armador = {
       disponibilidad,
       salasCapacidad,
     });
+    this._kidsSlotsPorSemana = this._computarKidsSlots(this._resultado);
+  },
+
+  // Pre-computa qué slots tienen GP grupal (más de 1 niño con GP) para cada semana.
+  // Reemplaza el O(n²) por celda del antes.
+  _computarKidsSlots(res) {
+    const map = new Map();
+    res.semanas?.forEach((sem, si) => {
+      const set = new Set();
+      const N = sem.grid.length;
+      const slots = sem.grid[0]?.length || 0;
+      for (let s = 0; s < slots; s++) {
+        let count = 0;
+        for (let n = 0; n < N; n++) {
+          if (sem.grid[n][s] === 'GP') {
+            count++;
+            if (count > 1) { set.add(s); break; }
+          }
+        }
+      }
+      map.set(si, set);
+    });
+    return map;
+  },
+
+  // Devuelve el cumplimiento agregado del intensivo:
+  // { incompletos: [{niño, pct, faltan}], totalPct }
+  _cumplimientoAgregado() {
+    const { intensivo } = this._cache;
+    const incompletos = [];
+    let cumplidoT = 0, esperadoT = 0;
+    intensivo.niños.forEach((n, ni) => {
+      // Sumar cumplido/esperado promediado entre semanas (cada semana debe respetar conteos)
+      let cumplido = 0, esperado = 0;
+      this._resultado.semanas?.forEach((sem) => {
+        const conteo = {};
+        sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
+        n.asignaciones.forEach((a) => {
+          if (a.rol === 'PAPAS') return;
+          let real = conteo[a.sigla] || 0;
+          if (a.sigla === 'GP') real -= (n.kids_semanal || 0);
+          cumplido += Math.min(real, a.sesiones);
+          esperado += a.sesiones;
+        });
+      });
+      cumplidoT += cumplido;
+      esperadoT += esperado;
+      const pct = esperado ? Math.round((cumplido / esperado) * 100) : 100;
+      if (pct < 100) incompletos.push({ niño: n.nombre, pct, faltan: esperado - cumplido });
+    });
+    return {
+      incompletos,
+      totalPct: esperadoT ? Math.round((cumplidoT / esperadoT) * 100) : 100,
+    };
   },
 
   // ===== Render HTML =====
   _html(data) {
     const { intensivo, catalogo } = data;
     const res = this._resultado;
-    const sem = res.semanas?.[this._semana];
+    const agg = this._cumplimientoAgregado();
 
     const fechaIni = intensivo.fecha_inicio;
     const fechaFin = intensivo.fecha_fin;
-    const headerEstado = res.ok
-      ? `<span class="armador-badge ok">Horario generado · ${sem?.sesionesPlanificadas || 0} sesiones</span>`
-      : `<span class="armador-badge ko">Conflictos sin resolver (${res.conflictos?.length || 0})</span>`;
+
+    let badge;
+    if (!res.ok) {
+      badge = `<span class="armador-badge ko">⚠ Conflictos sin resolver (${res.conflictos?.length || 0})</span>`;
+    } else if (agg.incompletos.length === 0) {
+      const totalSes = res.semanas.reduce((sum, s) => sum + s.sesionesPlanificadas, 0);
+      badge = `<span class="armador-badge ok">✓ Horario completo · ${totalSes} sesiones · ${intensivo.semanas} semanas</span>`;
+    } else {
+      badge = `<span class="armador-badge warn">${agg.incompletos.length} niño${agg.incompletos.length === 1 ? '' : 's'} incompleto${agg.incompletos.length === 1 ? '' : 's'} · ${agg.totalPct}% cumplido</span>`;
+    }
 
     return `
       <div class="armador-hero">
@@ -64,7 +125,7 @@ const Armador = {
           </div>
         </div>
         <div class="armador-hero-cta">
-          ${headerEstado}
+          ${badge}
           <button class="btn btn-primary" id="armadorRegenBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Regenerar horario
@@ -74,27 +135,23 @@ const Armador = {
       </div>
 
       <div class="armador-toolbar">
-        <div class="armador-week-tabs">
-          ${Array.from({ length: intensivo.semanas }, (_, i) => `
-            <button class="armador-week-tab ${i === this._semana ? 'active' : ''}" data-sem="${i}">Semana ${i + 1}</button>
-          `).join('')}
-        </div>
-        <div class="armador-legend">${this._legend(catalogo)}</div>
+        <div class="armador-legend">${this._legend()}</div>
+        <div class="armador-toolbar-hint">Las 6 semanas se muestran apiladas. Cada niño tiene 6 sub-filas (SEM 1 a SEM 6).</div>
       </div>
 
       <div class="armador-layout">
         <div class="armador-grid-wrap">
-          ${sem ? this._gridHtml(intensivo, catalogo, sem) : `<div class="empty-state">Sin resultado para esta semana</div>`}
+          ${this._gridHtml(intensivo, catalogo)}
         </div>
         <aside class="armador-side">
-          ${this._cumplimientoHtml(intensivo, catalogo, sem)}
+          ${this._cumplimientoHtml(intensivo, agg)}
           ${res.conflictos?.length ? this._conflictosHtml(res.conflictos) : ''}
         </aside>
       </div>
     `;
   },
 
-  _legend(catalogo) {
+  _legend() {
     const disciplinas = [
       ['TO', 'to'], ['FONO', 'fono'], ['COG', 'cog'], ['KINE', 'kine'],
       ['PSI', 'psico'], ['RDI', 'rdi'], ['KIDS (grupal)', 'kids'],
@@ -117,19 +174,21 @@ const Armador = {
     return 'to';
   },
 
-  _gridHtml(intensivo, catalogo, sem) {
+  // Grilla apilada: 1 niño = 6 sub-filas (SEM 1..6), todas visibles a la vez
+  _gridHtml(intensivo, catalogo) {
     const { franjas, dias, terapeutas } = catalogo;
     const F = franjas.length;
     const D = dias.length;
     const diaLabels = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
+    const semanas = this._resultado.semanas || [];
 
-    let headerDias = '<tr><th class="armador-corner">Niño</th>';
+    let headerDias = '<tr><th class="armador-corner" colspan="2">Niño · Semana</th>';
     dias.forEach((d) => {
       headerDias += `<th class="armador-day" colspan="${F}">${diaLabels[d] || d}</th>`;
     });
     headerDias += '</tr>';
 
-    let headerFranjas = '<tr><th></th>';
+    let headerFranjas = '<tr><th colspan="2"></th>';
     dias.forEach(() => {
       franjas.forEach((f) => {
         headerFranjas += `<th class="armador-franja">${f}</th>`;
@@ -138,16 +197,26 @@ const Armador = {
     headerFranjas += '</tr>';
 
     const cuerpo = intensivo.niños.map((n, ni) => {
-      const cells = sem.grid[ni].map((sig, slotIdx) => {
-        if (!sig) return `<td class="armador-cell empty"></td>`;
-        const t = terapeutas[sig];
-        const disc = t?.disciplina;
-        const token = sig === 'GP' && this._esKidsGrupal(sem, slotIdx, ni) ? 'kids' : this._disciplinaToken(disc);
-        const title = t ? `${sig} · ${t.nombre} · ${disc} · sala ${t.sala}` : sig;
-        const grupal = sig === 'GP' && this._esKidsGrupal(sem, slotIdx, ni) ? ' grupal' : '';
-        return `<td class="armador-cell" style="background:var(--${token}-bg);color:var(--${token}-text);border-left:3px solid var(--${token})" title="${UI.esc(title)}${grupal}">${UI.esc(sig)}</td>`;
+      const subRows = semanas.map((sem, si) => {
+        const kidsSet = this._kidsSlotsPorSemana?.get(si) || new Set();
+        const cells = sem.grid[ni].map((sig, slotIdx) => {
+          if (!sig) return `<td class="armador-cell empty"></td>`;
+          const t = terapeutas[sig];
+          const disc = t?.disciplina;
+          const esKids = sig === 'GP' && kidsSet.has(slotIdx);
+          const token = esKids ? 'kids' : this._disciplinaToken(disc);
+          const dia = Math.floor(slotIdx / F);
+          const franja = slotIdx % F;
+          const titulo = t ? `${sig} · ${t.nombre} · ${disc} · sala ${t.sala}\n${diaLabels[dias[dia]]} ${franjas[franja]}${esKids ? ' · sesión grupal' : ''}` : sig;
+          return `<td class="armador-cell" style="background:var(--${token}-bg);color:var(--${token}-text);border-left:3px solid var(--${token})" title="${UI.esc(titulo)}">${UI.esc(sig)}</td>`;
+        }).join('');
+        const ninoCell = si === 0
+          ? `<th class="armador-niño" rowspan="${semanas.length}">${UI.esc(n.nombre)}</th>`
+          : '';
+        const ultimaDeNino = si === semanas.length - 1;
+        return `<tr class="armador-subrow${ultimaDeNino ? ' last-subrow' : ''}">${ninoCell}<th class="armador-sem">SEM ${si + 1}</th>${cells}</tr>`;
       }).join('');
-      return `<tr><th class="armador-niño">${UI.esc(n.nombre)}</th>${cells}</tr>`;
+      return subRows;
     }).join('');
 
     return `
@@ -160,43 +229,41 @@ const Armador = {
     `;
   },
 
-  _esKidsGrupal(sem, slotIdx, niActual) {
-    // Es grupal si en este slot hay 2+ niños con la misma sigla GP
-    let count = 0;
-    for (let i = 0; i < sem.grid.length; i++) {
-      if (sem.grid[i][slotIdx] === 'GP') count++;
-      if (count > 1) return true;
-    }
-    return false;
-  },
-
-  _cumplimientoHtml(intensivo, catalogo, sem) {
-    if (!sem) return '';
+  _cumplimientoHtml(intensivo, agg) {
     const rows = intensivo.niños.map((n, ni) => {
-      const conteo = {};
-      sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
-      let cumplido = 0, esperado = 0;
-      n.asignaciones.forEach((a) => {
-        if (a.rol === 'PAPAS') return;
-        let real = conteo[a.sigla] || 0;
-        if (a.sigla === 'GP') real -= (n.kids_semanal || 0);
-        cumplido += Math.min(real, a.sesiones);
-        esperado += a.sesiones;
+      // Per-niño promedio entre semanas
+      let cumplido = 0, esperado = 0, kids = 0;
+      this._resultado.semanas?.forEach((sem) => {
+        const conteo = {};
+        sem.grid[ni].forEach((sig) => { if (sig) conteo[sig] = (conteo[sig] || 0) + 1; });
+        n.asignaciones.forEach((a) => {
+          if (a.rol === 'PAPAS') return;
+          let real = conteo[a.sigla] || 0;
+          if (a.sigla === 'GP') real -= (n.kids_semanal || 0);
+          cumplido += Math.min(real, a.sesiones);
+          esperado += a.sesiones;
+        });
+        kids += (n.kids_semanal || 0);
       });
-      const kids = (n.kids_semanal || 0);
       const pct = esperado ? Math.round((cumplido / esperado) * 100) : 100;
       const cls = pct === 100 ? 'ok' : pct >= 80 ? 'warn' : 'ko';
       return `
         <div class="armador-cumpl-row">
-          <div class="armador-cumpl-name">${UI.esc(n.nombre)}</div>
+          <div class="armador-cumpl-head">
+            <span class="armador-cumpl-name">${UI.esc(n.nombre)}</span>
+            <span class="armador-cumpl-pct ${cls}">${pct}%</span>
+          </div>
           <div class="armador-cumpl-meta">${cumplido}/${esperado} ind · ${kids} kids</div>
           <div class="armador-cumpl-bar"><div class="armador-cumpl-fill ${cls}" style="width:${pct}%"></div></div>
         </div>
       `;
     }).join('');
+    const titulo = agg.incompletos.length
+      ? `Cumplimiento · <span style="color:var(--alert)">${agg.incompletos.length} incompleto${agg.incompletos.length === 1 ? '' : 's'}</span>`
+      : `Cumplimiento · <span style="color:var(--success)">todos al 100%</span>`;
     return `
       <div class="armador-card">
-        <div class="armador-card-head">Cumplimiento por niño</div>
+        <div class="armador-card-head">${titulo}</div>
         <div class="armador-card-body">${rows}</div>
       </div>
     `;
@@ -214,48 +281,51 @@ const Armador = {
     `).join('');
     return `
       <div class="armador-card alert">
-        <div class="armador-card-head">⚠ Conflictos</div>
-        <div class="armador-card-body">${html}</div>
+        <div class="armador-card-head">⚠ Conflictos sin resolver</div>
+        <div class="armador-card-body">
+          ${html}
+          <div class="armador-conflicto-cta">
+            <p>El motor no pudo asignar estas sesiones con la distribución actual. Prueba otra combinación o revisa la disponibilidad de los terapeutas involucrados.</p>
+            <button class="btn btn-secondary btn-sm" id="armadorRegenInlineBtn">Intentar otra distribución</button>
+          </div>
+        </div>
       </div>
     `;
   },
 
   _wire() {
-    document.getElementById('armadorRegenBtn')?.addEventListener('click', () => {
+    const regenerar = () => {
       this._semilla = Math.floor(Math.random() * 100000);
       this._generar();
       this.render();
       UI.toast(this._resultado.ok ? 'Horario regenerado' : 'Generado con conflictos', this._resultado.ok ? 'success' : 'warning');
-    });
+    };
+    document.getElementById('armadorRegenBtn')?.addEventListener('click', regenerar);
+    document.getElementById('armadorRegenInlineBtn')?.addEventListener('click', regenerar);
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportCSV());
-    document.querySelectorAll('.armador-week-tab').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        this._semana = +btn.dataset.sem;
-        this.render();
-      });
-    });
   },
 
   _exportCSV() {
     const { intensivo, catalogo } = this._cache;
-    const sem = this._resultado.semanas[this._semana];
-    if (!sem) { UI.toast('Nada que exportar', 'error'); return; }
+    const semanas = this._resultado.semanas || [];
+    if (!semanas.length) { UI.toast('Nada que exportar', 'error'); return; }
     const { dias, franjas } = catalogo;
-    const F = franjas.length;
     const diaLabels = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb' };
-    let csv = 'Niño';
+    let csv = 'Niño,Semana';
     dias.forEach((d) => franjas.forEach((f) => { csv += `,${diaLabels[d]} ${f}`; }));
     csv += '\n';
     intensivo.niños.forEach((n, ni) => {
-      csv += `"${n.nombre}"`;
-      sem.grid[ni].forEach((s) => { csv += `,${s || ''}`; });
-      csv += '\n';
+      semanas.forEach((sem, si) => {
+        csv += `"${n.nombre}",SEM ${si + 1}`;
+        sem.grid[ni].forEach((s) => { csv += `,${s || ''}`; });
+        csv += '\n';
+      });
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${intensivo.id.replace(/\s+/g, '_')}_semana${this._semana + 1}.csv`;
+    a.download = `${intensivo.id.replace(/\s+/g, '_')}_horario_6sem.csv`;
     a.click();
     URL.revokeObjectURL(url);
     UI.toast(`Exportado ${a.download}`, 'success');
