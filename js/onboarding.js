@@ -26,26 +26,26 @@ const Onboarding = {
     this._run(steps, 0);
   },
 
-  _run(steps, idx) {
+  _run(steps, idx, opts = {}) {
     document.getElementById('tourLayer')?.remove();
     document.getElementById('tourPop')?.remove();
     if (idx >= steps.length) {
-      this._markDone();
-      UI.toast('Listo. Puedes volver al recorrido desde "Volver al tour guiado" en el sidebar.', 'success');
+      if (typeof opts.onDone === 'function') {
+        opts.onDone();
+      } else {
+        this._markDone();
+        UI.toast('Listo. Puedes volver al recorrido desde "Volver al tour guiado" en el sidebar.', 'success');
+      }
       return;
     }
     const step = steps[idx];
-
-    // Acción previa al paso (cambiar de módulo, abrir panel, etc.)
     if (typeof step.before === 'function') {
       try { step.before(); } catch {}
     }
-
-    // Esperar a que el target esté en el DOM
-    setTimeout(() => this._paintStep(steps, idx, step), step.wait || 60);
+    setTimeout(() => this._paintStep(steps, idx, step, opts), step.wait || 60);
   },
 
-  _paintStep(steps, idx, step) {
+  _paintStep(steps, idx, step, opts = {}) {
     const target = step.target ? document.querySelector(step.target) : null;
 
     // Capa de fondo (solo oscurece). El popover va aparte, por encima de todo.
@@ -89,16 +89,17 @@ const Onboarding = {
 
     document.getElementById('tourNext').addEventListener('click', () => {
       target?.classList.remove('tour-highlight');
-      this._run(steps, idx + 1);
+      this._run(steps, idx + 1, opts);
     });
     document.getElementById('tourBack')?.addEventListener('click', () => {
       target?.classList.remove('tour-highlight');
-      this._run(steps, idx - 1);
+      this._run(steps, idx - 1, opts);
     });
     document.getElementById('tourSkip').addEventListener('click', (e) => {
       e.preventDefault();
       cerrar();
-      this._markDone();
+      if (typeof opts.onSkip === 'function') opts.onSkip();
+      else this._markDone();
     });
   },
 

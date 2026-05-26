@@ -234,6 +234,9 @@ const Armador = {
               ${this._icons.plus}Agregar niño
             </button>
           ` : ''}
+          <button class="btn btn-ghost btn-help" id="armadorTourBtn" title="Ver el recorrido guiado del armador">
+            ${this._icons.help}
+          </button>
         </div>
       </div>
     `;
@@ -524,6 +527,7 @@ const Armador = {
 
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
     document.getElementById('armadorAddBtn')?.addEventListener('click', () => this._abrirFormNino());
+    document.getElementById('armadorTourBtn')?.addEventListener('click', () => this._abrirTour());
 
     // Toggle fuente real/generado
     document.querySelectorAll('.armador-fuente-btn').forEach(btn => {
@@ -828,39 +832,166 @@ const Armador = {
     }, 250);
   },
 
-  // ===== Tour =====
+  // ===== Tour guiado detallado =====
   _abrirTour() {
+    // Forzar modo Generado antes del tour (asegura que aparezcan TODOS los elementos)
+    if (this._fuente !== 'generado') {
+      this._fuente = 'generado';
+      localStorage.setItem(this.KEY_FUENTE, 'generado');
+      this.render();
+    }
+    // Limpiar filtros para que el tour parta desde el estado limpio
+    const tuvoFiltro = this._filtroNino !== -1 || this._filtroSemana !== -1;
+    if (tuvoFiltro) {
+      this._filtroNino = -1;
+      this._filtroSemana = -1;
+      this._terapeutaResaltado = null;
+      this.render();
+    }
+
     const steps = [
+      // === Parte 1: Bienvenida ===
       {
-        title: 'Armador de Horarios',
-        body: 'Esta página arma el horario completo del programa intensivo en segundos. Antes lo hacías a mano en Excel — acá el sistema lo distribuye solo y te avisa si hay choques.<br><br>Te muestro lo principal en 4 pasos.',
+        title: 'Hola Trini, bienvenida al Armador',
+        body: 'Esta página arma el horario completo del intensivo en segundos. Lo que antes hacías a mano en Excel ahora se distribuye solo, respetando que ningún terapeuta esté en dos lados a la vez y cumpliendo las sesiones que definiste para cada niño.<br><br>Te voy a mostrar todo en <b>17 pasos cortos</b>. Puedes saltar el recorrido en cualquier momento o devolverte con el botón "Atrás". Tarda 2 minutos.',
       },
+
+      // === Parte 2: Hero y estado ===
       {
         target: '.armador-hero',
         position: 'below',
-        title: 'Estado del horario',
-        body: 'Arriba ves de un vistazo si el horario está <b>completo</b>, <b>incompleto</b> o con <b>conflictos</b>. El texto explica qué pasa y qué hacer.',
+        title: 'Estado del horario en una frase',
+        body: 'Acá arriba siempre ves <b>en una frase</b> cómo está el horario:<br><br>• <b>"Horario listo para enviar a las familias"</b> → todo OK<br>• <b>"N niños sin horario completo"</b> → faltan sesiones por asignar<br>• <b>"El horario tiene conflictos sin resolver"</b> → hay choques que arreglar<br><br>El badge a la derecha (verde, amarillo o rojo) lo confirma con un número.',
       },
+
+      // === Parte 3: Toggle Real vs Generado ===
+      {
+        target: '.armador-fuente-toggle',
+        position: 'below',
+        title: '¿De dónde viene el horario que ves?',
+        body: 'Tienes dos vistas:<br><br>• <b>Real</b> · es lo que armaste a mano en tu Excel del INT 40<br>• <b>Generado</b> · es la propuesta del sistema con los mismos inputs (mismos niños, mismos terapeutas asignados, mismas sesiones por semana)<br><br>Sirven para <b>comparar</b>: ver si la propuesta del sistema te ahorra trabajo o si tu distribución funciona mejor.',
+        wait: 200,
+      },
+      {
+        target: '[data-fuente="real"]',
+        position: 'below',
+        title: 'Vista Real',
+        body: 'Click acá y ves <b>exactamente lo que tú armaste</b>. Se llenó leyendo el sheet RESUMEN del Excel que mandaste. Esta vista no tiene botón "Regenerar" porque no se cambia: es lo tuyo.',
+      },
+      {
+        target: '[data-fuente="generado"]',
+        position: 'below',
+        title: 'Vista Generado',
+        body: 'Click acá y el sistema te muestra <b>su propuesta</b>. Cada vez que aprietas "Regenerar", arma una distribución distinta válida. Te quedas con la que más te convenza.',
+      },
+
+      // === Parte 4: Filtros ===
       {
         target: '#armadorFiltroNino',
         position: 'below',
         title: 'Filtrar por niño',
-        body: 'Por defecto ves a <b>todos los niños</b> juntos en el calendario. Cambia el filtro para ver solo el horario de uno — queda mucho más limpio para revisar caso por caso.',
+        body: 'Por defecto ves a <b>los 6 niños juntos</b> en el calendario (denso pero útil para detectar problemas). <br><br>Cambia este selector para ver <b>solo a un niño</b> — queda mucho más limpio para revisar su semana y mandarle el PDF a su familia.',
+      },
+      {
+        target: '#armadorFiltroSem',
+        position: 'below',
+        title: 'Filtrar por semana',
+        body: 'Default: las <b>6 semanas apiladas</b> (todo el intensivo de un vistazo). Cambia a "Semana 1", "Semana 2", etc., si quieres enfocarte en una sola. Útil para imprimir solo esa semana.',
+      },
+
+      // === Parte 5: Leer el calendario ===
+      {
+        target: '.armador-calendar',
+        position: 'auto',
+        title: 'Cómo leer el calendario',
+        body: 'Cada <b>fila es una semana</b> (SEM 1 a SEM 6, marcadas a la izquierda). Cada <b>columna es un día</b> (Lun a Sáb, con fecha real arriba).<br><br>Dentro de cada celda de día, los bloques son las sesiones — apiladas verticalmente por hora.',
+      },
+      {
+        target: '.armador-cal-block',
+        position: 'auto',
+        title: 'Cada bloque es una sesión',
+        body: 'Un bloque tiene 3 datos:<br><br>• <b>Hora</b> de inicio (ej. 8:35)<br>• <b>Sigla del terapeuta</b> (ej. KRA = Krasna)<br>• <b>Inicial del niño</b> (L, S, B, F, A, So) — solo aparece cuando ves a todos los niños juntos<br><br>El <b>color y la barra lateral</b> indican la disciplina: verde TO, naranja FONO, azul COG, gris KINE, mostaza PSI, violeta RDI, turquesa KIDS grupal.',
+      },
+      {
+        target: '.armador-cal-block',
+        position: 'auto',
+        title: 'Click en un bloque = resaltar terapeuta',
+        body: 'Si quieres ver <b>todas las sesiones que tiene un terapeuta</b> en el intensivo, haz click en cualquier bloque con su sigla. El resto del calendario se atenúa y queda solo lo de esa persona resaltado en azul fuerte.<br><br>Vuelve a hacer click para quitar el resaltado.',
+      },
+
+      // === Parte 6: Panel Equipo ===
+      {
+        target: '.armador-side .armador-card:first-child',
+        position: 'left',
+        title: 'Panel Equipo',
+        body: 'Acá en la derecha tienes a <b>todos los terapeutas del centro</b>, agrupados por disciplina, con la traducción de cada sigla a su nombre real (KRA = Krasna, NP = Nati P, etc.).<br><br>Sirve como leyenda mientras lees el calendario.',
+      },
+      {
+        target: '.armador-equipo-pill',
+        position: 'left',
+        title: 'Click en un terapeuta del panel',
+        body: 'Si quieres ver <b>dónde aparece cada terapeuta</b> sin tener que cazar su sigla en el calendario, click directo en su pill del panel Equipo. Mismo efecto que clickear un bloque: resalta sus sesiones en todo el horario.',
+      },
+
+      // === Parte 7: Panel Cumplimiento ===
+      {
+        target: '.armador-side .armador-card:nth-child(2)',
+        position: 'left',
+        title: 'Panel Cumplimiento por niño',
+        body: 'Cada niño tiene su <b>barra de progreso</b> mostrando si tiene todas sus sesiones individuales asignadas. Verde = 100%, amarillo ≥ 80%, rojo < 80%.<br><br>Abajo del nombre ves el conteo: "25/25 individuales · 5 en KIDS" significa 25 de 25 sesiones individuales colocadas, más 5 grupales KIDS.',
+      },
+      {
+        target: '.armador-side .armador-card:nth-child(2) .armador-cumpl-row:first-child',
+        position: 'left',
+        title: 'Click en un niño = filtra el calendario',
+        body: 'Si quieres <b>aislar el horario de un niño</b> rápido, click en su fila de Cumplimiento. El calendario se filtra a solo sus sesiones. Click de nuevo para volver a ver a todos.',
+      },
+
+      // === Parte 8: Badge "revisar con Trini" ===
+      {
+        target: '.armador-cumpl-badge-rev',
+        position: 'left',
+        title: 'Cosas que necesitan tu confirmación',
+        body: 'Cuando ves un <b>badge mostaza ⚑ "revisar con Trini"</b>, significa que detectamos algo en la data del intensivo que necesita tu visto bueno antes de dar por cerrado el horario.<br><br>Haz <b>hover</b> sobre el badge y aparece el detalle de la pregunta exacta (con qué terapeuta, cuántas sesiones, qué duda hay).',
+      },
+
+      // === Parte 9: Acciones ===
+      {
+        target: '#armadorRegenBtn',
+        position: 'below',
+        title: 'Botón Regenerar',
+        body: 'Solo aparece en modo "Generado". Cada click arma una <b>distribución alternativa</b> válida. Útil cuando la propuesta actual te deja un día muy cargado y quieres ver otra opción.<br><br>Los inputs (niños, terapeutas, sesiones) se mantienen iguales — solo cambia el orden dentro de la semana.',
+      },
+      {
+        target: '#armadorAddBtn',
+        position: 'below',
+        title: 'Botón Agregar niño',
+        body: 'Para meter un <b>niño nuevo a la cohorte</b>: abre un formulario donde pones su nombre, encargado, y el equipo terapéutico (TUTOR + CO-T por disciplina con nº de sesiones). El sistema regenera el horario solo incluyéndolo.<br><br>Los niños agregados quedan marcados con badge <b>"nuevo"</b> en Cumplimiento y los puedes quitar después con el botón de papelera.',
       },
       {
         target: '#armadorExportBtn',
         position: 'below',
-        title: 'Exportar PDF',
-        body: 'Cuando estés conforme, baja el <b>PDF por niño</b> con todo el horario de las 6 semanas y el equipo asignado. Está listo para mandar a la familia.',
+        title: 'Botón Exportar PDF',
+        body: 'Genera un <b>PDF profesional por niño</b> con tu logo Casa Nogal, todas las 6 semanas del intensivo, y el equipo asignado. Listo para imprimir o adjuntar al mail de la familia.<br><br>Si tienes filtrado un niño, exporta directo el suyo. Si no, abre un selector para elegir.',
       },
+
+      // === Cierre ===
       {
-        title: 'Listo',
-        body: 'Ya conoces el armador. Si quieres volver al recorrido, busca el link al pie del menú lateral.<br><br>El sistema recuerda si ya viste este tour — no aparece de nuevo.',
+        title: 'Listo ✓',
+        body: 'Ya viste todo. Para volver a este recorrido en cualquier momento, usa el botón <b>"Ver recorrido"</b> que está siempre arriba a la derecha del armador.<br><br>Para volver al tour general del sistema (no solo del armador), usa el link <b>"Volver al tour guiado"</b> al pie del menú lateral izquierdo.<br><br>Si encuentras algo raro o tienes una pregunta, escríbele a Andy.',
       },
     ];
+
     if (typeof Onboarding !== 'undefined') {
-      Onboarding._run(steps, 0);
-      localStorage.setItem(this.KEY_TOUR, '1');
+      Onboarding._run(steps, 0, {
+        onDone: () => {
+          localStorage.setItem(this.KEY_TOUR, '1');
+          UI.toast('Recorrido completo. Puedes volver a verlo con "Ver recorrido" arriba.', 'success');
+        },
+        onSkip: () => {
+          localStorage.setItem(this.KEY_TOUR, '1');
+        },
+      });
     }
   },
 
@@ -877,5 +1008,6 @@ const Armador = {
     cpu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="15" x2="22" y2="15"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="15" x2="4" y2="15"/></svg>',
     plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     trash: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
+    help: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
   },
 };

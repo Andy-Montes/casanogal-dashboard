@@ -523,6 +523,13 @@
 .armador-conflicto-cta p { font-size: 12px; color: var(--text-2); margin: 0 0 10px; line-height: 1.5; }
 
 .btn-sm { padding: 5px 11px; font-size: 12px; gap: 5px; }
+.btn-help {
+  padding: 7px 9px;
+  border-radius: 50% !important;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-help svg { width: 15px; height: 15px; }
 
 /* FOCUS visible */
 .armador-hero-cta button:focus-visible,
