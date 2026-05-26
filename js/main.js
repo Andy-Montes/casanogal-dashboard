@@ -209,6 +209,7 @@ const Main = {
       case 'fichas':     Fichas.render(); break;
       case 'reportes':   Reportes.render(); break;
       case 'boletas':    Reportes.renderBoletas(); break;
+      case 'armador':    Armador.render(); break;
       case 'equipo':     Recursos.renderEquipo(); break;
       case 'ninos':      Recursos.renderNinosTable(); break;
       case 'salas':      Recursos.renderSalas(); break;
@@ -224,8 +225,8 @@ const Main = {
     // Módulos ocultos según rol. El terapeuta no ve nada del área Sistema
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
-      padres:    ['reportes','boletas','equipo','ninos','salas','config','permisos'],
-      terapeuta: ['config','permisos','reportes'],
+      padres:    ['reportes','boletas','armador','equipo','ninos','salas','config','permisos'],
+      terapeuta: ['config','permisos','reportes','armador'],
     };
     const ocultar = ocultosPorRol[State.role] || [];
     document.querySelectorAll('.nav-item').forEach(item => {
