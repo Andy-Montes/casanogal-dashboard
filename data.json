@@ -58,7 +58,7 @@
       "sesion_notas": 569,
       "objetivos_terapeuticos": 108,
       "equipo_asignado": 154,
-      "documentos_nino": 60,
+      "documentos_nino": 65,
       "usuarios": 25,
       "conflictos_detectados": 2,
       "duplas_intencionales": 1,
@@ -66475,6 +66475,61 @@
       "nombre_archivo": "Consentimiento_Informado_Diego_M.pdf",
       "descripcion": "Consentimiento firmado por apoderado",
       "fecha_documento": "2026-02-12",
+      "subido_por": "TC",
+      "fecha_subida": "2026-05-15"
+    },
+    {
+      "id_documento": "DOC-0061",
+      "id_nino": "NINO-0001",
+      "nino_visible": "León A.",
+      "tipo": "Orden Médica",
+      "nombre_archivo": "Orden_Medica_León_Aravena_Pérez.pdf",
+      "descripcion": "Derivación de neurología infantil para terapias integrales",
+      "fecha_documento": "2026-03-10",
+      "subido_por": "TC",
+      "fecha_subida": "2026-05-15"
+    },
+    {
+      "id_documento": "DOC-0062",
+      "id_nino": "NINO-0002",
+      "nino_visible": "Santi B.",
+      "tipo": "Orden Médica",
+      "nombre_archivo": "Orden_Medica_Santiago_Becerra_Soto.pdf",
+      "descripcion": "Indicación médica de fonoaudiología y terapia ocupacional",
+      "fecha_documento": "2026-03-10",
+      "subido_por": "TC",
+      "fecha_subida": "2026-05-15"
+    },
+    {
+      "id_documento": "DOC-0063",
+      "id_nino": "NINO-0003",
+      "nino_visible": "Baltazar R.",
+      "tipo": "Orden Médica",
+      "nombre_archivo": "Orden_Medica_Baltazar_Rodríguez_Vega.pdf",
+      "descripcion": "Orden de tratamiento por neuropediatra",
+      "fecha_documento": "2026-03-10",
+      "subido_por": "TC",
+      "fecha_subida": "2026-05-15"
+    },
+    {
+      "id_documento": "DOC-0064",
+      "id_nino": "NINO-0005",
+      "nino_visible": "Vicente M.",
+      "tipo": "Orden Médica",
+      "nombre_archivo": "Orden_Medica_Vicente_Muñoz_Salinas.pdf",
+      "descripcion": "Derivación para evaluación y terapias multidisciplinarias",
+      "fecha_documento": "2026-03-10",
+      "subido_por": "TC",
+      "fecha_subida": "2026-05-15"
+    },
+    {
+      "id_documento": "DOC-0065",
+      "id_nino": "NINO-0008",
+      "nino_visible": "Sofía D.",
+      "tipo": "Orden Médica",
+      "nombre_archivo": "Orden_Medica_Sofía_Donoso_Maturana.pdf",
+      "descripcion": "Indicación médica de continuidad terapéutica",
+      "fecha_documento": "2026-03-10",
       "subido_por": "TC",
       "fecha_subida": "2026-05-15"
     }

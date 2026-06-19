@@ -443,7 +443,7 @@ const Main = {
         <div class="role-banner role-banner-padres">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-9-5-9 5z"/><polyline points="3 7 12 13 21 7"/></svg>
           <div>
-            <b>Consola de familia · ${UI.esc(nino?.nombre_completo || '—')}.</b> Aquí preparas y revisas lo que recibe el apoderado: horario semanal, informe y documento de acompañamiento. El apoderado no entra al sistema; tú se lo envías desde el botón Descargar PDF.
+            <b>Estás viendo como apoderado de ${UI.esc(nino?.nombre_completo || '—')}.</b> Esta es la pantalla del papá: el horario de la semana, su equipo y la documentación del niño. Cambia de apoderado o de rol arriba.
           </div>
         </div>`;
     }
