@@ -2,16 +2,41 @@
 // Genera 1 semana del horario. Las 6 semanas del intensivo se generan iterando.
 //
 // Inputs:
-//   intensivo = { id, fecha_inicio, semanas, niños: [{ nombre, asignaciones: [{disciplina, rol, sigla, sesiones}] }] }
+//   intensivo = { id, fecha_inicio, semanas, reglas?, niños: [{ nombre, kids_semanal, kids_grupo,
+//                  asignaciones: [{disciplina, rol, sigla, sesiones}] }] }
 //   catalogo  = { franjas: [...], dias: [...], terapeutas: { SIGLA: {nombre, disciplina, sala} } }
-//   opts      = { semilla?: int }   // determinismo opcional
+//   opts      = { semilla?, salasCapacidad?, disponibilidad?, reglas? }
 //
 // Output:
-//   { ok, semanas: [ { grid: { [niñoIdx]: [slotIdx]: sigla }, sesionesPlanificadas: int } ],
-//     conflictos: [ { tipo, mensaje, ... } ] }
+//   { ok, grid: [niñoIdx][slotIdx]=sigla|null, sesionesPlanificadas, conflictos,
+//     kidsSlots: [{grupo, slot, niños:[ni]}],
+//     reunionesEquipo: [{ni, niño, slot, tutores:[sigla]}],
+//     reunionesPapas:  [{ni, niño, slots:[..], tutores:[sigla]}],
+//     sesionesPapas:   [{ni, niño, sigla, slot}] }
+//
+// Reglas (confirmadas con Trini, reunión 18-jun):
+//   - TUTOR y COT son sesiones SEPARADAS (un niño puede tener 7 TO/semana).
+//   - KIDS: nunca en la primera hora; en módulos centrales; grupos de 2-3 niños.
+//   - 1 sesión de cada disciplina por día (ideal); si hay más sesiones que días,
+//     los días con 2 de la misma disciplina quedan en módulos NO contiguos.
+//   - Máx 5 sesiones por terapeuta por día.
+//   - Bloques fijos (08:00-08:35 y 12:30-13:00): sin atención; reunión de equipo.
+//   - Reunión de equipo: 1/semana por niño, con TO+FONO+COG, en bloque fijo.
+//   - Reunión con papás: semana 2, doble bloque, con TO+FONO+COG (ideal).
+//   - Psicólogo-papás (rol PAPAS): fuera del horario del niño.
 
 const Scheduler = (() => {
-  const SOFT_MAX_PER_DAY_DEFAULT = (totalSes, dias) => Math.max(1, Math.ceil(totalSes / dias));
+  const DEFAULTS = {
+    kids_modulos: [2, 3, 4],
+    max_por_terapeuta_dia: 5,
+    max_por_disciplina_dia: 2,
+    disciplina_no_consecutiva: true,
+    bloques_fijos: [0, 7],
+    reunion_equipo_franja: 0,
+    reunion_papas_semana: 2,
+    reunion_papas_bloques: 2,
+  };
+  const TUTORES_REUNION = ['TO', 'FONO', 'COG']; // disciplinas presentes en reuniones con papás/equipo
 
   // PRNG simple (mulberry32) para shuffles determinísticos
   function mulberry32(seed) {
@@ -38,11 +63,15 @@ const Scheduler = (() => {
     const totalSlots = F * D;
     const N = intensivo.niños.length;
     const rnd = mulberry32(opts.semilla ?? 42);
-    // Capacidades de sala; sala sin entrada → capacidad 1 por defecto
+    const reglas = { ...DEFAULTS, ...(intensivo.reglas || {}), ...(opts.reglas || {}) };
+    const semana = opts.semana ?? 1; // 1-based, para la reunión de papás
+
     const salasCap = opts.salasCapacidad || {};
     const capDe = (sala) => (sala in salasCap ? salasCap[sala] : 1);
-    // Disponibilidad por terapeuta. Si no hay entrada → disponible siempre.
     const disponibilidad = opts.disponibilidad || {};
+    const bloquesFijos = new Set(reglas.bloques_fijos || []);
+    const esFijo = (slot) => bloquesFijos.has(slot % F);
+
     function disponibleEn(sigla, slot) {
       const disp = disponibilidad[sigla];
       if (!disp) return true;
@@ -52,162 +81,222 @@ const Scheduler = (() => {
     }
 
     // Estado
-    // gridNino[ni][slot] = sigla | null
     const gridNino = Array.from({ length: N }, () => new Array(totalSlots).fill(null));
-    // ocupadoTer[sigla] = Uint8Array(totalSlots) — 1 si ocupado
     const ocupadoTer = {};
-    Object.keys(catalogo.terapeutas).forEach((s) => {
-      ocupadoTer[s] = new Uint8Array(totalSlots);
-    });
-    // ocupadoSala[sala][slot] = count actual
+    Object.keys(catalogo.terapeutas).forEach((s) => { ocupadoTer[s] = new Uint8Array(totalSlots); });
     const ocupadoSala = {};
     const salasUsadas = new Set(Object.values(catalogo.terapeutas).map((t) => t.sala));
     salasUsadas.forEach((s) => { ocupadoSala[s] = new Uint8Array(totalSlots); });
 
     const conflictos = [];
 
-    // === Fase 0: sesiones grupales KIDS ===
-    // Cada niño con kids_semanal > 0 participa de N sesiones grupales con GP en sala KIDS.
-    // Todos los niños del intensivo comparten el mismo slot. Solo cuenta 1 ocupación de GP y 1 de sala.
-    const KIDS_TER = opts.kidsTerapeuta || "GP";
-    const kidsCount = Math.max(...intensivo.niños.map((n) => n.kids_semanal || 0));
-    const kidsSlotsElegidos = [];
-    if (kidsCount > 0 && ocupadoTer[KIDS_TER]) {
-      const candidatos = shuffle(Array.from({ length: totalSlots }, (_, k) => k), rnd);
-      const salaKids = catalogo.terapeutas[KIDS_TER]?.sala;
-      for (const slot of candidatos) {
-        if (kidsSlotsElegidos.length >= kidsCount) break;
-        if (!disponibleEn(KIDS_TER, slot)) continue;
-        if (ocupadoTer[KIDS_TER][slot]) continue;
-        // Limitar a 1 KIDS por día (no apilar todas en lunes)
-        const dia = Math.floor(slot / F);
-        if (kidsSlotsElegidos.some((s) => Math.floor(s / F) === dia)) continue;
-        if (salaKids && ocupadoSala[salaKids] && ocupadoSala[salaKids][slot] >= capDe(salaKids)) continue;
-        // Tomar para los 6 niños (que tengan kids_semanal > 0)
-        ocupadoTer[KIDS_TER][slot] = 1;
-        if (salaKids && ocupadoSala[salaKids]) ocupadoSala[salaKids][slot]++;
-        intensivo.niños.forEach((n, ni) => {
-          if ((n.kids_semanal || 0) > 0) {
-            gridNino[ni][slot] = KIDS_TER;
-          }
-        });
-        kidsSlotsElegidos.push(slot);
+    // === Fase 0: sesiones grupales KIDS, por subgrupo ===
+    // Cada grupo (kids_grupo) comparte slot; sala KIDS capacidad 1 → un grupo por slot.
+    // Solo en módulos permitidos (kids_modulos), nunca la primera hora, 1 por día por grupo.
+    const KIDS_TER = opts.kidsTerapeuta || 'GP';
+    const kidsModulos = (reglas.kids_modulos || []).filter((f) => !bloquesFijos.has(f));
+    const kidsSlots = [];
+    const grupos = {};
+    intensivo.niños.forEach((n, ni) => {
+      if ((n.kids_semanal || 0) > 0) {
+        const g = n.kids_grupo || 1;
+        (grupos[g] = grupos[g] || []).push(ni);
       }
-      if (kidsSlotsElegidos.length < kidsCount) {
-        conflictos.push({
-          tipo: "kids_insuficientes",
-          mensaje: `Solo se pudieron asignar ${kidsSlotsElegidos.length}/${kidsCount} sesiones KIDS grupales`,
-        });
-      }
+    });
+    const salaKids = catalogo.terapeutas[KIDS_TER]?.sala;
+    if (ocupadoTer[KIDS_TER]) {
+      Object.keys(grupos).forEach((g) => {
+        const nis = grupos[g];
+        const need = Math.max(...nis.map((ni) => intensivo.niños[ni].kids_semanal || 0));
+        const candidatos = shuffle(
+          Array.from({ length: totalSlots }, (_, k) => k).filter((k) => kidsModulos.includes(k % F)),
+          rnd
+        );
+        const elegidosDia = new Set();
+        let puestos = 0;
+        for (const slot of candidatos) {
+          if (puestos >= need) break;
+          const dia = Math.floor(slot / F);
+          if (elegidosDia.has(dia)) continue;            // 1 kids/día por grupo
+          if (!disponibleEn(KIDS_TER, slot)) continue;   // GP disponible en la franja
+          if (ocupadoTer[KIDS_TER][slot]) continue;      // GP libre
+          if (nis.some((ni) => gridNino[ni][slot])) continue; // niños del grupo libres
+          if (salaKids && ocupadoSala[salaKids][slot] >= capDe(salaKids)) continue;
+          ocupadoTer[KIDS_TER][slot] = 1;
+          if (salaKids) ocupadoSala[salaKids][slot]++;
+          nis.forEach((ni) => { gridNino[ni][slot] = KIDS_TER; });
+          kidsSlots.push({ grupo: Number(g), slot, niños: nis.slice() });
+          elegidosDia.add(dia);
+          puestos++;
+        }
+        if (puestos < need) {
+          conflictos.push({ tipo: 'kids_insuficientes', mensaje: `Grupo KIDS ${g}: ${puestos}/${need} sesiones` });
+        }
+      });
     }
 
     // === Fase 1: demandas individuales ===
-    // Cada demanda: { ni, sigla, disciplina, rol, maxPorDia }
     const demandas = [];
     intensivo.niños.forEach((n, ni) => {
       n.asignaciones.forEach((a) => {
-        // Excluir asignaciones que no van al horario propiamente (PAPÁS)
-        if (a.rol === "PAPAS") return;
-        const max = SOFT_MAX_PER_DAY_DEFAULT(a.sesiones, D);
+        if (a.rol === 'PAPAS') return; // las sesiones con papás se agendan aparte
+        const max = Math.max(1, Math.ceil(a.sesiones / D));
         for (let k = 0; k < a.sesiones; k++) {
-          demandas.push({
-            ni,
-            niño: n.nombre,
-            sigla: a.sigla,
-            disciplina: a.disciplina,
-            rol: a.rol,
-            maxPorDia: max,
-          });
+          demandas.push({ ni, niño: n.nombre, sigla: a.sigla, disciplina: a.disciplina, rol: a.rol, maxPorDia: max });
         }
       });
     });
 
-    // Heurística: most-constrained-first.
-    // Ordenar por (carga del terapeuta DESC, niño con más sesiones DESC).
-    const cargaTer = {};
-    demandas.forEach((d) => { cargaTer[d.sigla] = (cargaTer[d.sigla] || 0) + 1; });
-    const cargaNino = {};
-    demandas.forEach((d) => { cargaNino[d.ni] = (cargaNino[d.ni] || 0) + 1; });
+    // Heurística most-constrained-first
+    const cargaTer = {}; demandas.forEach((d) => { cargaTer[d.sigla] = (cargaTer[d.sigla] || 0) + 1; });
+    const cargaNino = {}; demandas.forEach((d) => { cargaNino[d.ni] = (cargaNino[d.ni] || 0) + 1; });
+    demandas.sort((a, b) => (cargaTer[b.sigla] - cargaTer[a.sigla]) || (cargaNino[b.ni] - cargaNino[a.ni]));
 
-    demandas.sort((a, b) => {
-      const dt = cargaTer[b.sigla] - cargaTer[a.sigla];
-      if (dt) return dt;
-      return cargaNino[b.ni] - cargaNino[a.ni];
-    });
-
-    // Contadores por día niño-terapeuta para enforcement de maxPorDia
-    // key: `${ni}_${sigla}_${diaIdx}` → count
-    const porDia = new Map();
+    const porDia = new Map();        // `${ni}_${sigla}_${dia}` → count (cap maxPorDia)
+    const porTerDia = new Map();     // `${sigla}_${dia}` → count (cap max_por_terapeuta_dia)
+    const discDia = new Map();       // `${ni}_${disc}_${dia}` → [franjas usadas]
 
     function intentar(i) {
       if (i >= demandas.length) return true;
       const d = demandas[i];
-
-      // Verificar que la sigla exista en el catálogo
       if (!ocupadoTer[d.sigla]) {
-        conflictos.push({
-          tipo: "sigla_desconocida",
-          mensaje: `Terapeuta "${d.sigla}" no está en el catálogo (niño ${d.niño}, ${d.disciplina})`,
-          niño: d.niño,
-          sigla: d.sigla,
-        });
+        conflictos.push({ tipo: 'sigla_desconocida', mensaje: `Terapeuta "${d.sigla}" no está en el catálogo (niño ${d.niño}, ${d.disciplina})`, niño: d.niño, sigla: d.sigla });
         return false;
       }
-
-      // Generar lista de slots candidatos, shuffleados (determinismo via rnd)
       const slots = shuffle(Array.from({ length: totalSlots }, (_, k) => k), rnd);
-
       const sala = catalogo.terapeutas[d.sigla]?.sala;
       const salaCap = capDe(sala);
 
       for (const slot of slots) {
+        if (esFijo(slot)) continue;                       // sin atención en bloques fijos
         const dia = Math.floor(slot / F);
-        // C5: terapeuta disponible en esta franja-día
-        if (!disponibleEn(d.sigla, slot)) continue;
-        // C1: terapeuta libre
-        if (ocupadoTer[d.sigla][slot]) continue;
-        // C2: niño libre en este slot
-        if (gridNino[d.ni][slot]) continue;
-        // C4: capacidad de sala
-        if (sala && ocupadoSala[sala] && ocupadoSala[sala][slot] >= salaCap) continue;
-        // B1: máx por día niño-terapeuta
-        const key = `${d.ni}_${d.sigla}_${dia}`;
-        if ((porDia.get(key) || 0) >= d.maxPorDia) continue;
+        const f = slot % F;
+        if (!disponibleEn(d.sigla, slot)) continue;       // disponibilidad terapeuta
+        if (ocupadoTer[d.sigla][slot]) continue;          // terapeuta libre
+        if (gridNino[d.ni][slot]) continue;               // niño libre
+        if (sala && ocupadoSala[sala][slot] >= salaCap) continue; // capacidad sala
+        const keyNT = `${d.ni}_${d.sigla}_${dia}`;
+        if ((porDia.get(keyNT) || 0) >= d.maxPorDia) continue;    // máx por día niño-terapeuta
+        const keyTD = `${d.sigla}_${dia}`;
+        if ((porTerDia.get(keyTD) || 0) >= reglas.max_por_terapeuta_dia) continue; // máx 5/terapeuta/día
+        const keyDD = `${d.ni}_${d.disciplina}_${dia}`;
+        const usadas = discDia.get(keyDD) || [];
+        if (usadas.length >= reglas.max_por_disciplina_dia) continue;           // máx disciplina/día
+        if (reglas.disciplina_no_consecutiva && usadas.some((ff) => Math.abs(ff - f) === 1)) continue; // no contiguas
 
         // Tomar
         gridNino[d.ni][slot] = d.sigla;
         ocupadoTer[d.sigla][slot] = 1;
-        if (sala && ocupadoSala[sala]) ocupadoSala[sala][slot]++;
-        porDia.set(key, (porDia.get(key) || 0) + 1);
+        if (sala) ocupadoSala[sala][slot]++;
+        porDia.set(keyNT, (porDia.get(keyNT) || 0) + 1);
+        porTerDia.set(keyTD, (porTerDia.get(keyTD) || 0) + 1);
+        usadas.push(f); discDia.set(keyDD, usadas);
 
         if (intentar(i + 1)) return true;
 
         // Backtrack
         gridNino[d.ni][slot] = null;
         ocupadoTer[d.sigla][slot] = 0;
-        if (sala && ocupadoSala[sala]) ocupadoSala[sala][slot]--;
-        porDia.set(key, porDia.get(key) - 1);
+        if (sala) ocupadoSala[sala][slot]--;
+        porDia.set(keyNT, porDia.get(keyNT) - 1);
+        porTerDia.set(keyTD, porTerDia.get(keyTD) - 1);
+        const posBT = usadas.lastIndexOf(f);
+        if (posBT >= 0) usadas.splice(posBT, 1);
       }
 
-      // No se pudo colocar
-      conflictos.push({
-        tipo: "sin_solucion",
-        mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`,
-        niño: d.niño,
-        sigla: d.sigla,
-        disciplina: d.disciplina,
-      });
+      conflictos.push({ tipo: 'sin_solucion', mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`, niño: d.niño, sigla: d.sigla, disciplina: d.disciplina });
       return false;
     }
 
     const ok = intentar(0);
 
-    return {
-      ok,
-      grid: gridNino,
-      sesionesPlanificadas: demandas.length,
-      conflictos,
-    };
+    // === Post-fases: reuniones y sesiones con papás (no compiten por el grid de atención) ===
+    const reunionesEquipo = [];
+    const reunionesPapas = [];
+    const sesionesPapas = [];
+
+    // Tutores TO/FONO/COG por niño (rol TUTOR)
+    function tutoresDe(n) {
+      const out = {};
+      n.asignaciones.forEach((a) => {
+        if (a.rol === 'TUTOR' && TUTORES_REUNION.includes(a.disciplina) && !out[a.disciplina]) out[a.disciplina] = a.sigla;
+      });
+      return out;
+    }
+    function franjaLibreParaTutores(siglas, franja, requeridos) {
+      // busca un día donde todos los 'siglas' estén libres y disponibles en 'franja'
+      const ordenDias = shuffle(Array.from({ length: D }, (_, d) => d), rnd);
+      for (const dia of ordenDias) {
+        const slot = dia * F + franja;
+        const todos = siglas.every((s) => ocupadoTer[s] && !ocupadoTer[s][slot] && disponibleEn(s, slot));
+        if (todos && siglas.length >= requeridos) return slot;
+      }
+      return -1;
+    }
+
+    if (ok) {
+      intensivo.niños.forEach((n, ni) => {
+        const tut = tutoresDe(n);
+        const siglas = TUTORES_REUNION.map((d) => tut[d]).filter(Boolean);
+
+        // Reunión de equipo: cualquier bloque fijo, día con los tutores libres
+        // (preferir reunion_equipo_franja, si no, probar las demás franjas fijas)
+        const franjasReunion = [reglas.reunion_equipo_franja, ...[...bloquesFijos].filter((f) => f !== reglas.reunion_equipo_franja)];
+        let slotEq = -1;
+        for (const fr of franjasReunion) { slotEq = franjaLibreParaTutores(siglas, fr, 2); if (slotEq >= 0) break; }
+        if (slotEq >= 0) {
+          siglas.forEach((s) => { ocupadoTer[s][slotEq] = 1; });
+          reunionesEquipo.push({ ni, niño: n.nombre, slot: slotEq, tutores: siglas });
+        } else {
+          conflictos.push({ tipo: 'reunion_equipo', mensaje: `Sin bloque común para reunión de equipo de ${n.nombre}` });
+        }
+
+        // Reunión con papás: solo en la semana indicada, doble bloque contiguo (ideal)
+        if (semana === reglas.reunion_papas_semana && siglas.length >= 2) {
+          const nb = reglas.reunion_papas_bloques || 2;
+          const ordenDias = shuffle(Array.from({ length: D }, (_, d) => d), rnd);
+          let puesta = false;
+          for (const dia of ordenDias) {
+            // buscar inicio de bloque contiguo de nb módulos (no fijos) con tutores libres
+            for (let f = 0; f + nb <= F && !puesta; f++) {
+              const slotsBloque = [];
+              let okBloque = true;
+              for (let k = 0; k < nb; k++) {
+                const fr = f + k;
+                if (bloquesFijos.has(fr)) { okBloque = false; break; }
+                const slot = dia * F + fr;
+                if (!siglas.every((s) => !ocupadoTer[s][slot] && disponibleEn(s, slot))) { okBloque = false; break; }
+                slotsBloque.push(slot);
+              }
+              if (okBloque) {
+                slotsBloque.forEach((slot) => siglas.forEach((s) => { ocupadoTer[s][slot] = 1; }));
+                reunionesPapas.push({ ni, niño: n.nombre, slots: slotsBloque, tutores: siglas });
+                puesta = true;
+              }
+            }
+            if (puesta) break;
+          }
+          if (!puesta) conflictos.push({ tipo: 'reunion_papas', mensaje: `Sem ${semana}: sin doble bloque para reunión con papás de ${n.nombre}`, nivel: 'ideal' });
+        }
+
+        // Psicólogo-papás (rol PAPAS): fuera del horario del niño
+        n.asignaciones.filter((a) => a.rol === 'PAPAS').forEach((a) => {
+          if (!ocupadoTer[a.sigla]) return;
+          const candidatos = shuffle(Array.from({ length: totalSlots }, (_, k) => k), rnd);
+          for (const slot of candidatos) {
+            if (esFijo(slot)) continue;
+            if (gridNino[ni][slot]) continue;          // fuera del horario del niño
+            if (ocupadoTer[a.sigla][slot]) continue;   // psicóloga libre
+            if (!disponibleEn(a.sigla, slot)) continue;
+            ocupadoTer[a.sigla][slot] = 1;
+            sesionesPapas.push({ ni, niño: n.nombre, sigla: a.sigla, slot });
+            break;
+          }
+        });
+      });
+    }
+
+    return { ok, grid: gridNino, sesionesPlanificadas: demandas.length, conflictos, kidsSlots, reunionesEquipo, reunionesPapas, sesionesPapas };
   }
 
   function generar(intensivo, catalogo, opts = {}) {
@@ -215,13 +304,13 @@ const Scheduler = (() => {
     for (let s = 0; s < intensivo.semanas; s++) {
       const r = generarSemana(intensivo, catalogo, {
         semilla: (opts.semilla ?? 42) + s,
+        semana: s + 1,
         salasCapacidad: opts.salasCapacidad,
         disponibilidad: opts.disponibilidad,
+        reglas: opts.reglas,
       });
       semanas.push(r);
-      if (!r.ok) {
-        return { ok: false, semanas, conflictos: r.conflictos, semanaFallo: s + 1 };
-      }
+      if (!r.ok) return { ok: false, semanas, conflictos: r.conflictos, semanaFallo: s + 1 };
     }
     return { ok: true, semanas };
   }
@@ -229,9 +318,8 @@ const Scheduler = (() => {
   return { generar, generarSemana };
 })();
 
-// Export para Node (test runner) y exposición global en browser
-if (typeof module !== "undefined" && module.exports) {
+if (typeof module !== 'undefined' && module.exports) {
   module.exports = Scheduler;
-} else if (typeof window !== "undefined") {
+} else if (typeof window !== 'undefined') {
   window.Scheduler = Scheduler;
 }

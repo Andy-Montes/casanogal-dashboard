@@ -10,19 +10,70 @@
       "kids_semanal": 5,
       "total_ses_semanal": 33,
       "asignaciones": [
-        { "disciplina": "TO",     "rol": "TUTOR", "sigla": "KRA", "sesiones": 4 },
-        { "disciplina": "TO",     "rol": "COT",   "sigla": "PT",  "sesiones": 3 },
-        { "disciplina": "FONO",   "rol": "TUTOR", "sigla": "NP",  "sesiones": 4 },
-        { "disciplina": "FONO",   "rol": "COT",   "sigla": "RJ",  "sesiones": 2 },
-        { "disciplina": "COG",    "rol": "TUTOR", "sigla": "PA",  "sesiones": 5 },
-        { "disciplina": "COG",    "rol": "COT",   "sigla": "PO",  "sesiones": 2 },
-        { "disciplina": "KINE",   "rol": "TUTOR", "sigla": "BA",  "sesiones": 1 },
-        { "disciplina": "KINE",   "rol": "COT",   "sigla": "FD",  "sesiones": 1 },
-        { "disciplina": "HAB AD", "rol": "TUTOR", "sigla": "GP",  "sesiones": 3,
-          "_revisar": "Confirmar con Trini: ¿son 3 sesiones individuales con Gloria, además de las 5 KIDS grupales? El Excel original las tenía como PSI." },
-        { "disciplina": "F.EJEC", "rol": "TUTOR", "sigla": "GLO", "sesiones": 3,
-          "_revisar": "Confirmar con Trini: Glorita (GLO) aparece en el horario real con 3 sesiones a LEON pero no estaba en el input de asignaciones del INT 40." }
-      ]
+        {
+          "disciplina": "TO",
+          "rol": "TUTOR",
+          "sigla": "KRA",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "TO",
+          "rol": "COT",
+          "sigla": "PT",
+          "sesiones": 3
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "TUTOR",
+          "sigla": "NP",
+          "sesiones": 4
+        },
+        {
+          "disciplina": "FONO",
+          "rol": "COT",
+          "sigla": "RJ",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "COG",
+          "rol": "TUTOR",
+          "sigla": "PA",
+          "sesiones": 5
+        },
+        {
+          "disciplina": "COG",
+          "rol": "COT",
+          "sigla": "PO",
+          "sesiones": 2
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "TUTOR",
+          "sigla": "BA",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "KINE",
+          "rol": "COT",
+          "sigla": "FD",
+          "sesiones": 1
+        },
+        {
+          "disciplina": "HAB AD",
+          "rol": "TUTOR",
+          "sigla": "GP",
+          "sesiones": 3,
+          "_revisar": "Confirmar con Trini: ¿son 3 sesiones individuales con Gloria, además de las 5 KIDS grupales? El Excel original las tenía como PSI."
+        },
+        {
+          "disciplina": "F.EJEC",
+          "rol": "TUTOR",
+          "sigla": "GLO",
+          "sesiones": 3,
+          "_revisar": "Confirmar con Trini: Glorita (GLO) aparece en el horario real con 3 sesiones a LEON pero no estaba en el input de asignaciones del INT 40."
+        }
+      ],
+      "kids_grupo": 1
     },
     {
       "nombre": "SANTI",
@@ -84,7 +135,8 @@
           "sigla": "CB",
           "sesiones": 1
         }
-      ]
+      ],
+      "kids_grupo": 1
     },
     {
       "nombre": "BALTAZAR",
@@ -140,7 +192,8 @@
           "sigla": "CB",
           "sesiones": 1
         }
-      ]
+      ],
+      "kids_grupo": 1
     },
     {
       "nombre": "FIORELLA",
@@ -208,7 +261,8 @@
           "sigla": "CB",
           "sesiones": 1
         }
-      ]
+      ],
+      "kids_grupo": 2
     },
     {
       "nombre": "AMELIA",
@@ -282,7 +336,8 @@
           "sigla": "FER",
           "sesiones": 1
         }
-      ]
+      ],
+      "kids_grupo": 2
     },
     {
       "nombre": "SOFIA",
@@ -356,7 +411,26 @@
           "sigla": "CB",
           "sesiones": 1
         }
-      ]
+      ],
+      "kids_grupo": 2
     }
-  ]
+  ],
+  "reglas": {
+    "kids_modulos": [
+      2,
+      3,
+      4
+    ],
+    "kids_por_grupo": 3,
+    "max_por_terapeuta_dia": 5,
+    "max_por_disciplina_dia": 2,
+    "disciplina_no_consecutiva": true,
+    "bloques_fijos": [
+      0,
+      7
+    ],
+    "reunion_equipo_franja": 0,
+    "reunion_papas_semana": 2,
+    "reunion_papas_bloques": 2
+  }
 }

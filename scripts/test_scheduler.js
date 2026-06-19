@@ -16,6 +16,7 @@ const F = franjas.length;
 console.log(`Intensivo: ${intensivo.id} | ${niños.length} niños | ${intensivo.semanas} semanas`);
 console.log(`Catálogo: ${Object.keys(catalogo.terapeutas).length} terapeutas, ${dias.length} días × ${F} franjas = ${dias.length * F} slots/semana\n`);
 
+const reglas = intensivo.reglas || {};
 const t0 = Date.now();
 const res = Scheduler.generar(intensivo, catalogo, { semilla: 1, salasCapacidad, disponibilidad });
 const dt = Date.now() - t0;
@@ -105,15 +106,70 @@ function validar(semana, idxSem) {
     // Acá no podemos distinguir GP grupal de GP individual mirando solo el grid. Validación más laxa: GP total ≥ (PSI sesiones + kids_semanal)
   }
 
-  // K2: cada slot KIDS (donde GP aparece) debe estar en TODOS los niños con kids>0
-  const slotsKids = [];
-  for (let s = 0; s < totalSlots; s++) {
-    const niñosConGP = [];
-    for (let n = 0; n < N; n++) {
-      if (semana.grid[n][s] === "GP") niñosConGP.push(n);
+  // ===== Reglas nuevas (reunión 18-jun) =====
+  const bloquesFijos = new Set(reglas.bloques_fijos || []);
+  const kidsModulos = new Set(reglas.kids_modulos || []);
+  const maxTerDia = reglas.max_por_terapeuta_dia || 99;
+  const maxDiscDia = reglas.max_por_disciplina_dia || 99;
+  const noConsec = reglas.disciplina_no_consecutiva;
+
+  // R1: ninguna atención individual en bloques fijos (KIDS tampoco)
+  for (let n = 0; n < N; n++) {
+    for (let s = 0; s < totalSlots; s++) {
+      if (semana.grid[n][s] && bloquesFijos.has(s % F)) {
+        errors.push(`${niños[n].nombre}: sesión ${semana.grid[n][s]} en bloque fijo (franja ${(s % F) + 1})`);
+      }
     }
-    if (niñosConGP.length > 1) slotsKids.push({ slot: s, niños: niñosConGP });
   }
+
+  // R2: KIDS solo en módulos permitidos
+  (semana.kidsSlots || []).forEach((k) => {
+    if (!kidsModulos.has(k.slot % F)) errors.push(`KIDS grupo ${k.grupo} en módulo no permitido (franja ${(k.slot % F) + 1})`);
+  });
+
+  // R3: máx sesiones por terapeuta por día (incluye KIDS grupales)
+  const terDia = {};
+  for (let s = 0; s < totalSlots; s++) {
+    const dia = Math.floor(s / F);
+    const vistoGP = new Set();
+    for (let n = 0; n < N; n++) {
+      const sig = semana.grid[n][s];
+      if (!sig) continue;
+      if (sig === "GP" && vistoGP.has(s)) continue; // KIDS grupal cuenta 1
+      if (sig === "GP") vistoGP.add(s);
+      terDia[`${sig}_${dia}`] = (terDia[`${sig}_${dia}`] || 0) + 1;
+    }
+  }
+  Object.entries(terDia).forEach(([k, v]) => { if (v > maxTerDia) errors.push(`${k.split("_")[0]} tiene ${v} sesiones el día ${k.split("_")[1]} (máx ${maxTerDia})`); });
+
+  // R4: máx disciplina/día por niño + no consecutivas
+  for (let n = 0; n < N; n++) {
+    const porDiscDia = {}; // `${disc}_${dia}` → [franjas]
+    for (let s = 0; s < totalSlots; s++) {
+      const sig = semana.grid[n][s];
+      if (!sig || sig === "GP") continue;
+      const disc = catalogo.terapeutas[sig]?.disciplina;
+      const dia = Math.floor(s / F), f = s % F;
+      const key = `${disc}_${dia}`;
+      (porDiscDia[key] = porDiscDia[key] || []).push(f);
+    }
+    Object.entries(porDiscDia).forEach(([key, fs]) => {
+      if (fs.length > maxDiscDia) errors.push(`${niños[n].nombre}: ${fs.length} sesiones de ${key.split("_")[0]} el día ${key.split("_")[1]} (máx ${maxDiscDia})`);
+      if (noConsec) {
+        const sorted = fs.slice().sort((a, b) => a - b);
+        for (let i = 1; i < sorted.length; i++) if (sorted[i] - sorted[i - 1] === 1) errors.push(`${niños[n].nombre}: ${key.split("_")[0]} consecutivas el día ${key.split("_")[1]} (franjas ${sorted[i - 1] + 1}-${sorted[i] + 1})`);
+      }
+    });
+  }
+
+  // R5: reunión de equipo presente para cada niño (en bloque fijo)
+  const conReunion = new Set((semana.reunionesEquipo || []).map((r) => r.ni));
+  for (let n = 0; n < N; n++) if (!conReunion.has(n)) errors.push(`${niños[n].nombre}: sin reunión de equipo`);
+  (semana.reunionesEquipo || []).forEach((r) => { if (!bloquesFijos.has(r.slot % F)) errors.push(`Reunión de equipo de ${r.niño} fuera de bloque fijo`); });
+
+  // R6: psicólogo-papás fuera del horario del niño
+  (semana.sesionesPapas || []).forEach((sp) => { if (semana.grid[sp.ni][sp.slot]) errors.push(`Sesión papás de ${sp.niño} choca con el horario del niño`); });
+
   return errors;
 }
 
