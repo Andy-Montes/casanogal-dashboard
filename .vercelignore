@@ -1,0 +1,6 @@
+# Archivos internos que no deben publicarse en la demo
+fix_*.js
+scripts/
+.github/
+.gstack/
+README.md
