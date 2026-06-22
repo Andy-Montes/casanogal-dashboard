@@ -102,7 +102,14 @@ const Comunicacion = {
   _paSesionCard(s) {
     const sala = Data.sala(s.id_sala);
     const estado = s.estado || '';
-    const cls = estado === 'Realizada' ? 'is-done'
+    // Sesiones donde participa el papá (de la reunión con Trini)
+    const tp = s.tipo_sesion_padre;
+    const badge = tp === 'observacion' ? 'Observación'
+                : tp === 'vincular' ? 'Con tu hijo'
+                : tp === 'individual_padre' ? 'Para ti' : '';
+    const cls = tp === 'observacion' ? 'is-observacion'
+              : (tp === 'vincular' || tp === 'individual_padre') ? 'is-padre'
+              : estado === 'Realizada' ? 'is-done'
               : estado === 'Cancelada' ? 'is-cancel'
               : estado === 'No Asistió' ? 'is-miss' : 'is-next';
     const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
@@ -110,29 +117,43 @@ const Comunicacion = {
       <div class="pa-ses ${cls}">
         <div class="pa-ses-time mono">${UI.esc(rango)}</div>
         <div class="pa-ses-esp">${UI.esc(s.tipo_terapia || '')}</div>
-        <div class="pa-ses-sala">${UI.esc(sala?.nombre || s.sala_nombre || '')}</div>
+        ${badge ? `<div class="pa-ses-badge">${badge}</div>` : `<div class="pa-ses-sala">${UI.esc(sala?.nombre || s.sala_nombre || '')}</div>`}
       </div>`;
   },
 
   _paEquipo(n) {
     const equipo = Data.equipoDeNino(n.id_nino);
-    if (!equipo.length) return '';
-    const items = equipo.map(e => {
+    const primer = (n.nombre_completo || '').split(' ')[0];
+    const terap = equipo.map(e => {
       const t = Data.terapeuta(e.id_terapeuta);
       if (!t) return '';
-      const c = ESPECIALIDAD_VAR[t.especialidad] || {};
-      return `
-        <li class="pa-team-item">
-          <span class="pa-team-dot" style="background:${c.main || 'var(--cn-azul)'}"></span>
-          <span class="pa-team-name">${UI.esc(t.nombre_completo)}</span>
-          <span class="pa-team-role">${UI.esc(t.especialidad || '')}</span>
-        </li>`;
+      return this._paPersona({ nombre: t.nombre_completo, sub: t.especialidad, desc: t.descripcion_breve, foto: t.foto_url, color: ESPECIALIDAD_VAR[t.especialidad] || {} });
     }).join('');
+    const centro = (State.data.equipo_centro || []).map(p =>
+      this._paPersona({ nombre: p.nombre, sub: p.cargo, desc: p.descripcion_breve, foto: p.foto_url, color: {} })
+    ).join('');
+    if (!terap && !centro) return '';
     return `
       <section class="pa-card">
-        <div class="pa-card-head"><div><div class="pa-card-eyebrow">Equipo</div><h2 class="pa-card-title">Quiénes acompañan a ${UI.esc((n.nombre_completo || '').split(' ')[0])}</h2></div></div>
-        <ul class="pa-team-list">${items}</ul>
+        <div class="pa-card-head"><div><div class="pa-card-eyebrow">Equipo</div><h2 class="pa-card-title">Quiénes acompañan a ${UI.esc(primer)}</h2></div></div>
+        <ul class="pa-team-list">${terap}</ul>
+        ${centro ? `<div class="pa-team-sub">Equipo del centro</div><ul class="pa-team-list">${centro}</ul>` : ''}
       </section>`;
+  },
+
+  _paPersona({ nombre, sub, desc, foto, color }) {
+    const av = foto
+      ? `<img class="pa-team-foto" src="${UI.esc(foto)}" alt="">`
+      : `<span class="pa-team-foto pa-team-ini" style="background:${color.bg || 'var(--cn-azul-bg)'};color:${color.text || 'var(--cn-azul-deep)'}">${UI.esc(UI.initials(nombre))}</span>`;
+    return `
+      <li class="pa-team-item">
+        ${av}
+        <span class="pa-team-info">
+          <span class="pa-team-name">${UI.esc(nombre)}</span>
+          <span class="pa-team-role">${UI.esc(sub || '')}</span>
+          ${desc ? `<span class="pa-team-desc">${UI.esc(desc)}</span>` : ''}
+        </span>
+      </li>`;
   },
 
   _paDocs(n) {

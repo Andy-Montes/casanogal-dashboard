@@ -2194,16 +2194,26 @@
 }
 .pa-ses.is-done { border-left-color: var(--text-3); opacity: 0.78; }
 .pa-ses.is-cancel, .pa-ses.is-miss { border-left-color: #D08B8B; opacity: 0.7; }
+/* Observación del papá → amarillo; otras sesiones del papá → durazno */
+.pa-ses.is-observacion { background: #FEF6D8; border-left-color: #E8A317; }
+.pa-ses.is-padre { background: #FDECE0; border-left-color: #E07B39; }
 .pa-ses-time { font-size: 12px; font-weight: 700; color: var(--cn-azul); }
 .pa-ses-esp { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 1px; }
 .pa-ses-sala { font-size: 10.5px; color: var(--text-3); margin-top: 1px; }
+.pa-ses-badge { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; margin-top: 2px; color: #8A5A12; }
+.pa-ses.is-padre .pa-ses-badge { color: #A8521E; }
 
 /* Equipo */
-.pa-team-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; }
-.pa-team-item { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.pa-team-dot { width: 9px; height: 9px; border-radius: var(--r-pill); flex-shrink: 0; }
+.pa-team-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; }
+.pa-team-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.pa-team-foto { width: 36px; height: 36px; border-radius: var(--r-pill); flex-shrink: 0; object-fit: cover; }
+.pa-team-ini { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.pa-team-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pa-team-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
-.pa-team-role { font-size: 11.5px; color: var(--text-3); margin-left: auto; }
+.pa-team-role { font-size: 11.5px; color: var(--cn-azul); font-weight: 600; }
+.pa-team-desc { font-size: 11px; color: var(--text-3); line-height: 1.35; margin-top: 2px; }
+.pa-team-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin: 14px 0 6px; }
+@media (max-width: 860px) { .pa-team-list { grid-template-columns: 1fr; } }
 
 /* Documentación */
 .pa-doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

@@ -65,7 +65,7 @@
       "sesiones_realizadas": 753,
       "sesiones_canceladas": 45,
       "sesiones_no_asistio": 51,
-      "sesiones_agendadas": 1144,
+      "sesiones_agendadas": 1146,
       "ninos_activos": 38
     },
     "feriados": [
@@ -97,7 +97,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-09-17",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
     },
     {
       "id_terapeuta": "TER-02",
@@ -118,7 +120,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-09-27",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
     },
     {
       "id_terapeuta": "TER-03",
@@ -139,7 +143,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-10-05",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
     },
     {
       "id_terapeuta": "TER-04",
@@ -159,7 +165,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-07-22",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
     },
     {
       "id_terapeuta": "TER-05",
@@ -180,7 +188,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-03-25",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
     },
     {
       "id_terapeuta": "TER-06",
@@ -202,7 +212,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-12-06",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
     },
     {
       "id_terapeuta": "TER-07",
@@ -223,7 +235,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-01-12",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
     },
     {
       "id_terapeuta": "TER-08",
@@ -243,7 +257,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-12-18",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
     },
     {
       "id_terapeuta": "TER-09",
@@ -263,7 +279,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-10-28",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
     },
     {
       "id_terapeuta": "TER-10",
@@ -285,7 +303,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-03-14",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
     },
     {
       "id_terapeuta": "TER-11",
@@ -306,7 +326,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-12-02",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
     },
     {
       "id_terapeuta": "TER-12",
@@ -327,7 +349,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-02-14",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
     },
     {
       "id_terapeuta": "TER-13",
@@ -349,7 +373,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-11-26",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Desarrolla motricidad, postura y movimiento."
     },
     {
       "id_terapeuta": "TER-14",
@@ -369,7 +395,9 @@
       "tipo_contrato": "Honorarios",
       "valor_hora": 25000,
       "fecha_ingreso": "2024-02-05",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Guía el desarrollo relacional con la familia."
     },
     {
       "id_terapeuta": "TER-15",
@@ -390,7 +418,9 @@
       "tipo_contrato": "Planta",
       "valor_hora": null,
       "fecha_ingreso": "2024-11-16",
-      "estado": "Activo"
+      "estado": "Activo",
+      "foto_url": "",
+      "descripcion_breve": "Acompaña lo emocional y el vínculo familiar."
     }
   ],
   "salas": [
@@ -21799,7 +21829,8 @@
       "notas_admin": null,
       "conflicto_detectado": null,
       "creado_por": "USR-001",
-      "fecha_creacion": "2026-04-20"
+      "fecha_creacion": "2026-04-20",
+      "tipo_sesion_padre": "observacion"
     },
     {
       "id_sesion": "SES-0824",
@@ -53572,6 +53603,60 @@
       "conflicto_detectado": null,
       "creado_por": "USR-001",
       "fecha_creacion": "2026-01-15"
+    },
+    {
+      "id_nino": "NINO-0001",
+      "nino_visible": "León A.",
+      "id_terapeuta": "TER-15",
+      "terapeuta_abr": "CB",
+      "id_terapeuta_secundario": null,
+      "id_nino_secundario": null,
+      "id_sala": "SALA-09",
+      "sala_nombre": "Espejo",
+      "tipo_terapia": "Psicología",
+      "estado": "Agendada",
+      "id_programa": "PROG-INT",
+      "notas_admin": null,
+      "conflicto_detectado": null,
+      "creado_por": "USR-001",
+      "fecha_creacion": "2026-05-15",
+      "semana_intensivo": 4,
+      "es_dupla": false,
+      "id_sesion": "SES-3601",
+      "fecha": "2026-05-20",
+      "dia_semana": "miércoles",
+      "id_bloque": "BLQ-07",
+      "hora_inicio": "11:55",
+      "hora_fin": "12:30",
+      "tipo_actividad": "Sesión vincular",
+      "tipo_sesion_padre": "vincular"
+    },
+    {
+      "id_nino": "NINO-0001",
+      "nino_visible": "León A.",
+      "id_terapeuta": "TER-15",
+      "terapeuta_abr": "CB",
+      "id_terapeuta_secundario": null,
+      "id_nino_secundario": null,
+      "id_sala": "SALA-09",
+      "sala_nombre": "Espejo",
+      "tipo_terapia": "Psicología",
+      "estado": "Agendada",
+      "id_programa": "PROG-INT",
+      "notas_admin": null,
+      "conflicto_detectado": null,
+      "creado_por": "USR-001",
+      "fecha_creacion": "2026-05-15",
+      "semana_intensivo": 4,
+      "es_dupla": false,
+      "id_sesion": "SES-3602",
+      "fecha": "2026-05-22",
+      "dia_semana": "viernes",
+      "id_bloque": "BLQ-08",
+      "hora_inicio": "12:30",
+      "hora_fin": "13:00",
+      "tipo_actividad": "Sesión de padres",
+      "tipo_sesion_padre": "individual_padre"
     }
   ],
   "sesion_notas": [
@@ -66784,6 +66869,29 @@
       "id_nino_asociado": "NINO-0008",
       "activo": true,
       "ultimo_acceso": "2026-05-15"
+    }
+  ],
+  "equipo_centro": [
+    {
+      "id": "STAFF-COORD",
+      "nombre": "Trinidad Cervero",
+      "cargo": "Coordinadora clínica",
+      "descripcion_breve": "Coordina el equipo y el plan de cada niño.",
+      "foto_url": ""
+    },
+    {
+      "id": "STAFF-ENC",
+      "nombre": "Anita",
+      "cargo": "Encargada",
+      "descripcion_breve": "Tu contacto del día a día en el centro.",
+      "foto_url": ""
+    },
+    {
+      "id": "STAFF-SEC",
+      "nombre": "Lorena",
+      "cargo": "Secretaria",
+      "descripcion_breve": "Agenda, horarios y trámites.",
+      "foto_url": ""
     }
   ]
 }
