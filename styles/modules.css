@@ -2255,6 +2255,25 @@
 }
 .cal-filtro-nino select:focus { outline: 2px solid var(--cn-azul); outline-offset: -1px; }
 
+/* Reasignar terapeuta (panel de sesión) */
+.panel-reasignar-link { font-size: 11px; color: var(--cn-azul); background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: 600; margin-left: 6px; }
+.panel-reasignar { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 10px; }
+.panel-reasignar-head { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); }
+.reasignar-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-soft); cursor: pointer; text-align: left; width: 100%; }
+.reasignar-item:hover { border-color: var(--cn-azul); background: var(--cn-azul-bg-soft, #F2F8FB); }
+.reasignar-abr { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px; background: var(--cn-azul-bg); color: var(--cn-azul-deep); padding: 2px 6px; border-radius: var(--r-xs); }
+.reasignar-nombre { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+.reasignar-sala { font-size: 11px; color: var(--text-3); }
+.reasignar-vacio { font-size: 12px; color: var(--text-3); font-style: italic; padding: 6px 2px; }
+
+/* Disponibilidad por bloque (modal de profesional) */
+.cfg-disp { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.cfg-disp th { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.03em; padding: 3px 2px; text-align: center; }
+.cfg-disp td { text-align: center; padding: 3px 2px; border-top: 1px solid var(--border); }
+.cfg-disp-h { font-size: 11px; color: var(--text-2); text-align: right !important; padding-right: 8px !important; }
+.cfg-disp-chk { width: 15px; height: 15px; accent-color: var(--cn-azul); cursor: pointer; }
+.cfg-disp-exc { font-size: 11.5px; color: #8A5A12; background: #FEF6D8; border-radius: var(--r-sm); padding: 6px 9px; margin-top: 8px; }
+
 /* Documentación */
 .pa-doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pa-doc {

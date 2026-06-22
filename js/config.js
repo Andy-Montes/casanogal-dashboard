@@ -319,6 +319,30 @@ const Config = {
     }
   },
 
+  _dispGridHtml(t) {
+    const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const diasLbl = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo === 'Mañana' && !b.es_reunion_equipo);
+    const exc = (t.excepciones || []).map(e => UI.esc(e.concepto + (e.detalle ? ` (${e.detalle})` : ''))).join(' · ');
+    return `
+      <div class="cfg-field" style="grid-column:1/-1">
+        <label>Disponibilidad por bloque (mañana)</label>
+        <table class="cfg-disp">
+          <thead><tr><th></th>${diasLbl.map(d => `<th>${d}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${bloques.map(b => `<tr>
+              <td class="cfg-disp-h mono">${b.hora_inicio}</td>
+              ${dias.map(dia => {
+                const on = (t.disponibilidad_bloques[dia] || []).includes(b.id_bloque);
+                return `<td><input type="checkbox" class="cfg-disp-chk" data-dia="${dia}" data-bloque="${b.id_bloque}" ${on ? 'checked' : ''}></td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        ${exc ? `<div class="cfg-disp-exc">Excepción: ${exc}</div>` : ''}
+      </div>`;
+  },
+
   _abrirModalTer(id) {
     const editing = !!id;
     const ters = this.terapeutasEfectivos();
@@ -354,6 +378,7 @@ const Config = {
             <div class="cfg-field" style="grid-column:1/-1"><label>Nota de estado (opcional)</label>
               <input id="ter-est-nota" placeholder="Ej: regresa el 15 de junio · licencia hasta 30/05" value="${UI.esc(t?.estado_nota || '')}">
             </div>
+            ${editing && State.data.terapeutas.find(x => x.id_terapeuta === id)?.disponibilidad_bloques ? this._dispGridHtml(State.data.terapeutas.find(x => x.id_terapeuta === id)) : ''}
           </div>
           <div class="pendiente-modal-foot">
             <button class="btn btn-ghost" id="cfgTerCancel">Cancelar</button>
@@ -367,6 +392,17 @@ const Config = {
     document.getElementById('cfgTerClose').addEventListener('click', close);
     document.getElementById('cfgTerCancel').addEventListener('click', close);
     document.getElementById('cfgTerOverlay').addEventListener('click', (e) => { if (e.target.id === 'cfgTerOverlay') close(); });
+    // Disponibilidad por bloque: edita en memoria el terapeuta base
+    document.querySelectorAll('#cfgTerOverlay .cfg-disp-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const tr = State.data.terapeutas.find(x => x.id_terapeuta === id);
+        if (!tr) return;
+        tr.disponibilidad_bloques = tr.disponibilidad_bloques || {};
+        const set = new Set(tr.disponibilidad_bloques[chk.dataset.dia] || []);
+        if (chk.checked) set.add(chk.dataset.bloque); else set.delete(chk.dataset.bloque);
+        tr.disponibilidad_bloques[chk.dataset.dia] = [...set];
+      });
+    });
     document.getElementById('cfgTerSave').addEventListener('click', () => {
       const data = {
         id_terapeuta: id || 'TER-NEW-' + Date.now(),

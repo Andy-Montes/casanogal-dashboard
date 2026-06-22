@@ -601,6 +601,9 @@ const Calendar = {
       if (!sesion) return null;
       const fecha = cell.dataset.fecha;
       const idBloque = cell.dataset.bloque;
+      const b = Data.bloque(idBloque);
+      if (b && b.es_reunion_equipo) return `El bloque ${b.hora_inicio} está reservado para reuniones de equipo`;
+      if ((State.data.meta?.feriados || []).includes(fecha)) return 'Ese día es feriado';
       const otras = State.data.sesiones.filter(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
       if (otras.some(s => s.id_sala === sesion.id_sala)) return 'Sala ' + sesion.sala_nombre + ' ya está usada en ese bloque';
       if (otras.some(s => s.id_terapeuta === sesion.id_terapeuta)) return 'El terapeuta ya tiene otra sesión en ese bloque';
@@ -642,6 +645,8 @@ const Calendar = {
         if (e.target.closest('.session')) return;
         if (cell.querySelector('.session')) return;
         if (cell.classList.contains('cal-feriado')) return;
+        const b = Data.bloque(cell.dataset.bloque);
+        if (b && b.es_reunion_equipo) { UI.toast(`El bloque ${b.hora_inicio} está reservado para reuniones de equipo`, 'alert'); return; }
         Modal.openCreate({ dia: cell.dataset.dia, id_bloque: cell.dataset.bloque, fecha: cell.dataset.fecha });
       });
     });

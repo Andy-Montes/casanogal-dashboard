@@ -49,9 +49,10 @@ const Panel = {
 
       ${State.role !== 'padres' ? `
       <div class="panel-field">
-        <span class="panel-field-label">Terapeuta</span>
+        <span class="panel-field-label">Terapeuta ${esAdmin ? '<button class="panel-reasignar-link" id="panelReasignarBtn" type="button">Reasignar</button>' : ''}</span>
         <span class="panel-field-value">${UI.esc(ter?.nombre_completo || '—')} <span class="badge" style="background:${c.bg};color:${c.text}">${UI.esc(ter?.abreviacion || '—')}</span></span>
-      </div>` : ''}
+      </div>
+      ${esAdmin ? '<div id="panelReasignar" class="panel-reasignar"></div>' : ''}` : ''}
 
       <div class="panel-field">
         <span class="panel-field-label">Tipo de terapia</span>
@@ -149,6 +150,58 @@ const Panel = {
       Main.activateNav('fichas');
       Main._renderModule();
     });
+
+    // Reasignar terapeuta (coordinación): cuando uno falta, ver quién está libre a esa hora
+    document.getElementById('panelReasignarBtn')?.addEventListener('click', () => Panel._renderReasignar(sesion));
+  },
+
+  // Terapeutas de la misma especialidad, activos y libres en fecha+bloque de la sesión
+  _disponiblesPara(sesion) {
+    const ocupados = new Set((Data.sesionesPorDiaYBloque(sesion.fecha, sesion.id_bloque) || []).map(s => s.id_terapeuta));
+    return Data.terapeutasEfectivos().filter(t => {
+      if (t.estado !== 'Activo') return false;
+      if (t.especialidad !== sesion.tipo_terapia) return false;
+      if (t.id_terapeuta === sesion.id_terapeuta) return false;
+      if (ocupados.has(t.id_terapeuta)) return false;
+      // Respetar disponibilidad por bloque si está configurada
+      const disp = t.disponibilidad_bloques;
+      if (disp && disp[sesion.dia_semana] && !disp[sesion.dia_semana].includes(sesion.id_bloque)) return false;
+      return true;
+    });
+  },
+
+  _renderReasignar(sesion) {
+    const cont = document.getElementById('panelReasignar');
+    if (!cont) return;
+    if (cont.innerHTML) { cont.innerHTML = ''; return; } // toggle cerrar
+    const disp = this._disponiblesPara(sesion);
+    cont.innerHTML = `
+      <div class="panel-reasignar-head">Disponibles el ${UI.esc(sesion.dia_semana)} ${UI.esc(sesion.hora_inicio)} · ${UI.esc(sesion.tipo_terapia)}</div>
+      ${disp.length
+        ? disp.map(t => {
+            const sala = Data.sala(t.sala_principal);
+            return `<button class="reasignar-item" data-ter="${t.id_terapeuta}" type="button">
+              <span class="reasignar-abr">${UI.esc(t.abreviacion)}</span>
+              <span class="reasignar-nombre">${UI.esc(t.nombre_completo)}</span>
+              ${sala ? `<span class="reasignar-sala">${UI.esc(sala.nombre)}</span>` : ''}
+            </button>`;
+          }).join('')
+        : '<div class="reasignar-vacio">No hay otro terapeuta de esta especialidad libre a esta hora.</div>'}
+    `;
+    cont.querySelectorAll('.reasignar-item').forEach(b =>
+      b.addEventListener('click', () => this._aplicarReasignar(sesion, b.dataset.ter))
+    );
+  },
+
+  _aplicarReasignar(sesion, idTer) {
+    const t = Data.terapeuta(idTer);
+    if (!t) return;
+    sesion.id_terapeuta = idTer;
+    sesion.terapeuta_abr = t.abreviacion;
+    sesion.conflicto_detectado = null;
+    UI.toast(`Sesión reasignada a ${t.nombre_completo}`, 'success');
+    this.close();
+    if (State.module === 'calendario') Calendar.render();
   },
 
   close() {

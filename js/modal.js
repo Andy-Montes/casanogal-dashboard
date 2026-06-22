@@ -88,13 +88,20 @@ const Modal = {
       <div id="f_warns"></div>
     `;
 
-    // Cuando cambia tipo, regenerar terapeutas
+    // Preselecciona la sala predefinida del terapeuta elegido
+    const aplicarSalaDeTer = () => {
+      const t = Data.terapeuta(document.getElementById('f_ter').value);
+      if (t && t.sala_principal) document.getElementById('f_sala').value = t.sala_principal;
+    };
+    // Cuando cambia tipo, regenerar terapeutas y aplicar su sala
     document.getElementById('f_tipo').addEventListener('change', () => {
       const t = document.getElementById('f_tipo').value;
       const list = Data.terapeutasEfectivos().filter(x => x.especialidad === t && x.estado === 'Activo');
       document.getElementById('f_ter').innerHTML = list.map(x => `<option value="${x.id_terapeuta}">${UI.esc(x.nombre_visible)} (${UI.esc(x.abreviacion)})</option>`).join('');
+      aplicarSalaDeTer();
       this._validate();
     });
+    document.getElementById('f_ter').addEventListener('change', aplicarSalaDeTer);
     ['f_nino','f_ter','f_dia','f_bloque','f_sala'].forEach(id => {
       document.getElementById(id).addEventListener('change', () => this._validate());
     });
