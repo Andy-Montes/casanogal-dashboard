@@ -185,7 +185,6 @@ const Fichas = {
       ${this._seccionHistorial(sesionesVisibles)}
       ${this._seccionObjetivos(objetivos)}
       ${!isTer ? this._seccionReuniones(n.id_nino) : ''}
-      ${!isTer ? this._seccionBoletas(n.id_nino) : ''}
       ${!isTer ? this._seccionDocumentos(docs) : ''}
     `;
 

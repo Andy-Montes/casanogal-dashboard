@@ -460,6 +460,7 @@ const Calendar = {
     let nombre = UI.esc(s.nino_visible);
     let sub = `${UI.esc(s.tipo_terapia)} · ${UI.esc(s.sala_nombre)}`;
     if (isConflict) extraCls += ' s-conflict';
+    if (s.tipo_sesion_padre === 'observacion') { extraCls += ' s-observacion'; sub += ' · con papás'; }
     if (isDupla) {
       extraCls += ' s-dupla';
       const ninoSec = Data.nino(s.id_nino_secundario);

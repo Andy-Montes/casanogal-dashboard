@@ -34,6 +34,14 @@ const Main = {
       }
       State.role = 'terapeuta';
       State.currentUser = DEMO_USERS.terapeuta;
+    } else if (session.tipo === 'padres') {
+      const n = State.data.ninos.find(x => x.id_nino === session.id_nino) || State.data.ninos.find(x => x.estado === 'Activo');
+      if (n) {
+        DEMO_USERS.padres = { id: 'USR-PAD-' + n.id_nino, name: n.apoderado_principal, short: (n.apoderado_principal || '').split(' ')[0], avatar: UI.initials(n.apoderado_principal), role: 'Padre', id_nino: n.id_nino };
+      }
+      State.role = 'padres';
+      State.currentUser = DEMO_USERS.padres;
+      State.module = 'comunicacion';
     }
 
     // Inicializar selección de niño para consola padres (primer niño activo)
@@ -58,8 +66,12 @@ const Main = {
     this.refreshUserChip();
     this.refreshCounts();
     this.renderPendientes();
-    this.activateNav('calendario');
-    Calendar.render();
+    if (State.role === 'padres') {
+      this._renderModule();
+    } else {
+      this.activateNav('calendario');
+      Calendar.render();
+    }
     this._injectRoleBanner();
     this._aplicarVisibilidadSidebar();
     // Onboarding al primer ingreso
@@ -227,9 +239,10 @@ const Main = {
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
       padres:    ['reportes','boletas','armador','equipo','ninos','salas','config','permisos'],
-      terapeuta: ['config','permisos','reportes','armador'],
+      terapeuta: ['config','permisos','reportes','boletas','armador'],
     };
-    const ocultar = ocultosPorRol[State.role] || [];
+    // Boletas se manejan fuera del sistema (Temite) → ocultas en todos los roles
+    const ocultar = [...(ocultosPorRol[State.role] || []), 'boletas'];
     document.querySelectorAll('.nav-item').forEach(item => {
       item.style.display = ocultar.includes(item.dataset.module) ? 'none' : '';
     });

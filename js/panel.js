@@ -74,6 +74,17 @@ const Panel = {
         <span class="panel-field-value"><span class="estado-pill ${UI.estadoClass(sesion.estado)}">${UI.esc(sesion.estado)}</span></span>
       </div>
 
+      ${(esTerapeuta || esAdmin) ? `
+        <div class="panel-estado-acciones">
+          <span class="panel-field-label">Marcar asistencia</span>
+          <div class="estado-btns">
+            ${['Realizada', 'No Asistió', 'Cancelada', 'Agendada'].map(e =>
+              `<button class="estado-btn ${sesion.estado === e ? 'is-activo' : ''}" data-estado="${e}" type="button">${e}</button>`
+            ).join('')}
+          </div>
+        </div>
+      ` : ''}
+
       ${showNotas ? `
         <div class="panel-section-title">
           Notas clínicas
@@ -153,6 +164,20 @@ const Panel = {
 
     // Reasignar terapeuta (coordinación): cuando uno falta, ver quién está libre a esa hora
     document.getElementById('panelReasignarBtn')?.addEventListener('click', () => Panel._renderReasignar(sesion));
+
+    // Cambiar estado de la sesión (realizada / no asistió / cancelada / agendada)
+    document.querySelectorAll('.estado-btn').forEach(b =>
+      b.addEventListener('click', () => Panel._cambiarEstado(sesion, b.dataset.estado))
+    );
+  },
+
+  _cambiarEstado(sesion, estado) {
+    if (!sesion) return;
+    sesion.estado = estado;
+    UI.toast(`Sesión marcada como “${estado}”`, 'success');
+    Panel.open(sesion); // refresca el panel
+    if (State.module === 'calendario') Calendar.render();
+    else if (State.module === 'fichas') Fichas.render();
   },
 
   // Terapeutas de la misma especialidad, activos y libres en fecha+bloque de la sesión
