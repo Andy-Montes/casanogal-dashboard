@@ -326,6 +326,37 @@
   border-left-width: 3px;
 }
 
+/* Reuniones y sesión psicólogo-papás (salidas del motor, no del grid de atención) */
+.cal-item-reunion,
+.cal-item-papas,
+.cal-item-psipapas {
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-left-width: 3px;
+  cursor: default;
+}
+.cal-item-reunion  { background: #E4E7EC !important; color: #2B3445 !important; border-color: #9AA3B2 !important; }
+.cal-item-papas    { background: #FDE9C8 !important; color: #5E480C !important; border-color: #E8A317 !important; }
+.cal-item-psipapas { background: #F2D98A !important; color: #523600 !important; border-color: #D4AE3A !important; }
+
+/* Panel de reglas del armador (sidebar) */
+.armador-reglas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.armador-reglas li {
+  position: relative; padding-left: 18px; font-size: 12px; line-height: 1.4; color: var(--text-2);
+}
+.armador-reglas li::before {
+  content: ''; position: absolute; left: 4px; top: 6px; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--cn-azul);
+}
+.armador-leyenda { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.armador-leg { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid; }
+.armador-leg-reunion  { background: #E4E7EC; color: #2B3445; border-color: #9AA3B2; }
+.armador-leg-papas    { background: #FDE9C8; color: #5E480C; border-color: #E8A317; }
+.armador-leg-psipapas { background: #F2D98A; color: #523600; border-color: #D4AE3A; }
+.armador-reglas-nota { margin-top: 10px; font-size: 11px; color: var(--text-3); font-style: italic; line-height: 1.4; }
+
 /* Estados resaltado / atenuado */
 .cal-item.is-resaltado {
   outline: 1.5px solid var(--cn-azul-deep);

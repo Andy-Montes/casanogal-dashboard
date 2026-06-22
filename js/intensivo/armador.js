@@ -161,6 +161,7 @@ const Armador = {
           ${this._calendarioHtml(intensivo, catalogo)}
         </div>
         <aside class="armador-side">
+          ${this._reglasHtml(intensivo)}
           ${this._equipoHtml(catalogo)}
           ${this._cumplimientoHtml(intensivo, agg)}
           ${res.conflictos?.length ? this._conflictosHtml(res.conflictos) : ''}
@@ -372,46 +373,61 @@ const Armador = {
         sala: catalogo.terapeutas[sig]?.sala || '',
       });
     });
+
+    // Reuniones y sesión psicólogo-papás (las calcula el motor aparte del grid)
+    const enFiltro = (ni) => this._filtroNino === -1 || ni === this._filtroNino;
+    (sem.reunionesEquipo || []).forEach((r) => {
+      if (r.slot !== slotIdx || !enFiltro(r.ni)) return;
+      sesiones.push({ tipo: 'reunion-equipo', niño: intensivo.niños[r.ni].nombre, niInicial: inicialNino(intensivo.niños[r.ni].nombre), tutores: r.tutores });
+    });
+    (sem.reunionesPapas || []).forEach((r) => {
+      if (!r.slots?.includes(slotIdx) || !enFiltro(r.ni)) return;
+      sesiones.push({ tipo: 'reunion-papas', niño: intensivo.niños[r.ni].nombre, niInicial: inicialNino(intensivo.niños[r.ni].nombre), tutores: r.tutores });
+    });
+    (sem.sesionesPapas || []).forEach((sp) => {
+      if (sp.slot !== slotIdx || !enFiltro(sp.ni)) return;
+      sesiones.push({ tipo: 'sesion-papas', niño: intensivo.niños[sp.ni].nombre, niInicial: inicialNino(intensivo.niños[sp.ni].nombre), sig: sp.sigla, terapeutaNombre: catalogo.terapeutas[sp.sigla]?.nombre || sp.sigla });
+    });
     return sesiones.sort((a, b) => a.niño.localeCompare(b.niño));
   },
 
   _renderCelda(sesiones) {
     // KIDS grupal: una sola etiqueta centrada
     if (sesiones.length === 1 && sesiones[0].esKids) {
-      const s = sesiones[0];
-      const titulo = `Sesión grupal KIDS · todos los niños con Gloria`;
+      const titulo = `Sesión grupal KIDS · subgrupo con Gloria`;
       const resaltado = this._terapeutaResaltado === 'GP' ? ' is-resaltado' : '';
       const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== 'GP' ? ' is-atenuado' : '';
       return `<button class="cal-item cal-item-kids${resaltado}${atenuado}" data-sigla="GP" title="${UI.esc(titulo)}">KIDS</button>`;
     }
-    // Solo 1 sesión (niño filtrado, o solo 1 niño activo en el slot)
-    if (sesiones.length === 1) {
-      const s = sesiones[0];
-      const token = this._disciplinaToken(s.disc);
-      const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
-      const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
-      const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}`;
-      const mostrarNino = this._filtroNino === -1;
-      return `
-        <button class="cal-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" data-disc="${token}" title="${UI.esc(titulo)}">
-          ${mostrarNino ? `<span class="cal-item-nino">${UI.esc(s.niInicial)}</span>` : ''}
-          <span class="cal-item-sigla">${UI.esc(s.sig)}</span>
-        </button>
-      `;
+    const mostrarNino = this._filtroNino === -1;
+    return sesiones.map(s => this._itemHtml(s, mostrarNino)).join('');
+  },
+
+  // Render de un item de celda según su tipo (sesión normal o reunión/papás)
+  _itemHtml(s, mostrarNino) {
+    const ini = mostrarNino ? `<span class="cal-item-nino">${UI.esc(s.niInicial)}</span>` : '';
+    if (s.tipo === 'reunion-equipo') {
+      const titulo = `Reunión de equipo · ${s.niño} · tutores ${(s.tutores || []).join(', ')}`;
+      return `<div class="cal-item cal-item-reunion" title="${UI.esc(titulo)}">${ini}<span class="cal-item-sigla">Equipo</span></div>`;
     }
-    // Múltiples sesiones: lista compacta vertical
-    return sesiones.map(s => {
-      const token = this._disciplinaToken(s.disc);
-      const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
-      const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
-      const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}`;
-      return `
-        <button class="cal-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" data-disc="${token}" title="${UI.esc(titulo)}">
-          <span class="cal-item-nino">${UI.esc(s.niInicial)}</span>
-          <span class="cal-item-sigla">${UI.esc(s.sig)}</span>
-        </button>
-      `;
-    }).join('');
+    if (s.tipo === 'reunion-papas') {
+      const titulo = `Reunión con papás · ${s.niño} · tutores ${(s.tutores || []).join(', ')}`;
+      return `<div class="cal-item cal-item-papas" title="${UI.esc(titulo)}">${ini}<span class="cal-item-sigla">Papás</span></div>`;
+    }
+    if (s.tipo === 'sesion-papas') {
+      const titulo = `Sesión psicólogo–papás · ${s.niño} · ${s.terapeutaNombre}`;
+      return `<div class="cal-item cal-item-psipapas" title="${UI.esc(titulo)}">${ini}<span class="cal-item-sigla">Psi·Papás</span></div>`;
+    }
+    const token = this._disciplinaToken(s.disc);
+    const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
+    const atenuado = this._terapeutaResaltado && this._terapeutaResaltado !== s.sig ? ' is-atenuado' : '';
+    const titulo = `${s.niño} · ${s.sig} (${s.terapeutaNombre}) · ${s.disc} · sala ${s.sala}`;
+    return `
+      <button class="cal-item${resaltado}${atenuado}" data-sigla="${UI.esc(s.sig)}" data-disc="${token}" title="${UI.esc(titulo)}">
+        ${ini}
+        <span class="cal-item-sigla">${UI.esc(s.sig)}</span>
+      </button>
+    `;
   },
 
   // Render agrupado: una "tarjeta" por slot horario con la hora una vez
@@ -475,6 +491,35 @@ const Armador = {
         <span class="armador-cal-block-sigla">${UI.esc(labelSig)}</span>
         ${labelNino}
       </button>
+    `;
+  },
+
+  _reglasHtml(intensivo) {
+    const r = intensivo.reglas || {};
+    const esReal = this._fuente === 'real';
+    const reglas = [
+      `KIDS en módulos ${(r.kids_modulos || [2,3,4]).join('-')}, subgrupos de ${r.kids_por_grupo || 3}`,
+      `Máx ${r.max_por_terapeuta_dia || 5} sesiones por terapeuta al día`,
+      `1 sesión de cada disciplina al día${r.disciplina_no_consecutiva ? ' (las repetidas, no seguidas)' : ''}`,
+      `Reunión de equipo por niño en bloque fijo (8:00 o 12:30)`,
+      `Reunión con papás en la semana ${r.reunion_papas_semana || 2} (doble bloque)`,
+      `Sesión psicólogo–papás fuera del horario del niño`,
+    ];
+    return `
+      <div class="armador-card">
+        <div class="armador-card-head">${this._icons.check}Reglas que aplica el sistema</div>
+        <div class="armador-card-body">
+          <ul class="armador-reglas">
+            ${reglas.map(t => `<li>${UI.esc(t)}</li>`).join('')}
+          </ul>
+          <div class="armador-leyenda">
+            <span class="armador-leg armador-leg-reunion">Equipo</span>
+            <span class="armador-leg armador-leg-papas">Papás</span>
+            <span class="armador-leg armador-leg-psipapas">Psi·Papás</span>
+          </div>
+          ${esReal ? '<div class="armador-reglas-nota">En el horario real (Excel) las reglas no se aplican; cambia a “Generado” para verlas en acción.</div>' : ''}
+        </div>
+      </div>
     `;
   },
 
