@@ -146,7 +146,9 @@ const Fichas = {
       </button>
 
       <div class="ficha-detail-head">
-        <span class="ficha-avatar-lg ficha-avatar" style="background:${cNino.bg};color:${cNino.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>
+        ${n.foto_url
+          ? `<img class="ficha-avatar-lg ficha-avatar" src="${UI.esc(n.foto_url)}" alt="">`
+          : `<span class="ficha-avatar-lg ficha-avatar" style="background:${cNino.bg};color:${cNino.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>`}
         <div>
           <div class="ficha-detail-name">${UI.esc(n.nombre_completo)}</div>
           <div class="ficha-detail-meta">
@@ -178,6 +180,7 @@ const Fichas = {
 
       <!-- Ficha unificada: una sola vista con secciones -->
       ${this._seccionDatos(n)}
+      ${this._seccionCiclos(n)}
       ${!isTer ? this._seccionEquipo(equipo) : ''}
       ${this._seccionHistorial(sesionesVisibles)}
       ${this._seccionObjetivos(objetivos)}
@@ -318,6 +321,75 @@ const Fichas = {
   },
 
   // ===== Secciones de la ficha unificada =====
+
+  _edadEn(nac, fecha) {
+    if (!nac || !fecha) return '';
+    const a = new Date(nac + 'T00:00:00'), b = new Date(fecha + 'T00:00:00');
+    let años = b.getFullYear() - a.getFullYear();
+    let meses = b.getMonth() - a.getMonth();
+    if (b.getDate() < a.getDate()) meses--;
+    if (meses < 0) { años--; meses += 12; }
+    return `${años}a ${meses}m`;
+  },
+
+  _seccionCiclos(n) {
+    const hist = Data.historialDeNino(n.id_nino);
+    const prog = Data.programa(n.id_programa);
+    const fmtMes = (f) => { const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; const [y, mm] = f.split('-').map(Number); return `${m[mm - 1]} ${y}`; };
+    const ICON = {
+      'Evaluación inicial': '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+      'Intensivo': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+      'Seguimiento': '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
+    };
+    const icono = (t) => `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">${ICON[t] || ICON['Intensivo']}</svg>`;
+
+    // Hito en curso (programa vigente del niño)
+    const enCurso = `
+      <div class="fhist-item fhist-curso">
+        <div class="fhist-head">
+          <span class="fhist-dot fhist-dot-curso">${icono('Intensivo')}</span>
+          <span class="fhist-main">
+            <span class="fhist-title">${UI.esc(prog?.nombre || n.programa_nombre || 'Programa')} · en curso</span>
+            <span class="fhist-meta">${n.fecha_inicio_programa ? fmtMes(n.fecha_inicio_programa) : ''} · semana ${n.semana_actual || '—'} de ${prog?.duracion_semanas || '—'} · ${this._edadEn(n.fecha_nacimiento, n.fecha_inicio_programa)}</span>
+          </span>
+          <span class="fhist-badge fhist-badge-curso">En curso</span>
+        </div>
+      </div>`;
+
+    const items = hist.map(h => {
+      const rango = h.fecha_termino ? `${fmtMes(h.fecha_inicio)} – ${fmtMes(h.fecha_termino)}` : fmtMes(h.fecha_inicio);
+      const edad = this._edadEn(n.fecha_nacimiento, h.fecha_inicio);
+      const sub = [rango, h.semanas ? `${h.semanas} semanas` : '', edad].filter(Boolean).join(' · ');
+      const cuerpo = `
+        <div class="fhist-body">
+          ${h.resumen ? `<p class="fhist-resumen">${UI.esc(h.resumen)}</p>` : ''}
+          ${h.horario_resumen ? `<div class="fhist-row"><span class="fhist-row-label">Horario</span><div class="fhist-chips">${h.horario_resumen.map(x => `<span class="fhist-chip">${UI.esc(x)}</span>`).join('')}</div></div>` : ''}
+          ${h.sesiones_realizadas != null ? `<div class="fhist-row"><span class="fhist-row-label">Registros</span><span>${h.sesiones_realizadas} de ${h.sesiones_totales} sesiones realizadas</span></div>` : ''}
+          ${h.objetivos ? `<div class="fhist-row"><span class="fhist-row-label">Objetivos</span><ul class="fhist-obj">${h.objetivos.map(o => `<li>${UI.esc(o)}</li>`).join('')}</ul></div>` : ''}
+          ${h.informe ? `<button class="btn btn-secondary btn-sm doc-download fhist-doc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ${UI.esc(h.informe.tipo)}</button>` : ''}
+        </div>`;
+      return `
+        <details class="fhist-item">
+          <summary class="fhist-head">
+            <span class="fhist-dot">${icono(h.tipo)}</span>
+            <span class="fhist-main">
+              <span class="fhist-title">${UI.esc(h.nombre ? `${h.tipo} · ${h.nombre}` : h.tipo)}</span>
+              <span class="fhist-meta">${UI.esc(sub)}</span>
+            </span>
+            <span class="fhist-badge">${UI.esc(h.estado || '')}</span>
+            <svg class="fhist-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          ${cuerpo}
+        </details>`;
+    }).join('');
+
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Historia de vida <span class="ficha-section-count">${hist.length}</span></h2>
+      ${hist.length === 0
+        ? `<div class="empty-state"><div class="empty-state-title">Sin ciclos anteriores</div><div class="empty-state-sub">Cuando se cierre un intensivo, queda aquí su horario, registros, objetivos e informe.</div></div>`
+        : `<div class="fhist-timeline">${enCurso}${items}</div>`}
+    </section>`;
+  },
 
   _seccionDatos(n) {
     return `<section class="ficha-section">

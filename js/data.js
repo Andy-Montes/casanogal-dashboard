@@ -51,6 +51,11 @@ const Data = {
   documentosDeNino(idNino) {
     return State.data.documentos_nino.filter(d => d.id_nino === idNino);
   },
+  historialDeNino(idNino) {
+    return (State.data.historial_intensivos || [])
+      .filter(h => h.id_nino === idNino)
+      .sort((a, b) => (b.fecha_inicio || '').localeCompare(a.fecha_inicio || ''));
+  },
   sesionesDeNino(idNino) {
     return State.data.sesiones.filter(s => s.id_nino === idNino || s.id_nino_secundario === idNino);
   },
