@@ -105,6 +105,14 @@ const Calendar = {
           <button class="chip ${State.filterPrograma==='APR'?'active':''}" data-prog="APR">Apraxia <span class="chip-count">${conteo.APR}</span></button>
           <button class="chip ${State.filterPrograma==='AT'?'active':''}" data-prog="AT">AT <span class="chip-count">${conteo.AT}</span></button>
         </div>
+        ${State.role === 'coordinacion' ? `
+          <div class="cal-filtro-nino">
+            <label for="calFiltroNino">Niño</label>
+            <select id="calFiltroNino">
+              <option value="all">Todos los niños</option>
+              ${Data.ninosVisibles().slice().sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)).map(n => `<option value="${n.id_nino}" ${State.filterNino === n.id_nino ? 'selected' : ''}>${UI.esc(n.nombre_completo)}</option>`).join('')}
+            </select>
+          </div>` : ''}
         <div class="tip">Tip: arrastra una sesión para moverla · <kbd>click</kbd> para abrir</div>
       </div>
 
@@ -436,6 +444,8 @@ const Calendar = {
   },
 
   _matchPrograma(s) {
+    if (State.filterNino && State.filterNino !== 'all'
+        && s.id_nino !== State.filterNino && s.id_nino_secundario !== State.filterNino) return false;
     if (State.filterPrograma === 'all') return true;
     return s.id_programa === 'PROG-' + State.filterPrograma;
   },
@@ -559,6 +569,12 @@ const Calendar = {
         State.filterPrograma = b.dataset.prog;
         this.render();
       });
+    });
+
+    // Filtro por niño (coordinación)
+    document.getElementById('calFiltroNino')?.addEventListener('change', (e) => {
+      State.filterNino = e.target.value;
+      this.render();
     });
 
     // Sesiones: click + drag

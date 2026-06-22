@@ -100,7 +100,51 @@
       "fecha_ingreso": "2024-09-17",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial.",
+      "sala_principal": "SALA-01",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-02",
@@ -123,7 +167,51 @@
       "fecha_ingreso": "2024-09-27",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial.",
+      "sala_principal": "SALA-01",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-03",
@@ -146,7 +234,57 @@
       "fecha_ingreso": "2024-10-05",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial.",
+      "sala_principal": "SALA-01",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05"
+        ]
+      },
+      "excepciones": [
+        {
+          "concepto": "Hora de lactancia",
+          "detalle": "Sale a las 12:00",
+          "bloques_indisponibles": [
+            "BLQ-06",
+            "BLQ-07"
+          ],
+          "dias": [
+            "lunes",
+            "martes",
+            "miércoles",
+            "jueves",
+            "viernes"
+          ]
+        }
+      ]
     },
     {
       "id_terapeuta": "TER-04",
@@ -168,7 +306,51 @@
       "fecha_ingreso": "2024-07-22",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial.",
+      "sala_principal": "SALA-01",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-05",
@@ -191,7 +373,51 @@
       "fecha_ingreso": "2024-03-25",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial."
+      "descripcion_breve": "Trabaja autonomía, juego y regulación sensorial.",
+      "sala_principal": "SALA-01",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-06",
@@ -215,7 +441,51 @@
       "fecha_ingreso": "2024-12-06",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-07",
@@ -238,7 +508,51 @@
       "fecha_ingreso": "2024-01-12",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-08",
@@ -260,7 +574,51 @@
       "fecha_ingreso": "2024-12-18",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-09",
@@ -282,7 +640,51 @@
       "fecha_ingreso": "2024-10-28",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación."
+      "descripcion_breve": "Apoya comunicación, lenguaje y alimentación.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-10",
@@ -306,7 +708,51 @@
       "fecha_ingreso": "2024-03-14",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje.",
+      "sala_principal": "SALA-06",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-11",
@@ -329,7 +775,51 @@
       "fecha_ingreso": "2024-12-02",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje.",
+      "sala_principal": "SALA-06",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-12",
@@ -352,7 +842,51 @@
       "fecha_ingreso": "2024-02-14",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje."
+      "descripcion_breve": "Estimula atención, funciones ejecutivas y aprendizaje.",
+      "sala_principal": "SALA-06",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-13",
@@ -376,7 +910,51 @@
       "fecha_ingreso": "2024-11-26",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Desarrolla motricidad, postura y movimiento."
+      "descripcion_breve": "Desarrolla motricidad, postura y movimiento.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-14",
@@ -398,7 +976,51 @@
       "fecha_ingreso": "2024-02-05",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Guía el desarrollo relacional con la familia."
+      "descripcion_breve": "Guía el desarrollo relacional con la familia.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     },
     {
       "id_terapeuta": "TER-15",
@@ -421,7 +1043,51 @@
       "fecha_ingreso": "2024-11-16",
       "estado": "Activo",
       "foto_url": "",
-      "descripcion_breve": "Acompaña lo emocional y el vínculo familiar."
+      "descripcion_breve": "Acompaña lo emocional y el vínculo familiar.",
+      "sala_principal": "SALA-03",
+      "disponibilidad_bloques": {
+        "lunes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "martes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "miércoles": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "jueves": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ],
+        "viernes": [
+          "BLQ-02",
+          "BLQ-03",
+          "BLQ-04",
+          "BLQ-05",
+          "BLQ-06",
+          "BLQ-07"
+        ]
+      },
+      "excepciones": []
     }
   ],
   "salas": [
@@ -565,7 +1231,8 @@
       "hora_fin": "08:35",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 1
+      "orden": 1,
+      "es_reunion_equipo": true
     },
     {
       "id_bloque": "BLQ-02",
@@ -573,7 +1240,8 @@
       "hora_fin": "09:10",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 2
+      "orden": 2,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-03",
@@ -581,7 +1249,8 @@
       "hora_fin": "09:55",
       "duracion_minutos": 45,
       "periodo": "Mañana",
-      "orden": 3
+      "orden": 3,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-04",
@@ -589,7 +1258,8 @@
       "hora_fin": "10:30",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 4
+      "orden": 4,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-05",
@@ -597,7 +1267,8 @@
       "hora_fin": "11:10",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 5
+      "orden": 5,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-06",
@@ -605,7 +1276,8 @@
       "hora_fin": "11:50",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 6
+      "orden": 6,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-07",
@@ -613,7 +1285,8 @@
       "hora_fin": "12:30",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 7
+      "orden": 7,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-08",
@@ -621,7 +1294,8 @@
       "hora_fin": "13:00",
       "duracion_minutos": 35,
       "periodo": "Mañana",
-      "orden": 8
+      "orden": 8,
+      "es_reunion_equipo": true
     },
     {
       "id_bloque": "BLQ-09",
@@ -629,7 +1303,8 @@
       "hora_fin": "14:35",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 9
+      "orden": 9,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-10",
@@ -637,7 +1312,8 @@
       "hora_fin": "15:10",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 10
+      "orden": 10,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-11",
@@ -645,7 +1321,8 @@
       "hora_fin": "15:55",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 11
+      "orden": 11,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-12",
@@ -653,7 +1330,8 @@
       "hora_fin": "16:30",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 12
+      "orden": 12,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-13",
@@ -661,7 +1339,8 @@
       "hora_fin": "17:10",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 13
+      "orden": 13,
+      "es_reunion_equipo": false
     },
     {
       "id_bloque": "BLQ-14",
@@ -669,7 +1348,8 @@
       "hora_fin": "17:50",
       "duracion_minutos": 35,
       "periodo": "Tarde",
-      "orden": 14
+      "orden": 14,
+      "es_reunion_equipo": false
     }
   ],
   "ninos": [

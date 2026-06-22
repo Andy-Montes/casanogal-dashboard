@@ -2246,6 +2246,15 @@
 .fhist-doc { align-self: flex-start; }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 
+/* Filtro por niño en la agenda (coordinación) */
+.cal-filtro-nino { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+.cal-filtro-nino label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
+.cal-filtro-nino select {
+  font: inherit; font-size: 12.5px; padding: 5px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); cursor: pointer; max-width: 200px;
+}
+.cal-filtro-nino select:focus { outline: 2px solid var(--cn-azul); outline-offset: -1px; }
+
 /* Documentación */
 .pa-doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pa-doc {

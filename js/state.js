@@ -8,6 +8,7 @@ const State = {
   weekStart: '2026-05-18',       // semana visible (lunes 18 may)
   filterPrograma: 'INT',         // default: Intensivo (producto estrella). all | INT | CONT | EVAL | APR | AT
   filterFicha: 'all',
+  filterNino: 'all',             // filtro por niño en la agenda (coordinación)
   fichaActiva: null,             // id_nino abierto en vista B
   searchQuery: '',
   selectedSesion: null,

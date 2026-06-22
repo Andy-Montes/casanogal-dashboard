@@ -101,6 +101,7 @@ const Main = {
         State.fichaActiva = null;
         State.searchQuery = '';
         State.filterFicha = 'all';
+        State.filterNino = 'all';
         State.filterPrograma = newRole === 'coordinacion' ? 'INT' : 'all';
         // Solo el admin puede cambiar rol entre pills (preview). Terapeuta no ve pills.
         if (newRole === 'terapeuta') {
