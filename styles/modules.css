@@ -2289,6 +2289,40 @@
 .estado-btn:hover { border-color: var(--cn-azul); color: var(--cn-azul); }
 .estado-btn.is-activo { background: var(--cn-azul); border-color: var(--cn-azul); color: #fff; }
 
+/* ====== Vista de disponibilidad (matriz terapeutas × horas) ====== */
+.disp-dias { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.disp-dia-btn { font: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: var(--r-pill); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text-2); cursor: pointer; }
+.disp-dia-btn.active { background: var(--cn-azul); border-color: var(--cn-azul); color: #fff; }
+.disp-feriado { font-size: 12.5px; color: #8A5A12; background: #FEF6D8; border-radius: var(--r-sm); padding: 8px 12px; margin-bottom: 10px; }
+.disp-legend { display: flex; gap: 10px; margin-bottom: 10px; font-size: 11px; flex-wrap: wrap; }
+.disp-leg { padding: 2px 9px; border-radius: var(--r-pill); font-weight: 600; }
+.disp-leg-libre { background: #E3F0E4; color: #2E6B3A; }
+.disp-leg-ocupado { background: var(--cn-azul-bg); color: var(--cn-azul-deep); }
+.disp-leg-nodisp { background: var(--bg-soft); color: var(--text-3); }
+.disp-wrap { overflow-x: auto; }
+.disp-table { border-collapse: collapse; width: 100%; }
+.disp-table th { background: var(--bg-soft); padding: 6px 4px; font-size: 10.5px; font-weight: 700; color: var(--text-3); border: 1px solid var(--border); text-align: center; }
+.disp-th-ter { text-align: left !important; min-width: 168px; }
+.disp-ter { display: flex; align-items: center; gap: 7px; padding: 4px 7px; border: 1px solid var(--border); }
+.disp-abr { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 10px; padding: 2px 5px; border-radius: var(--r-xs); flex-shrink: 0; }
+.disp-ter-nom { display: flex; flex-direction: column; line-height: 1.2; font-size: 12px; font-weight: 600; color: var(--text); }
+.disp-ter-nom small { font-size: 10px; color: var(--text-3); font-weight: 500; }
+.disp-cell { text-align: center; border: 1px solid var(--border); padding: 4px 2px; font-size: 10.5px; }
+.disp-libre { background: #EAF6EC; color: #2E6B3A; font-weight: 600; }
+.disp-ocupado { font-weight: 600; }
+.disp-nodisp { background: var(--bg-soft); color: var(--text-3); }
+.disp-fijo { background: #E4E7EC; color: #5A6472; font-size: 9px; }
+
+/* ====== Hero compacto (vista terapeuta) ====== */
+.hero-compact { padding: 14px 18px !important; }
+.hero-compact .hero-brain { display: none !important; }
+.hero-compact .hero-meta { gap: 12px; }
+
+/* ====== Calendario más compacto (menos aire) ====== */
+.cal-cell { min-height: 46px; }
+.session { padding: 4px 7px; }
+.session-sub { font-size: 10px; }
+
 /* Documentación */
 .pa-doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pa-doc {

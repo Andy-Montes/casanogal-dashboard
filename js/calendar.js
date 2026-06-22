@@ -30,7 +30,7 @@ const Calendar = {
       : `${vista.length} sesiones${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'}</b> detectado${k.conf.count===1?'':'s'}` : ''} · click en celda vacía para crear · drag para mover`;
 
     main.innerHTML = `
-      <section class="hero">
+      <section class="hero${State.role === 'terapeuta' ? ' hero-compact' : ''}">
         <div class="hero-brain">
           <svg viewBox="0 0 64 64" fill="none">
             <path d="M22 14C16 14 12 18 12 24C12 26 12.5 28 13.5 29.5C11 31 9 34 9 38C9 44 13 48 19 48C20 49.5 22 51 24 51C24 53 25 54 27 54C29 54 31 53 31 51V14C28 14 25 14 22 14Z" stroke="currentColor" stroke-width="2.5"/>
@@ -76,7 +76,7 @@ const Calendar = {
         </div>
       </section>
 
-      ${this._kpiRow(k)}
+      ${State.role === 'coordinacion' ? this._kpiRow(k) : ''}
 
       <div class="section-head">
         <div>

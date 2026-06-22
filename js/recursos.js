@@ -52,6 +52,60 @@ const Recursos = {
     // Igualito a Fichas, pero el sidebar resalta "Niños"
   },
 
+  // Vista general de disponibilidad: matriz terapeutas × horas de un día.
+  // Es la "hoja de trabajo" de Trini: ver de un vistazo quién está libre a cada hora.
+  renderDisponibilidad() {
+    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo')
+      .sort((a, b) => (a.especialidad || '').localeCompare(b.especialidad || '') || a.nombre_completo.localeCompare(b.nombre_completo));
+    const fechas = fechasSemana();
+    const idx = (this._dispDiaIdx != null) ? this._dispDiaIdx : Math.max(0, fechas.indexOf(HOY_ISO));
+    const dia = fechas[idx] || fechas[0];
+    const diaNombre = DIAS[idx];
+    const esFeriado = (State.data.meta?.feriados || []).includes(dia);
+    const sesDia = State.data.sesiones.filter(s => s.fecha === dia);
+    const ocup = {};
+    sesDia.forEach(s => {
+      ocup[s.id_terapeuta + '|' + s.id_bloque] = s;
+      if (s.id_terapeuta_secundario) ocup[s.id_terapeuta_secundario + '|' + s.id_bloque] = s;
+    });
+
+    const diasBtns = fechas.map((f, i) => `<button class="disp-dia-btn ${i === idx ? 'active' : ''}" data-idx="${i}">${DIAS_ABBR[i]} ${Number(f.split('-')[2])}</button>`).join('');
+
+    const filas = ters.map(t => {
+      const c = ESPECIALIDAD_VAR[t.especialidad] || {};
+      const celdas = bloques.map(b => {
+        if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo" title="Bloque de reunión de equipo">reunión</td>`;
+        const disp = t.disponibilidad_bloques;
+        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
+        const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
+        if (s) return `<td class="disp-cell disp-ocupado" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)}">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+        return `<td class="disp-cell disp-libre" title="Libre">libre</td>`;
+      }).join('');
+      return `<tr>
+        <td class="disp-ter"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span class="disp-ter-nom">${UI.esc(t.nombre_completo)}<small>${UI.esc(t.especialidad)}</small></span></td>
+        ${celdas}
+      </tr>`;
+    }).join('');
+
+    document.getElementById('main').innerHTML = `
+      <div class="section-head"><div>
+        <div class="section-title">Disponibilidad</div>
+        <div class="section-sub">Quién está libre a cada hora · ${ters.length} terapeutas · jornada de mañana. Útil para cubrir una ausencia o armar una dupla.</div>
+      </div></div>
+      <div class="disp-dias">${diasBtns}</div>
+      ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
+      <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado (con niño)</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
+      <div class="table-wrap disp-wrap">
+        <table class="disp-table">
+          <thead><tr><th class="disp-th-ter">Terapeuta</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    `;
+    document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this.renderDisponibilidad(); }));
+  },
+
   renderSalas() {
     const list = State.data.salas;
     const sesHoy = Data.sesionesVisibles().filter(s => s.fecha === HOY_ISO);

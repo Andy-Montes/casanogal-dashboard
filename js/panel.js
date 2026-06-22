@@ -180,18 +180,22 @@ const Panel = {
     else if (State.module === 'fichas') Fichas.render();
   },
 
-  // Terapeutas de la misma especialidad, activos y libres en fecha+bloque de la sesión
+  // Terapeutas activos y libres en fecha+bloque de la sesión.
+  // NO se limita a la misma especialidad (Trini reasigna a cualquiera libre, incluso para duplas).
+  // Se ordenan: misma especialidad primero, luego el resto.
   _disponiblesPara(sesion) {
     const ocupados = new Set((Data.sesionesPorDiaYBloque(sesion.fecha, sesion.id_bloque) || []).map(s => s.id_terapeuta));
     return Data.terapeutasEfectivos().filter(t => {
       if (t.estado !== 'Activo') return false;
-      if (t.especialidad !== sesion.tipo_terapia) return false;
       if (t.id_terapeuta === sesion.id_terapeuta) return false;
       if (ocupados.has(t.id_terapeuta)) return false;
-      // Respetar disponibilidad por bloque si está configurada
       const disp = t.disponibilidad_bloques;
       if (disp && disp[sesion.dia_semana] && !disp[sesion.dia_semana].includes(sesion.id_bloque)) return false;
       return true;
+    }).sort((a, b) => {
+      const am = a.especialidad === sesion.tipo_terapia ? 0 : 1;
+      const bm = b.especialidad === sesion.tipo_terapia ? 0 : 1;
+      return am - bm || a.nombre_completo.localeCompare(b.nombre_completo);
     });
   },
 

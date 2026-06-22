@@ -226,6 +226,7 @@ const Main = {
       case 'equipo':     Recursos.renderEquipo(); break;
       case 'ninos':      Recursos.renderNinosTable(); break;
       case 'salas':      Recursos.renderSalas(); break;
+      case 'disponibilidad': Recursos.renderDisponibilidad(); break;
       case 'config':     Config.render(); break;
       case 'permisos':   Recursos.renderPermisos(); break;
       default:           Calendar.render();
@@ -238,8 +239,8 @@ const Main = {
     // Módulos ocultos según rol. El terapeuta no ve nada del área Sistema
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
-      padres:    ['reportes','boletas','armador','equipo','ninos','salas','config','permisos'],
-      terapeuta: ['config','permisos','reportes','boletas','armador'],
+      padres:    ['reportes','boletas','armador','equipo','ninos','salas','disponibilidad','config','permisos'],
+      terapeuta: ['config','permisos','reportes','boletas','armador','disponibilidad'],
     };
     // Boletas se manejan fuera del sistema (Temite) → ocultas en todos los roles
     const ocultar = [...(ocultosPorRol[State.role] || []), 'boletas'];
