@@ -338,7 +338,6 @@ const Calendar = {
       const divCls = cambioPeriodo ? ' cal-period-start' : '';
       html += `<div class="cal-time${divCls}">
         <span>${b.hora_inicio}</span>
-        <span class="cal-time-period">${b.periodo === 'Mañana' ? 'AM' : 'PM'}</span>
       </div>`;
       DIAS.forEach((dia, i) => {
         const fecha = fechas[i];
@@ -392,7 +391,6 @@ const Calendar = {
       const divCls = cambioPeriodo ? ' cal-period-start' : '';
       html += `<div class="cal-time${divCls}">
         <span>${b.hora_inicio}</span>
-        <span class="cal-time-period">${b.periodo === 'Mañana' ? 'AM' : 'PM'}</span>
       </div>`;
       const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque).filter(s => this._matchPrograma(s));
       const cellCls = `cal-cell ${isToday ? 'today-col' : ''} ${sesiones.length === 0 ? 'empty' : ''}${divCls}${esFeriado ? ' cal-feriado' : ''}`;
@@ -446,11 +444,19 @@ const Calendar = {
   _matchPrograma(s) {
     if (State.filterNino && State.filterNino !== 'all'
         && s.id_nino !== State.filterNino && s.id_nino_secundario !== State.filterNino) return false;
+    if (s.tipo_actividad === 'Reunión de equipo') return true; // del centro, no de un programa
     if (State.filterPrograma === 'all') return true;
     return s.id_programa === 'PROG-' + State.filterPrograma;
   },
 
   _renderSesion(s, idx) {
+    // Reunión de equipo: tarjeta gris, sin niño/sala
+    if (s.tipo_actividad === 'Reunión de equipo') {
+      return `<div class="session s-reunion-equipo" data-id="${s.id_sesion}" style="animation-delay:${idx * 30}ms" title="Reunión de equipo · 08:00">
+        <div class="session-name">Reunión de equipo<span class="ter mono">${UI.esc(s.terapeuta_abr || '')}</span></div>
+        <div class="session-sub">Todo el equipo</div>
+      </div>`;
+    }
     const ter = Data.terapeuta(s.id_terapeuta);
     const cls = ESPECIALIDAD_CLASS[s.tipo_terapia] || 's-to';
     const isConflict = !!s.conflicto_detectado;

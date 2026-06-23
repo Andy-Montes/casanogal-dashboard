@@ -180,6 +180,7 @@ const Fichas = {
 
       <!-- Ficha unificada: una sola vista con secciones -->
       ${this._seccionDatos(n)}
+      ${this._seccionHorarioSemana(n)}
       ${this._seccionCiclos(n)}
       ${!isTer ? this._seccionEquipo(equipo) : ''}
       ${this._seccionHistorial(sesionesVisibles)}
@@ -329,6 +330,31 @@ const Fichas = {
     if (b.getDate() < a.getDate()) meses--;
     if (meses < 0) { años--; meses += 12; }
     return `${años}a ${meses}m`;
+  },
+
+  _seccionHorarioSemana(n) {
+    const fechas = fechasSemana();
+    const ses = Data.sesionesDeNino(n.id_nino).filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo');
+    if (!ses.length) return '';
+    const primer = (n.nombre_completo || '').split(' ')[0];
+    const porDia = fechas.map(f => ses.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
+    const cols = fechas.map((f, i) => {
+      const dnum = Number(f.split('-')[2]);
+      const items = porDia[i];
+      const cuerpo = items.length
+        ? items.map(s => {
+            const t = Data.terapeuta(s.id_terapeuta);
+            const c = ESPECIALIDAD_VAR[s.tipo_terapia] || {};
+            return `<div class="hsem-item" style="border-left-color:${c.main || 'var(--cn-azul)'}"><span class="mono">${UI.esc(s.hora_inicio || '')}</span> ${UI.esc(s.tipo_terapia || '')}<small>${UI.esc(t?.abreviacion || '')}</small></div>`;
+          }).join('')
+        : '<div class="hsem-empty">—</div>';
+      return `<div class="hsem-day"><div class="hsem-day-h">${DIAS_ABBR[i]} ${dnum}</div><div class="hsem-day-body">${cuerpo}</div></div>`;
+    }).join('');
+    return `<section class="ficha-section">
+      <h2 class="ficha-section-title">Horario de la semana</h2>
+      <div class="ficha-section-hint">Todas las sesiones de ${UI.esc(primer)} esta semana — para coordinar traspasos (con quién tiene antes y después).</div>
+      <div class="hsem-grid">${cols}</div>
+    </section>`;
   },
 
   _seccionCiclos(n) {

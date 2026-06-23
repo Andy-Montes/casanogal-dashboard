@@ -2323,6 +2323,33 @@
 .session { padding: 4px 7px; }
 .session-sub { font-size: 10px; }
 
+/* Reunión de equipo en el calendario */
+.session.s-reunion-equipo { background: #E4E7EC !important; border-left-color: #9AA3B2 !important; color: #2B3445 !important; }
+
+/* ====== Horario de la semana del niño (ficha · traspasos) ====== */
+.ficha-section-hint { font-size: 12px; color: var(--text-3); margin: -6px 0 10px; line-height: 1.4; }
+.hsem-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.hsem-day { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.hsem-day-h { background: var(--cn-azul-deep); color: #fff; font-size: 11px; font-weight: 700; text-align: center; padding: 5px 0; letter-spacing: 0.06em; }
+.hsem-day-body { padding: 6px; display: flex; flex-direction: column; gap: 5px; min-height: 56px; }
+.hsem-item { background: #fff; border-left: 3px solid var(--cn-azul); border-radius: 3px; padding: 4px 7px; font-size: 11px; line-height: 1.3; }
+.hsem-item .mono { font-weight: 700; color: var(--cn-azul); margin-right: 3px; }
+.hsem-item small { display: block; font-size: 10px; color: var(--text-3); }
+.hsem-empty { color: #B5B5B5; text-align: center; font-size: 11px; padding: 8px 0; }
+
+/* ====== Responsive celular ====== */
+@media (max-width: 860px) {
+  .hsem-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .hsem-grid { grid-template-columns: 1fr; }
+  .hero-meta { flex-wrap: wrap; gap: 10px 14px; }
+  .hero-meta-divider { display: none; }
+  .disp-table { font-size: 10px; }
+  .disp-th-ter { min-width: 120px; }
+  .cal-filtro-nino select { max-width: 140px; }
+}
+
 /* Documentación */
 .pa-doc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pa-doc {
