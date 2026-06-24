@@ -248,15 +248,22 @@ const Panel = {
     if (cont.innerHTML) { cont.innerHTML = ''; return; } // toggle cerrar
     const ocupadas = new Set((Data.sesionesPorDiaYBloque(sesion.fecha, sesion.id_bloque) || [])
       .filter(s => s.id_sesion !== sesion.id_sesion).map(s => s.id_sala));
-    const libres = (State.data.salas || []).filter(sa => sa.id_sala !== sesion.id_sala && !ocupadas.has(sa.id_sala));
+    // Salas preferidas del terapeuta (principal / opción 2 / opción 3): se ofrecen primero.
+    const ter = Data.terapeuta(sesion.id_terapeuta);
+    const preferidas = [ter?.sala_principal, ter?.sala_opcion_2, ter?.sala_opcion_3].filter(Boolean);
+    const rank = id => { const i = preferidas.indexOf(id); return i === -1 ? 99 : i; };
+    const libres = (State.data.salas || [])
+      .filter(sa => sa.id_sala !== sesion.id_sala && !ocupadas.has(sa.id_sala))
+      .sort((a, b) => rank(a.id_sala) - rank(b.id_sala) || a.nombre.localeCompare(b.nombre));
     cont.innerHTML = `
       <div class="panel-reasignar-head">Salas libres el ${UI.esc(sesion.dia_semana)} ${UI.esc(sesion.hora_inicio)}</div>
       ${libres.length
         ? libres.map(sa => {
             const c = UI.colorSala(sa.tipo_principal);
+            const pref = preferidas.includes(sa.id_sala);
             return `<button class="reasignar-item" data-sala="${sa.id_sala}" type="button">
               <span class="reasignar-abr" style="background:${c.bg};color:${c.text}">sala</span>
-              <span class="reasignar-nombre">${UI.esc(sa.nombre)}<small class="reasignar-esp">${UI.esc(sa.tipo_principal)}</small></span>
+              <span class="reasignar-nombre">${UI.esc(sa.nombre)}<small class="reasignar-esp"${pref ? ' style="color:var(--cn-mostaza-deep,#9A6B00);font-weight:600"' : ''}>${UI.esc(sa.tipo_principal)}${pref ? ' · preferida' : ''}</small></span>
             </button>`;
           }).join('')
         : '<div class="reasignar-vacio">No hay salas libres a esta hora.</div>'}

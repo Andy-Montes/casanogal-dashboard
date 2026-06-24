@@ -349,6 +349,15 @@ const Config = {
             <div class="cfg-field" style="grid-column:1/-1"><label>Nota de estado (opcional)</label>
               <input id="ter-est-nota" placeholder="Ej: regresa el 15 de junio · licencia hasta 30/05" value="${UI.esc(t?.estado_nota || '')}">
             </div>
+            ${(() => {
+              const salas = State.data.salas || [];
+              const opts = (sel, conVacio) => `${conVacio ? '<option value="">— sin asignar —</option>' : ''}${salas.map(s => `<option value="${s.id_sala}" ${sel === s.id_sala ? 'selected' : ''}>${UI.esc(s.nombre)}</option>`).join('')}`;
+              return `
+              <div class="cfg-field" style="grid-column:1/-1"><label>Salas del profesional <small style="font-weight:400;color:var(--text-3)">· la opción 2 y 3 se usan cuando la principal está ocupada</small></label></div>
+              <div class="cfg-field"><label>Sala principal</label><select id="ter-sala1">${opts(t?.sala_principal, false)}</select></div>
+              <div class="cfg-field"><label>Sala opción 2</label><select id="ter-sala2">${opts(t?.sala_opcion_2, true)}</select></div>
+              <div class="cfg-field"><label>Sala opción 3</label><select id="ter-sala3">${opts(t?.sala_opcion_3, true)}</select></div>`;
+            })()}
             ${this._dispGridHtml(t || { disponibilidad_bloques: {} })}
           </div>
           <div class="pendiente-modal-foot">
@@ -383,6 +392,9 @@ const Config = {
         telefono: document.getElementById('ter-tel').value.trim(),
         estado: document.getElementById('ter-est').value,
         estado_nota: document.getElementById('ter-est-nota').value.trim() || null,
+        sala_principal: document.getElementById('ter-sala1').value || t?.sala_principal || null,
+        sala_opcion_2: document.getElementById('ter-sala2').value || null,
+        sala_opcion_3: document.getElementById('ter-sala3').value || null,
         disponibilidad_bloques: dispLocal,
         dias_disponibles: Object.keys(dispLocal).filter(d => (dispLocal[d] || []).length),
       };

@@ -27,7 +27,7 @@ const Calendar = {
     const tituloSeccion = this.view === 'dia' ? 'Agenda del día' : this.view === 'mes' ? 'Vista mensual' : 'Agenda semanal';
     const subSeccion = this.view === 'mes'
       ? `${vista.length} sesiones en el mes · click en un día para ver su agenda`
-      : `${vista.length} sesiones${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'}</b> detectado${k.conf.count===1?'':'s'}` : ''} · click en celda vacía para crear · drag para mover`;
+      : `${vista.length} sesiones${k.conf.count ? ` · <b style="color:var(--alert)">${k.conf.count} conflicto${k.conf.count===1?'':'s'}</b> detectado${k.conf.count===1?'':'s'}` : ''} · click en celda vacía para crear · drag para mover${State.role === 'coordinacion' ? ' · los cambios afectan <b>solo este día</b>; los permanentes se hacen en el Armador de Horario' : ''}`;
 
     main.innerHTML = `
       <section class="hero${State.role === 'terapeuta' ? ' hero-compact' : ''}">
