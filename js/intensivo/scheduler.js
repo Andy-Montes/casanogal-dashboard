@@ -110,10 +110,17 @@ const Scheduler = (() => {
       Object.keys(grupos).forEach((g) => {
         const nis = grupos[g];
         const need = Math.max(...nis.map((ni) => intensivo.niños[ni].kids_semanal || 0));
+        // Hora de entrada del grupo: si los niños la fijaron, su sesión grupal va en esa franja.
+        const hes = nis.map((ni) => intensivo.niños[ni].hora_entrada).filter((h) => h != null && !bloquesFijos.has(h));
+        const heGrupo = hes.length ? hes[0] : null;
+        const franjasOk = kidsModulos.slice();
+        if (heGrupo != null && !franjasOk.includes(heGrupo)) franjasOk.push(heGrupo);
         const candidatos = shuffle(
-          Array.from({ length: totalSlots }, (_, k) => k).filter((k) => kidsModulos.includes(k % F)),
+          Array.from({ length: totalSlots }, (_, k) => k).filter((k) => franjasOk.includes(k % F)),
           rnd
         );
+        // Priorizar los slots de la franja de entrada (la primera KIDS del grupo cae ahí).
+        if (heGrupo != null) candidatos.sort((a, b) => ((a % F === heGrupo) ? 0 : 1) - ((b % F === heGrupo) ? 0 : 1));
         const elegidosDia = new Set();
         let puestos = 0;
         for (const slot of candidatos) {
@@ -402,6 +409,8 @@ const Scheduler = (() => {
 
   return { generar, generarSemana };
 })();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = Scheduler;
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = Scheduler;

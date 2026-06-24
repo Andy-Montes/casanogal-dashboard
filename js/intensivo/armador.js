@@ -753,6 +753,14 @@ const Armador = {
             <select class="armador-form-sel" data-section="${s.key}" data-rol="COT">${opts}</select>
             <input type="number" class="armador-form-ses" data-section="${s.key}" data-rol="COT" min="0" max="10" placeholder="ses/sem" />
           </div>
+          ${s.key === 'PSI' ? `
+          <div class="armador-form-row armador-form-row-papas">
+            <label class="armador-form-rol">PAPÁS</label>
+            <select class="armador-form-sel" data-section="${s.key}" data-rol="PAPAS">${opts}</select>
+            <input type="number" class="armador-form-ses" data-section="${s.key}" data-rol="PAPAS" min="0" max="4" placeholder="ses/sem" />
+          </div>
+          <div class="armador-form-papas-hint">La sesión con papás se agenda fuera del horario del niño.</div>
+          ` : ''}
         </div>
       `;
     };
@@ -784,7 +792,15 @@ const Armador = {
               <span>Sesiones KIDS grupales / semana</span>
               <input type="number" id="armadorFormKids" min="0" max="10" value="5" />
             </label>
+            <label class="armador-form-field">
+              <span>Hora de entrada (sesión grupal)</span>
+              <select id="armadorFormHoraEntrada">
+                <option value="">— sin fijar —</option>
+                ${(catalogo.franjas || []).map((fr, i) => (i !== 0 && i !== (catalogo.franjas.length - 1)) ? `<option value="${i}">${UI.esc(fr)}</option>` : '').join('')}
+              </select>
+            </label>
           </div>
+          <div class="armador-form-hint armador-form-hint-soft">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora.</div>
           <div class="armador-form-disc-grid">
             ${SECCIONES.map(seccionHtml).join('')}
           </div>
@@ -815,9 +831,12 @@ const Armador = {
       }
       const encargado = document.getElementById('armadorFormEncargado').value.trim();
       const kids = parseInt(document.getElementById('armadorFormKids').value, 10) || 0;
+      const heRaw = document.getElementById('armadorFormHoraEntrada').value;
+      const horaEntrada = heRaw === '' ? null : Number(heRaw);
       const asignaciones = [];
       SECCIONES.forEach(s => {
-        ['TUTOR', 'COT'].forEach(rol => {
+        const roles = s.key === 'PSI' ? ['TUTOR', 'COT', 'PAPAS'] : ['TUTOR', 'COT'];
+        roles.forEach(rol => {
           const sel = document.querySelector(`.armador-form-sel[data-section="${s.key}"][data-rol="${rol}"]`);
           const ses = document.querySelector(`.armador-form-ses[data-section="${s.key}"][data-rol="${rol}"]`);
           const sigla = sel?.value?.trim();
@@ -836,6 +855,7 @@ const Armador = {
         nombre,
         encargado,
         kids_semanal: kids,
+        hora_entrada: horaEntrada,  // franja índice o null; agrupa la sesión grupal a esa hora
         total_ses_semanal: asignaciones.reduce((s, a) => s + a.sesiones, 0) + kids,
         asignaciones,
         _extra: true,  // marcador para distinguir niños agregados a mano

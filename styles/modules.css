@@ -597,6 +597,9 @@
   line-height: 1.5;
 }
 .armador-form-hint b { color: var(--cn-mostaza-deep); }
+.armador-form-hint-soft { background: var(--bg-soft); border-left-color: var(--border); color: var(--text-3); margin-top: 8px; }
+.armador-form-row-papas .armador-form-rol { color: var(--psico-text, var(--cn-mostaza-deep)); }
+.armador-form-papas-hint { font-size: 11px; color: var(--text-3); font-style: italic; margin-top: 4px; padding-left: 2px; }
 
 /* CONFLICTOS */
 .armador-conflicto-grupo { margin-bottom: 12px; }
