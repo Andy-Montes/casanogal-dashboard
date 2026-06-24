@@ -84,4 +84,17 @@ const UI = {
     };
     return map[tipo] || { bg: 'var(--cn-azul-bg)', text: 'var(--cn-azul-deep)', main: 'var(--cn-azul)' };
   },
+
+  // Color principal de una disciplina (para el punto de disciplina en las sesiones)
+  discColor(tipoTerapia) {
+    const v = (typeof ESPECIALIDAD_VAR !== 'undefined' && ESPECIALIDAD_VAR[tipoTerapia]) || null;
+    return v ? v.main : 'var(--text-3)';
+  },
+
+  // Niño en programa Intensivo
+  esIntensivo(n) { return !!(n && n.id_programa === 'PROG-INT'); },
+  // Insignia "INT" junto al nombre (vacío si no es intensivo)
+  badgeIntensivo(n) { return this.esIntensivo(n) ? '<span class="badge-int">INT</span>' : ''; },
+  // Anillo mostaza alrededor del avatar del niño intensivo (string de box-shadow, '' si no)
+  ringIntensivo(n) { return this.esIntensivo(n) ? 'box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--cn-mostaza);' : ''; },
 };

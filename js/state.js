@@ -5,7 +5,7 @@ const State = {
   role: 'coordinacion',          // coordinacion | terapeuta | padres
   currentUser: null,             // usuario activo según rol
   module: 'calendario',          // módulo activo
-  weekStart: '2026-05-18',       // semana visible (lunes 18 may)
+  weekStart: '2026-05-11',       // semana visible (lunes 11 may · SEM 4 del intensivo)
   filterPrograma: 'INT',         // default: Intensivo (producto estrella). all | INT | CONT | EVAL | APR | AT
   filterFicha: 'all',
   filterNino: 'all',             // filtro por niño en la agenda (coordinación)

@@ -116,14 +116,20 @@ const Calendar = {
         <div class="tip">Tip: arrastra una sesión para moverla · <kbd>click</kbd> para abrir</div>
       </div>
 
-      <div class="calendar" id="calendar">${this._renderGrid()}</div>
+      ${State.role === 'terapeuta' && this.view !== 'mes'
+        ? `<div class="ter-layout">
+             <div class="calendar cal-ter-compact" id="calendar">${this._renderGrid()}</div>
+             <aside class="ter-side">${this._panelTerapeuta()}</aside>
+           </div>`
+        : `<div class="calendar" id="calendar">${this._renderGrid()}</div>`}
 
       <div class="legend">
+        <span class="legend-note">Cada <b>color</b> es un niño · el <b>punto</b> indica la terapia:</span>
         ${Object.entries(ESPECIALIDAD_VAR).map(([k,v]) => `
-          <span class="legend-item"><span class="legend-swatch" style="background:${v.main}"></span>${UI.esc(k)}</span>
+          <span class="legend-item"><span class="ses-disc-dot" style="background:${v.main}"></span>${UI.esc(k)}</span>
         `).join('')}
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--cn-mostaza)"></span>Intensivo (INT)</span>
         <span class="legend-item"><span class="legend-swatch" style="background:var(--alert)"></span>Conflicto</span>
-        <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(120deg,var(--to) 50%, var(--fono) 50%)"></span>Dupla intencional</span>
       </div>
     `;
 
@@ -160,6 +166,76 @@ const Calendar = {
     if (this.view === 'dia') return 'Día';
     if (this.view === 'mes') return 'Mes';
     return `Sem ${State.data.meta.semana_actual} de 6`;
+  },
+
+  // Panel lateral del terapeuta: para cada sesión suya, qué le toca al niño
+  // ANTES y DESPUÉS (con otros profesionales) → traspasos. En gris lo que no es suyo.
+  _panelTerapeuta() {
+    const tid = DEMO_USERS.terapeuta?.id_terapeuta;
+    const DIAS_LBL = { lunes: 'Lunes', martes: 'Martes', 'miércoles': 'Miércoles', jueves: 'Jueves', viernes: 'Viernes' };
+    const bloquesOrd = (State.data.bloques_horarios || []).slice().sort((a, b) => a.orden - b.orden);
+    const ordenDe = (idb) => { const b = bloquesOrd.find(x => x.id_bloque === idb); return b ? b.orden : 99; };
+    const abrTer = (id) => { const t = Data.terapeuta(id); return t ? (t.nombre_visible || t.abreviacion) : '—'; };
+    const fechas = (this.view === 'dia') ? [this.dayDate || HOY_ISO] : fechasSemana();
+
+    const mias = this.view === 'dia'
+      ? Data.sesionesVisibles().filter(s => s.fecha === (this.dayDate || HOY_ISO))
+      : Data.sesionesSemana();
+    const propias = mias.filter(s => s.id_nino && s.tipo_actividad !== 'Reunión de equipo');
+
+    const reuniones = mias.filter(s => s.tipo_actividad === 'Reunión de equipo');
+
+    const adj = (s) => {
+      const todas = Data.sesionesDeNino(s.id_nino)
+        .filter(x => x.fecha === s.fecha && x.tipo_actividad !== 'Reunión de equipo')
+        .sort((a, b) => ordenDe(a.id_bloque) - ordenDe(b.id_bloque));
+      const i = todas.findIndex(x => x.id_sesion === s.id_sesion);
+      return { antes: i > 0 ? todas[i - 1] : null, despues: (i >= 0 && i < todas.length - 1) ? todas[i + 1] : null };
+    };
+    const lineaAdj = (x, tipo) => {
+      if (!x) return `<div class="ter-adj ter-adj-none">${tipo === 'antes' ? 'Sin sesión previa' : 'Última del día'}</div>`;
+      const mia = x.id_terapeuta === tid || x.id_terapeuta_secundario === tid;
+      return `<div class="ter-adj${mia ? ' ter-adj-mia' : ''}">
+        <span class="ter-adj-flecha">${tipo === 'antes' ? '↑' : '↓'}</span>
+        <span class="mono">${x.hora_inicio}</span> ${UI.esc(x.tipo_terapia)} · ${UI.esc(abrTer(x.id_terapeuta))}${mia ? ' (tú)' : ''}
+      </div>`;
+    };
+
+    let secciones = '';
+    fechas.forEach(f => {
+      const dia = propias.filter(s => s.fecha === f).sort((a, b) => ordenDe(a.id_bloque) - ordenDe(b.id_bloque));
+      const reuDia = reuniones.filter(s => s.fecha === f);
+      if (!dia.length && !reuDia.length) return;
+      const [, , d] = f.split('-').map(Number);
+      const diaNom = DIAS_LBL[Object.keys(DIAS_LBL)[(new Date(f + 'T00:00:00Z').getUTCDay() + 6) % 7]] || '';
+      const cards = dia.map(s => {
+        const c = ESPECIALIDAD_VAR[s.tipo_terapia] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
+        const nino = Data.nino(s.id_nino);
+        const cn = UI.colorNino(s.id_nino);
+        const { antes, despues } = adj(s);
+        return `<div class="ter-card" style="border-left-color:${cn.bg}">
+          <div class="ter-card-top">
+            <span class="ter-card-hora mono">${s.hora_inicio}</span>
+            <span class="ter-card-nino">${UI.esc((s.nino_visible || '').trim())}${UI.badgeIntensivo(nino)}</span>
+          </div>
+          <div class="ter-card-disc" style="color:${c.text}"><span class="ses-disc-dot" style="background:${UI.discColor(s.tipo_terapia)}"></span>${UI.esc(s.tipo_terapia)}${s.sala_nombre && s.sala_nombre !== '—' ? ` · ${UI.esc(s.sala_nombre)}` : ''}</div>
+          <div class="ter-adj-wrap">${lineaAdj(antes, 'antes')}${lineaAdj(despues, 'despues')}</div>
+        </div>`;
+      }).join('');
+      const reuCards = reuDia.map(s => `<div class="ter-card ter-card-reunion">
+          <div class="ter-card-top"><span class="ter-card-hora mono">${s.hora_inicio}</span><span class="ter-card-nino">Reunión de equipo</span></div>
+          <div class="ter-card-disc">${UI.esc((s.nino_visible || '').replace('Reunión de equipo · ', '')) || 'Todo el equipo'}</div>
+        </div>`).join('');
+      secciones += `<div class="ter-day"><div class="ter-day-head">${diaNom} ${d}</div>${cards}${reuCards}</div>`;
+    });
+
+    if (!secciones) secciones = '<div class="ter-empty">No tienes sesiones esta semana.</div>';
+    return `
+      <div class="ter-side-head">
+        <div class="ter-side-title">Tu agenda y traspasos</div>
+        <div class="ter-side-sub">Qué le toca a cada niño antes y después de tu sesión</div>
+      </div>
+      ${secciones}`;
   },
 
   // Fila de KPI superior. El admin ve el termómetro del centro;
@@ -450,19 +526,24 @@ const Calendar = {
   },
 
   _renderSesion(s, idx) {
-    // Reunión de equipo: tarjeta gris, sin niño/sala
+    // Reunión de equipo: tarjeta gris. Es POR NIÑO (ej. "Reunión de equipo · León A.").
     if (s.tipo_actividad === 'Reunión de equipo') {
-      return `<div class="session s-reunion-equipo" data-id="${s.id_sesion}" style="animation-delay:${idx * 30}ms" title="Reunión de equipo · 08:00">
-        <div class="session-name">Reunión de equipo<span class="ter mono">${UI.esc(s.terapeuta_abr || '')}</span></div>
-        <div class="session-sub">Todo el equipo</div>
+      const ninoReu = Data.nino(s.id_nino);
+      const etiqueta = ninoReu ? `Reunión de equipo · ${UI.esc(ninoReu.nombre_visible)}`
+                               : UI.esc(s.nino_visible || 'Reunión de equipo');
+      return `<div class="session s-reunion-equipo" data-id="${s.id_sesion}" style="animation-delay:${idx * 30}ms" title="${etiqueta} · ${UI.esc(s.hora_inicio)}">
+        <div class="session-name">${etiqueta}<span class="ter mono">${UI.esc(s.terapeuta_abr || '')}</span></div>
+        <div class="session-sub">Equipo de ${ninoReu ? UI.esc(ninoReu.nombre_visible) : 'trabajo'}</div>
       </div>`;
     }
     const ter = Data.terapeuta(s.id_terapeuta);
-    const cls = ESPECIALIDAD_CLASS[s.tipo_terapia] || 's-to';
+    const nino = Data.nino(s.id_nino);
+    const cn = UI.colorNino(s.id_nino);          // color identitario del niño
     const isConflict = !!s.conflicto_detectado;
     const isDupla = s.es_dupla;
     let extraCls = '';
-    let extraStyle = '';
+    // Color base = color del niño (consistente en todas las vistas). La dupla mantiene su gradiente.
+    let extraStyle = isDupla ? '' : `background:${cn.bg};color:${cn.text};border-left-color:${cn.bg};`;
     let nombre = UI.esc(s.nino_visible);
     let sub = `${UI.esc(s.tipo_terapia)} · ${UI.esc(s.sala_nombre)}`;
     if (isConflict) extraCls += ' s-conflict';
@@ -471,17 +552,17 @@ const Calendar = {
       extraCls += ' s-dupla';
       const ninoSec = Data.nino(s.id_nino_secundario);
       const terSec = Data.terapeuta(s.id_terapeuta_secundario);
-      // Bipartito: usa color de la especialidad principal y secundaria si la hay
       const c1 = ESPECIALIDAD_VAR[s.tipo_terapia];
       const c2 = terSec ? ESPECIALIDAD_VAR[terSec.especialidad] : ESPECIALIDAD_VAR['Fonoaudiología'];
       extraStyle = `--c1-bg:${c1.bg};--c2-bg:${c2?.bg || 'var(--fono-bg)'};color:${c1.text};border-left-color:${c1.main};`;
       if (ninoSec) nombre = `${UI.esc(s.nino_visible)} + ${UI.esc(ninoSec.nombre_visible)}`;
     }
-    return `<div class="session ${cls}${extraCls}" draggable="true"
+    const dot = `<span class="ses-disc-dot" style="background:${UI.discColor(s.tipo_terapia)}" title="${UI.esc(s.tipo_terapia)}"></span>`;
+    return `<div class="session${extraCls}" draggable="true"
       data-id="${s.id_sesion}"
       style="animation-delay:${idx * 30}ms;${extraStyle}"
-      title="${UI.esc(s.nino_visible)} · ${UI.esc(ter?.nombre_visible || '—')} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}">
-      <div class="session-name">${nombre}<span class="ter mono">${UI.esc(ter?.abreviacion || '—')}</span></div>
+      title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(ter?.nombre_visible || '—')} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}">
+      <div class="session-name">${nombre}${UI.badgeIntensivo(nino)}<span class="ter mono">${dot}${UI.esc(ter?.abreviacion || '—')}</span></div>
       <div class="session-sub">${sub}</div>
     </div>`;
   },
@@ -554,7 +635,7 @@ const Calendar = {
     document.getElementById('todayBtn')?.addEventListener('click', () => {
       if (this.view === 'dia') this.dayDate = HOY_ISO;
       else if (this.view === 'mes') this.monthAnchor = HOY_ISO;
-      else State.weekStart = '2026-05-18';
+      else State.weekStart = '2026-05-11';
       this.render();
     });
     document.getElementById('navPrev')?.addEventListener('click', () => this._nav(-1));
@@ -589,7 +670,12 @@ const Calendar = {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         const s = State.data.sesiones.find(x => x.id_sesion === el.dataset.id);
-        if (s) Panel.open(s);
+        if (!s) return;
+        if (s.tipo_actividad === 'Reunión de equipo') {
+          UI.toast('Reunión de equipo · martes 08:00 a 08:35 · todo el equipo', 'info');
+          return;
+        }
+        Panel.open(s);
       });
       el.addEventListener('dragstart', (e) => {
         Calendar._dragId = el.dataset.id;

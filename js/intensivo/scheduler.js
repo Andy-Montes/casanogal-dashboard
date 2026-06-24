@@ -62,7 +62,7 @@ const Scheduler = (() => {
     const D = dias.length;
     const totalSlots = F * D;
     const N = intensivo.niños.length;
-    const rnd = mulberry32(opts.semilla ?? 42);
+    let rnd = mulberry32(opts.semilla ?? 42);
     const reglas = { ...DEFAULTS, ...(intensivo.reglas || {}), ...(opts.reglas || {}) };
     const semana = opts.semana ?? 1; // 1-based, para la reunión de papás
 
@@ -104,7 +104,9 @@ const Scheduler = (() => {
       }
     });
     const salaKids = catalogo.terapeutas[KIDS_TER]?.sala;
-    if (ocupadoTer[KIDS_TER]) {
+    function colocarKids() {
+     kidsSlots.length = 0;
+     if (ocupadoTer[KIDS_TER]) {
       Object.keys(grupos).forEach((g) => {
         const nis = grupos[g];
         const need = Math.max(...nis.map((ni) => intensivo.niños[ni].kids_semanal || 0));
@@ -133,6 +135,7 @@ const Scheduler = (() => {
           conflictos.push({ tipo: 'kids_insuficientes', mensaje: `Grupo KIDS ${g}: ${puestos}/${need} sesiones` });
         }
       });
+     }
     }
 
     // === Fase 1: demandas individuales ===
@@ -155,9 +158,16 @@ const Scheduler = (() => {
     const porDia = new Map();        // `${ni}_${sigla}_${dia}` → count (cap maxPorDia)
     const porTerDia = new Map();     // `${sigla}_${dia}` → count (cap max_por_terapeuta_dia)
     const discDia = new Map();       // `${ni}_${disc}_${dia}` → [franjas usadas]
+    let maxNivel = -1, demandaFallo = null; // demanda más profunda que no se pudo colocar
+    // Random-restart: si una semilla no converge en LIMITE_PASOS, se reintenta con otra.
+    const ABORT = {};
+    const LIMITE_PASOS = 120_000;
+    let pasos = 0;
 
     function intentar(i) {
+      if (++pasos > LIMITE_PASOS) throw ABORT;
       if (i >= demandas.length) return true;
+      if (i > maxNivel) { maxNivel = i; demandaFallo = demandas[i]; }
       const d = demandas[i];
       if (!ocupadoTer[d.sigla]) {
         conflictos.push({ tipo: 'sigla_desconocida', mensaje: `Terapeuta "${d.sigla}" no está en el catálogo (niño ${d.niño}, ${d.disciplina})`, niño: d.niño, sigla: d.sigla });
@@ -204,11 +214,86 @@ const Scheduler = (() => {
         if (posBT >= 0) usadas.splice(posBT, 1);
       }
 
-      conflictos.push({ tipo: 'sin_solucion', mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`, niño: d.niño, sigla: d.sigla, disciplina: d.disciplina });
-      return false;
+      return false; // no acumular: el backtracking retrocede aquí millones de veces
     }
 
-    const ok = intentar(0);
+    function resetEstado() {
+      gridNino.forEach((row) => row.fill(null));
+      Object.values(ocupadoTer).forEach((a) => a.fill(0));
+      Object.values(ocupadoSala).forEach((a) => a.fill(0));
+      conflictos.length = 0;
+      porDia.clear(); porTerDia.clear(); discDia.clear();
+      maxNivel = -1; demandaFallo = null; pasos = 0;
+    }
+    // Intenta resolver con varias semillas; con sábado sin disponibilidad el espacio
+    // es ajustado y una semilla puede atascarse: el restart la salva.
+    const semillaBase = opts.semilla ?? 42;
+    let ok = false;
+    for (let r = 0; r < 60 && !ok; r++) {
+      resetEstado();
+      rnd = mulberry32(semillaBase + r * 101);
+      colocarKids();
+      try { ok = intentar(0); } catch (e) { if (e !== ABORT) throw e; ok = false; }
+    }
+    if (!ok && demandaFallo) {
+      const d = demandaFallo;
+      conflictos.push({ tipo: 'sin_solucion', mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`, niño: d.niño, sigla: d.sigla, disciplina: d.disciplina });
+    }
+
+    // === Reubicación lun-vie ===
+    // Casa Nogal atiende solo lun-vie. El motor reparte en 6 días (más estable);
+    // aquí movemos lo que quedó en sábado (último día) a huecos de lun-vie que
+    // cumplan las mismas reglas. Con la holgura del horario, el sábado queda vacío.
+    if (ok) {
+      const ultimoDia = D - 1;
+      const maxPorDiaDe = (ni, sigla) => {
+        const n = intensivo.niños[ni];
+        const a = (n.asignaciones || []).find((x) => x.sigla === sigla);
+        return a ? Math.max(1, Math.ceil(a.sesiones / D)) : reglas.max_por_terapeuta_dia;
+      };
+      const slotsSemana = shuffle(
+        Array.from({ length: totalSlots }, (_, k) => k).filter((k) => Math.floor(k / F) !== ultimoDia),
+        rnd
+      );
+      for (let ni = 0; ni < N; ni++) {
+        for (let f = 0; f < F; f++) {
+          const slotSab = ultimoDia * F + f;
+          const sigla = gridNino[ni][slotSab];
+          if (!sigla) continue;
+          // KIDS grupal se mueve aparte (afecta a varios niños): lo dejamos al motor
+          if (kidsSlots.some((k) => k.slot === slotSab)) continue;
+          const disc = catalogo.terapeutas[sigla]?.disciplina;
+          const sala = catalogo.terapeutas[sigla]?.sala;
+          const maxPD = maxPorDiaDe(ni, sigla);
+          for (const dest of slotsSemana) {
+            if (esFijo(dest)) continue;
+            const dia = Math.floor(dest / F);
+            const ff = dest % F;
+            if (!disponibleEn(sigla, dest)) continue;
+            if (ocupadoTer[sigla][dest]) continue;
+            if (gridNino[ni][dest]) continue;
+            if (sala && ocupadoSala[sala][dest] >= capDe(sala)) continue;
+            const keyNT = `${ni}_${sigla}_${dia}`;
+            if ((porDia.get(keyNT) || 0) >= maxPD) continue;
+            const keyTD = `${sigla}_${dia}`;
+            if ((porTerDia.get(keyTD) || 0) >= reglas.max_por_terapeuta_dia) continue;
+            const keyDD = `${ni}_${disc}_${dia}`;
+            const usadas = discDia.get(keyDD) || [];
+            if (usadas.length >= reglas.max_por_disciplina_dia) continue;
+            if (reglas.disciplina_no_consecutiva && usadas.some((x) => Math.abs(x - ff) === 1)) continue;
+            // mover sab → dest
+            gridNino[ni][slotSab] = null; ocupadoTer[sigla][slotSab] = 0;
+            if (sala) ocupadoSala[sala][slotSab]--;
+            gridNino[ni][dest] = sigla; ocupadoTer[sigla][dest] = 1;
+            if (sala) ocupadoSala[sala][dest]++;
+            porDia.set(keyNT, (porDia.get(keyNT) || 0) + 1);
+            porTerDia.set(keyTD, (porTerDia.get(keyTD) || 0) + 1);
+            usadas.push(ff); discDia.set(keyDD, usadas);
+            break;
+          }
+        }
+      }
+    }
 
     // === Post-fases: reuniones y sesiones con papás (no compiten por el grid de atención) ===
     const reunionesEquipo = [];

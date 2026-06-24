@@ -10,20 +10,16 @@ const Config = {
         dias_habiles: ['lunes','martes','miércoles','jueves','viernes'],
         manana_inicio: '08:00',
         manana_fin: '13:00',
-        tarde_inicio: '14:00',
-        tarde_fin: '18:00',
         bloque_min: 35,
       },
       notif: {
         recordatorio_padres_24h: true,
         alerta_conflictos: true,
-        aviso_boletas: true,
       },
       mailTemplate: {
         subject: 'Acompañamiento de {primer_nombre} · {mes}',
         body: 'Hola,\n\nAquí tienen el horario de esta semana para {primer_nombre}. El PDF con el detalle completo está adjunto a este mismo correo (descárgalo desde la consola y adjúntalo manualmente).\n\nHorario de esta semana:\n\n{horario}\n\nCualquier consulta o necesidad de reagendar, pueden escribirnos directo.\n\nUn abrazo,\nEquipo Casa Nogal',
       },
-      valor_hora_default: 35000,
     };
   },
 
@@ -87,7 +83,6 @@ const Config = {
         <button class="cfg-tab" data-tab="profesionales">Profesionales (${ters.length})</button>
         <button class="cfg-tab" data-tab="notif">Notificaciones</button>
         <button class="cfg-tab" data-tab="mail">Plantilla de mail</button>
-        <button class="cfg-tab" data-tab="costos">Costos</button>
       </div>
 
       <div id="cfgPanel"></div>
@@ -110,7 +105,6 @@ const Config = {
     else if (tab === 'profesionales') panel.innerHTML = this._tabProfesionales();
     else if (tab === 'notif')    panel.innerHTML = this._tabNotif();
     else if (tab === 'mail')     panel.innerHTML = this._tabMail();
-    else if (tab === 'costos')   panel.innerHTML = this._tabCostos();
     this._wireTab(tab);
   },
 
@@ -132,13 +126,11 @@ const Config = {
       </div>
 
       <div class="cfg-card">
-        <div class="cfg-card-title">Jornada y bloques</div>
-        <div class="cfg-card-sub">Define la franja horaria que cubre el centro y la duración estándar de cada bloque.</div>
+        <div class="cfg-card-title">Jornada de mañana</div>
+        <div class="cfg-card-sub">Casa Nogal atiende solo en jornada de mañana. Define el inicio, el fin y la duración estándar de cada bloque.</div>
         <div class="cfg-grid-2">
-          <div class="cfg-field"><label>Mañana inicio</label><input type="time" id="cfg-h-mi" value="${cfg.horario.manana_inicio}"></div>
-          <div class="cfg-field"><label>Mañana fin</label><input type="time" id="cfg-h-mf" value="${cfg.horario.manana_fin}"></div>
-          <div class="cfg-field"><label>Tarde inicio</label><input type="time" id="cfg-h-ti" value="${cfg.horario.tarde_inicio}"></div>
-          <div class="cfg-field"><label>Tarde fin</label><input type="time" id="cfg-h-tf" value="${cfg.horario.tarde_fin}"></div>
+          <div class="cfg-field"><label>Inicio jornada</label><input type="time" id="cfg-h-mi" value="${cfg.horario.manana_inicio}"></div>
+          <div class="cfg-field"><label>Fin jornada</label><input type="time" id="cfg-h-mf" value="${cfg.horario.manana_fin}"></div>
           <div class="cfg-field"><label>Duración de bloque (min)</label><input type="number" id="cfg-h-bl" value="${cfg.horario.bloque_min}" min="15" max="120"></div>
         </div>
         <div class="cfg-actions"><button class="btn btn-primary" id="cfg-h-save">Guardar horarios</button></div>
@@ -159,17 +151,15 @@ const Config = {
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr>
-              <th>Nombre</th><th>Especialidad</th><th>Contrato</th><th class="num">Valor hora</th><th>Email</th><th>Estado</th><th></th>
+              <th>Nombre</th><th>Especialidad</th><th>Días y horario disponible</th><th>Email</th><th>Estado</th><th></th>
             </tr></thead>
             <tbody>
               ${ters.map(t => {
                 const c = ESPECIALIDAD_VAR[t.especialidad] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
-                const vh = t.valor_hora ? `$${t.valor_hora.toLocaleString('es-CL')}` : 'Planta';
                 return `<tr>
                   <td><div style="font-weight:600">${UI.esc(t.nombre_completo)}</div><div style="font-size:11px;color:var(--text-3)">${UI.esc(t.abreviacion || '')}</div></td>
                   <td><span class="badge" style="background:${c.bg};color:${c.text}">${UI.esc(t.especialidad)}</span></td>
-                  <td>${UI.esc(t.tipo_contrato)}</td>
-                  <td class="num mono">${vh}</td>
+                  <td>${this._resumenDispHtml(t)}</td>
                   <td class="mono" style="font-size:12px">${UI.esc(t.email || '—')}</td>
                   <td>
                     <span class="estado-prof estado-${this._estadoSlug(t.estado)}">${UI.esc(t.estado || 'Activo')}</span>
@@ -206,11 +196,6 @@ const Config = {
             <input type="checkbox" class="toggle-input" id="cfg-n-con" ${cfg.notif.alerta_conflictos?'checked':''}>
             <span class="toggle-pill"></span>
           </label>
-          <label class="toggle-row">
-            <div><div class="toggle-title">Aviso de boletas pendientes</div><div class="toggle-sub">Recordatorio mensual a coordinación con las boletas por emitir.</div></div>
-            <input type="checkbox" class="toggle-input" id="cfg-n-bol" ${cfg.notif.aviso_boletas?'checked':''}>
-            <span class="toggle-pill"></span>
-          </label>
         </div>
         <div class="cfg-actions"><button class="btn btn-primary" id="cfg-n-save">Guardar notificaciones</button></div>
       </div>
@@ -230,22 +215,6 @@ const Config = {
           <button class="btn btn-ghost" id="cfg-m-reset">Restaurar plantilla</button>
           <button class="btn btn-primary" id="cfg-m-save">Guardar plantilla</button>
         </div>
-      </div>
-    `;
-  },
-
-  // ---- Costos ----
-  _tabCostos() {
-    const cfg = this.read();
-    return `
-      <div class="cfg-card">
-        <div class="cfg-card-title">Valor hora referencial</div>
-        <div class="cfg-card-sub">Se aplica a los profesionales a honorarios que no tienen un valor específico cargado en su ficha. Los profesionales de planta no usan este valor.</div>
-        <div class="cfg-field" style="max-width:240px">
-          <label>Valor hora por defecto (CLP)</label>
-          <input type="number" id="cfg-vh" value="${cfg.valor_hora_default}" min="0" step="1000">
-        </div>
-        <div class="cfg-actions"><button class="btn btn-primary" id="cfg-vh-save">Guardar valor hora</button></div>
       </div>
     `;
   },
@@ -270,8 +239,6 @@ const Config = {
         const cur = this.read();
         cur.horario.manana_inicio = document.getElementById('cfg-h-mi').value;
         cur.horario.manana_fin = document.getElementById('cfg-h-mf').value;
-        cur.horario.tarde_inicio = document.getElementById('cfg-h-ti').value;
-        cur.horario.tarde_fin = document.getElementById('cfg-h-tf').value;
         cur.horario.bloque_min = Number(document.getElementById('cfg-h-bl').value) || 35;
         this.save(cur);
         UI.toast('Horarios guardados', 'success');
@@ -287,7 +254,6 @@ const Config = {
         const cur = this.read();
         cur.notif.recordatorio_padres_24h = document.getElementById('cfg-n-pad').checked;
         cur.notif.alerta_conflictos = document.getElementById('cfg-n-con').checked;
-        cur.notif.aviso_boletas = document.getElementById('cfg-n-bol').checked;
         this.save(cur);
         UI.toast('Notificaciones guardadas', 'success');
       });
@@ -309,24 +275,33 @@ const Config = {
         UI.toast('Plantilla restaurada', 'success');
       });
     }
-    if (tab === 'costos') {
-      document.getElementById('cfg-vh-save')?.addEventListener('click', () => {
-        const cur = this.read();
-        cur.valor_hora_default = Number(document.getElementById('cfg-vh').value) || 0;
-        this.save(cur);
-        UI.toast('Valor hora guardado', 'success');
-      });
-    }
+  },
+
+  // Resumen compacto de la disponibilidad de un profesional (para la tabla)
+  _resumenDispHtml(t) {
+    const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const lbl = { lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié', jueves: 'Jue', viernes: 'Vie' };
+    const db = t.disponibilidad_bloques || {};
+    const activos = dias.filter(d => (db[d] || []).length);
+    if (!activos.length) return '<span style="color:var(--text-3);font-size:12px">Sin definir</span>';
+    const todos = [].concat(...activos.map(d => db[d]));
+    const bloqs = (State.data.bloques_horarios || []).filter(b => todos.includes(b.id_bloque));
+    const ini = bloqs.map(b => b.hora_inicio).sort()[0];
+    const fin = bloqs.map(b => b.hora_fin).sort().slice(-1)[0];
+    const chips = activos.map(d => `<span class="cfg-dia-chip">${lbl[d]}</span>`).join('');
+    return `<div class="cfg-disp-resumen">${chips}</div><div class="mono" style="font-size:11px;color:var(--text-3);margin-top:3px">${ini}–${fin}</div>`;
   },
 
   _dispGridHtml(t) {
     const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
     const diasLbl = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
     const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo === 'Mañana' && !b.es_reunion_equipo);
+    const db = t.disponibilidad_bloques || {};
     const exc = (t.excepciones || []).map(e => UI.esc(e.concepto + (e.detalle ? ` (${e.detalle})` : ''))).join(' · ');
     return `
       <div class="cfg-field" style="grid-column:1/-1">
-        <label>Disponibilidad por bloque (mañana)</label>
+        <label>Días y horarios disponibles · marca cada bloque que el profesional atiende</label>
+        <div class="cfg-card-sub" style="margin:-2px 0 6px">Esto alimenta la vista de Disponibilidad en Recursos.</div>
         <table class="cfg-disp">
           <thead><tr><th></th>${diasLbl.map(d => `<th>${d}</th>`).join('')}</tr></thead>
           <tbody>
@@ -364,10 +339,6 @@ const Config = {
             <div class="cfg-field"><label>Especialidad</label>
               <select id="ter-esp">${ESPS.map(e => `<option ${t?.especialidad===e?'selected':''}>${e}</option>`).join('')}</select>
             </div>
-            <div class="cfg-field"><label>Tipo de contrato</label>
-              <select id="ter-tc"><option ${t?.tipo_contrato==='Planta'?'selected':''}>Planta</option><option ${t?.tipo_contrato==='Honorarios'?'selected':''}>Honorarios</option></select>
-            </div>
-            <div class="cfg-field"><label>Valor hora (CLP, deja vacío si Planta)</label><input type="number" id="ter-vh" value="${t?.valor_hora || ''}"></div>
             <div class="cfg-field"><label>Email</label><input id="ter-em" value="${UI.esc(t?.email || '')}"></div>
             <div class="cfg-field"><label>Teléfono</label><input id="ter-tel" value="${UI.esc(t?.telefono || '')}"></div>
             <div class="cfg-field"><label>Estado actual</label>
@@ -378,7 +349,7 @@ const Config = {
             <div class="cfg-field" style="grid-column:1/-1"><label>Nota de estado (opcional)</label>
               <input id="ter-est-nota" placeholder="Ej: regresa el 15 de junio · licencia hasta 30/05" value="${UI.esc(t?.estado_nota || '')}">
             </div>
-            ${editing && State.data.terapeutas.find(x => x.id_terapeuta === id)?.disponibilidad_bloques ? this._dispGridHtml(State.data.terapeutas.find(x => x.id_terapeuta === id)) : ''}
+            ${this._dispGridHtml(t || { disponibilidad_bloques: {} })}
           </div>
           <div class="pendiente-modal-foot">
             <button class="btn btn-ghost" id="cfgTerCancel">Cancelar</button>
@@ -392,15 +363,13 @@ const Config = {
     document.getElementById('cfgTerClose').addEventListener('click', close);
     document.getElementById('cfgTerCancel').addEventListener('click', close);
     document.getElementById('cfgTerOverlay').addEventListener('click', (e) => { if (e.target.id === 'cfgTerOverlay') close(); });
-    // Disponibilidad por bloque: edita en memoria el terapeuta base
+    // Disponibilidad por bloque y día: se edita en un estado local y se vuelca al guardar
+    const dispLocal = JSON.parse(JSON.stringify((t && t.disponibilidad_bloques) || {}));
     document.querySelectorAll('#cfgTerOverlay .cfg-disp-chk').forEach(chk => {
       chk.addEventListener('change', () => {
-        const tr = State.data.terapeutas.find(x => x.id_terapeuta === id);
-        if (!tr) return;
-        tr.disponibilidad_bloques = tr.disponibilidad_bloques || {};
-        const set = new Set(tr.disponibilidad_bloques[chk.dataset.dia] || []);
+        const set = new Set(dispLocal[chk.dataset.dia] || []);
         if (chk.checked) set.add(chk.dataset.bloque); else set.delete(chk.dataset.bloque);
-        tr.disponibilidad_bloques[chk.dataset.dia] = [...set];
+        dispLocal[chk.dataset.dia] = [...set];
       });
     });
     document.getElementById('cfgTerSave').addEventListener('click', () => {
@@ -410,14 +379,17 @@ const Config = {
         nombre_visible: document.getElementById('ter-nom').value.trim().split(' ')[0],
         abreviacion: document.getElementById('ter-abr').value.trim().toUpperCase().slice(0,3),
         especialidad: document.getElementById('ter-esp').value,
-        tipo_contrato: document.getElementById('ter-tc').value,
-        valor_hora: Number(document.getElementById('ter-vh').value) || null,
         email: document.getElementById('ter-em').value.trim(),
         telefono: document.getElementById('ter-tel').value.trim(),
         estado: document.getElementById('ter-est').value,
         estado_nota: document.getElementById('ter-est-nota').value.trim() || null,
+        disponibilidad_bloques: dispLocal,
+        dias_disponibles: Object.keys(dispLocal).filter(d => (dispLocal[d] || []).length),
       };
       if (!data.nombre_completo) { UI.toast('El nombre es obligatorio', 'error'); return; }
+      // Reflejar la disponibilidad en memoria para que la vista Disponibilidad (Recursos) la use sin recargar
+      const trBase = State.data.terapeutas.find(x => x.id_terapeuta === id);
+      if (trBase) { trBase.disponibilidad_bloques = dispLocal; trBase.dias_disponibles = data.dias_disponibles; }
 
       const ov = this._readOverrides();
       const esBase = State.data.terapeutas.find(x => x.id_terapeuta === id);

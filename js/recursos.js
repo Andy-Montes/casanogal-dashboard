@@ -88,19 +88,62 @@ const Recursos = {
       </tr>`;
     }).join('');
 
+    // Panel equivalente POR NIÑO (lo pidió Trini): ver el horario de cada niño el mismo día.
+    const ocupNino = {};
+    sesDia.forEach(s => { if (s.id_nino) (ocupNino[s.id_nino + '|' + s.id_bloque] = ocupNino[s.id_nino + '|' + s.id_bloque] || []).push(s); });
+    const ninos = (State.data.ninos || [])
+      .filter(n => n.estado === 'Activo' && sesDia.some(s => s.id_nino === n.id_nino))
+      .sort((a, b) => { // intensivos primero, luego por nombre
+        const ai = UI.esIntensivo(a) ? 0 : 1, bi = UI.esIntensivo(b) ? 0 : 1;
+        return ai - bi || a.nombre_completo.localeCompare(b.nombre_completo);
+      });
+    const filasNino = ninos.map(n => {
+      const cn = UI.colorNino(n.id_nino);
+      const celdas = bloques.map(b => {
+        const lista = ocupNino[n.id_nino + '|' + b.id_bloque] || [];
+        const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
+        if (reu) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">reunión</td>`;
+        const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
+        if (clin.length) {
+          const detalle = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
+          const abrs = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
+          return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(detalle)}">${abrs}</td>`;
+        }
+        return `<td class="disp-cell disp-libre" title="Sin sesión">libre</td>`;
+      }).join('');
+      return `<tr>
+        <td class="disp-ter"><span class="disp-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span><span class="disp-ter-nom">${UI.esc(n.nombre_visible)}${UI.badgeIntensivo(n)}<small>${UI.esc(n.programa_nombre || '')}</small></span></td>
+        ${celdas}
+      </tr>`;
+    }).join('');
+
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Quién está libre a cada hora · ${ters.length} terapeutas · jornada de mañana. Útil para cubrir una ausencia o armar una dupla.</div>
+        <div class="section-sub">Horario del día por terapeuta y por niño, lado a lado · ${ters.length} terapeutas · ${ninos.length} niños con atención. Útil para cubrir una ausencia o armar una dupla.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
-      <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado (con niño)</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
-      <div class="table-wrap disp-wrap">
-        <table class="disp-table">
-          <thead><tr><th class="disp-th-ter">Terapeuta</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
-          <tbody>${filas}</tbody>
-        </table>
+      <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
+      <div class="disp-split">
+        <div class="disp-col">
+          <div class="disp-col-head">Por terapeuta</div>
+          <div class="table-wrap disp-wrap">
+            <table class="disp-table">
+              <thead><tr><th class="disp-th-ter">Terapeuta</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
+              <tbody>${filas}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="disp-col">
+          <div class="disp-col-head">Por niño</div>
+          <div class="table-wrap disp-wrap">
+            <table class="disp-table">
+              <thead><tr><th class="disp-th-ter">Niño</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
+              <tbody>${filasNino || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin atención de niños este día.</td></tr>`}</tbody>
+            </table>
+          </div>
+        </div>
       </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this.renderDisponibilidad(); }));
@@ -244,8 +287,8 @@ const Recursos = {
             ${filtered.map(n => {
               const c = UI.colorNino(n.id_nino);
               return `<tr style="cursor:pointer" data-id="${n.id_nino}">
-                <td><span class="ficha-avatar" style="width:32px;height:32px;font-size:11px;background:${c.bg};color:${c.text}">${UI.esc(UI.initials(n.nombre_completo))}</span></td>
-                <td><div style="font-weight:600;color:var(--text)">${UI.esc(n.nombre_completo)}</div><div style="font-size:11px;color:var(--text-3)" class="mono">${UI.esc(n.rut)}</div></td>
+                <td><span class="ficha-avatar" style="width:32px;height:32px;font-size:11px;background:${c.bg};color:${c.text};${UI.ringIntensivo(n)}">${UI.esc(UI.initials(n.nombre_completo))}</span></td>
+                <td><div style="font-weight:600;color:var(--text)">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div><div style="font-size:11px;color:var(--text-3)" class="mono">${UI.esc(n.rut)}</div></td>
                 <td class="num">${n.edad_anios}</td>
                 <td>${UI.esc(n.programa_nombre)}</td>
                 <td>${UI.esc(n.apoderado_principal)}</td>

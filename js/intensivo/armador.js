@@ -290,9 +290,8 @@ const Armador = {
   _calendarioHtml(intensivo, catalogo) {
     const { dias: diasCatalogo, franjas } = catalogo;
     const F = franjas.length;
-    const esReal = this._fuente === 'real';
-    // En modo real, sáb está vacío → no lo mostramos
-    const dias = esReal ? diasCatalogo.filter(d => d !== 'sab') : diasCatalogo;
+    // Casa Nogal atiende solo lun-vie: el sábado nunca se muestra.
+    const dias = diasCatalogo.filter(d => d !== 'sab');
     // Mapeo dia visible → índice en catálogo (para indexar grid del scheduler)
     const diaIdxOrig = dias.map(d => diasCatalogo.indexOf(d));
     const semanas = this._resultadoActivo().semanas || [];
@@ -321,7 +320,7 @@ const Armador = {
         ${dias.map((d, di) => {
           const fecha = new Date(inicioSem);
           fecha.setDate(inicioSem.getDate() + di);
-          return `<div class="cal-day-head"><span class="cal-day-name">${diaLabels[d]}</span><span class="cal-day-num">${fecha.getDate()}</span></div>`;
+          return `<div class="cal-day-head${di % 2 ? ' cal-col-alt' : ''}"><span class="cal-day-name">${diaLabels[d]}</span><span class="cal-day-num">${fecha.getDate()}</span></div>`;
         }).join('')}
       `;
 
@@ -330,11 +329,11 @@ const Armador = {
         const horaCorta = franja.split('-')[0];
         const horaHtml = `<div class="cal-time">${horaCorta}</div>`;
 
-        const celdas = diaIdxOrig.map((diaOrig) => {
+        const celdas = diaIdxOrig.map((diaOrig, di) => {
           const slotIdx = diaOrig * F + fi;
           const sesiones = this._sesionesEnSlot(intensivo, catalogo, sem, slotIdx, kidsSet, inicialNino);
           const contenido = sesiones.length ? this._renderCelda(sesiones) : '';
-          return `<div class="cal-slot">${contenido}</div>`;
+          return `<div class="cal-slot${di % 2 ? ' cal-col-alt' : ''}">${contenido}</div>`;
         }).join('');
 
         return horaHtml + celdas;

@@ -26,10 +26,13 @@ const Comunicacion = {
     main.innerHTML = `
       <div id="paRoot" class="pa-root">
         ${this._paHeader(n)}
-        ${this._paResumen(n)}
-        ${this._paHorario(n)}
-        ${this._paEquipo(n)}
-        ${this._paDocs(n)}
+        <div class="pa-grid">
+          <div class="pa-col-main">${this._paHorario(n)}</div>
+          <aside class="pa-col-side">
+            ${this._paEquipo(n)}
+            ${this._paDocs(n)}
+          </aside>
+        </div>
         <p class="pa-closing">Estamos aquí para acompañarlos a ${UI.esc((n.nombre_completo || '').split(' ')[0])} y a ustedes. Cualquier duda, escríbennos.</p>
       </div>`;
     this._paWire();
@@ -37,37 +40,40 @@ const Comunicacion = {
 
   _paHeader(n) {
     const primer = (n.nombre_completo || '').split(' ')[0];
-    return `
-      <div class="pa-hero">
-        <div>
-          <div class="pa-hero-eyebrow">Hola, ${UI.esc((n.apoderado_principal || '').split(' ')[0] || 'familia')}</div>
-          <h1 class="pa-hero-title">El acompañamiento de ${UI.esc(primer)}</h1>
-          <div class="pa-hero-sub">${UI.esc(n.programa_nombre || '')}${n.semana_actual ? ` · semana ${n.semana_actual}` : ''}</div>
-        </div>
-        <button class="btn btn-secondary" id="paDescargar">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Descargar resumen PDF
-        </button>
-      </div>`;
-  },
-
-  _paResumen(n) {
+    const ini = (n.nombre_completo || '').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
     const mesIso = HOY_ISO.slice(0, 7);
-    const sesMes = Data.sesionesDeNino(n.id_nino).filter(s => s.fecha.startsWith(mesIso));
+    // Los papás no ven las reuniones de equipo (son internas del centro).
+    const sesMes = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && s.fecha.startsWith(mesIso));
     const total = sesMes.length;
     const realizadas = sesMes.filter(s => s.estado === 'Realizada').length;
     const futuras = sesMes.filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO).length;
     return `
-      <div class="pa-stats">
-        <div class="pa-stat"><b>${total}</b><span>sesiones este mes</span></div>
-        <div class="pa-stat"><b>${realizadas}</b><span>completadas</span></div>
-        <div class="pa-stat"><b>${futuras}</b><span>por venir</span></div>
+      <div class="pa-hero">
+        <div class="pa-hero-id">
+          ${n.foto_url ? `<img class="pa-hero-foto" src="${UI.esc(n.foto_url)}" alt="" style="${UI.ringIntensivo(n)}">` : `<span class="pa-hero-foto pa-hero-ini" style="${UI.ringIntensivo(n)}">${UI.esc(ini)}</span>`}
+          <div>
+            <div class="pa-hero-eyebrow">Hola, ${UI.esc((n.apoderado_principal || '').split(' ')[0] || 'familia')}</div>
+            <h1 class="pa-hero-title">El acompañamiento de ${UI.esc(primer)}</h1>
+            <div class="pa-hero-sub">${UI.esc(n.programa_nombre || '')}${n.semana_actual ? ` · semana ${n.semana_actual}` : ''}${UI.badgeIntensivo(n)}</div>
+          </div>
+        </div>
+        <div class="pa-hero-right">
+          <div class="pa-stats">
+            <div class="pa-stat"><b>${total}</b><span>este mes</span></div>
+            <div class="pa-stat"><b>${realizadas}</b><span>hechas</span></div>
+            <div class="pa-stat"><b>${futuras}</b><span>por venir</span></div>
+          </div>
+          <button class="btn btn-secondary pa-pdf-btn" id="paDescargar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Descargar PDF
+          </button>
+        </div>
       </div>`;
   },
 
   _paHorario(n) {
     const fechas = fechasSemana();
-    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => fechas.includes(s.fecha));
+    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && fechas.includes(s.fecha));
     const porDia = fechas.map(f => sesNino.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
     const cols = fechas.map((f, i) => {
       const [, , d] = f.split('-').map(Number);
@@ -364,7 +370,8 @@ const Comunicacion = {
 
   _previewResumen(n) {
     const mesIso = HOY_ISO.slice(0, 7);
-    const sesMes = Data.sesionesDeNino(n.id_nino).filter(s => s.fecha.startsWith(mesIso));
+    // Los papás no ven las reuniones de equipo (son internas del centro).
+    const sesMes = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && s.fecha.startsWith(mesIso));
     const total = sesMes.length;
     const realizadas = sesMes.filter(s => s.estado === 'Realizada').length;
     const futuras = sesMes.filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO).length;
@@ -398,7 +405,7 @@ const Comunicacion = {
 
   _previewHorario(n) {
     const fechas = fechasSemana();
-    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => fechas.includes(s.fecha));
+    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && fechas.includes(s.fecha));
     const porDia = fechas.map(f => sesNino.filter(s => s.fecha === f).sort((a,b)=>(a.hora_inicio||'').localeCompare(b.hora_inicio||'')));
     const cols = fechas.map((f, i) => {
       const [, , d] = f.split('-').map(Number);

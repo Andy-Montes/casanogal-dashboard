@@ -14,19 +14,19 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "KRA",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "TO",
           "rol": "COT",
           "sigla": "PT",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "NP",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "FONO",
@@ -38,7 +38,7 @@
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "PA",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "COG",
@@ -62,14 +62,14 @@
           "disciplina": "HAB AD",
           "rol": "TUTOR",
           "sigla": "GP",
-          "sesiones": 3,
+          "sesiones": 2,
           "_revisar": "Confirmar con Trini: ¿son 3 sesiones individuales con Gloria, además de las 5 KIDS grupales? El Excel original las tenía como PSI."
         },
         {
           "disciplina": "F.EJEC",
           "rol": "TUTOR",
           "sigla": "GLO",
-          "sesiones": 3,
+          "sesiones": 2,
           "_revisar": "Confirmar con Trini: Glorita (GLO) aparece en el horario real con 3 sesiones a LEON pero no estaba en el input de asignaciones del INT 40."
         }
       ],
@@ -85,7 +85,7 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "ISA",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "TO",
@@ -103,13 +103,13 @@
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "ND",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "PO",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "KINE",
@@ -148,19 +148,19 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "PT",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "TO",
           "rol": "COT",
           "sigla": "AO",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "NP",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "FONO",
@@ -172,13 +172,13 @@
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "FV",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "COG",
           "rol": "COT",
           "sigla": "PO",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "KINE",
@@ -205,19 +205,19 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "CLA",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "TO",
           "rol": "COT",
           "sigla": "ISA",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "MF",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "FONO",
@@ -229,7 +229,7 @@
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "PO",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "KINE",
@@ -274,7 +274,7 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "AO",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "TO",
@@ -292,7 +292,7 @@
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "ND",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "FONO",
@@ -304,13 +304,13 @@
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "FV",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "COG",
           "rol": "COT",
           "sigla": "PA",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "KINE",
@@ -349,31 +349,31 @@
           "disciplina": "TO",
           "rol": "TUTOR",
           "sigla": "ISA",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "TO",
           "rol": "COT",
           "sigla": "CLA",
-          "sesiones": 3
+          "sesiones": 2
         },
         {
           "disciplina": "FONO",
           "rol": "TUTOR",
           "sigla": "MF",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "FONO",
           "rol": "COT",
           "sigla": "ND",
-          "sesiones": 4
+          "sesiones": 3
         },
         {
           "disciplina": "COG",
           "rol": "TUTOR",
           "sigla": "PA",
-          "sesiones": 5
+          "sesiones": 4
         },
         {
           "disciplina": "KINE",

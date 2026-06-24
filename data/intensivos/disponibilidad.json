@@ -50,16 +50,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "KRA": {
     "lun": [
@@ -112,16 +103,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "AO": {
     "lun": [
@@ -174,16 +156,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "PT": {
     "lun": [
@@ -236,16 +209,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "CLA": {
     "lun": [
@@ -298,16 +262,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "ANT": {
     "lun": [
@@ -360,16 +315,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "VS": {
     "lun": [
@@ -422,16 +368,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "NP": {
     "lun": [
@@ -484,16 +421,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "ND": {
     "lun": [
@@ -546,16 +474,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "MF": {
     "lun": [
@@ -608,16 +527,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "RJ": {
     "lun": [
@@ -670,16 +580,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "RM": {
     "lun": [
@@ -732,16 +633,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "COL": {
     "lun": [
@@ -794,16 +686,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "PA": {
     "lun": [
@@ -856,16 +739,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "FV": {
     "lun": [
@@ -918,16 +792,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "PO": {
     "lun": [
@@ -980,16 +845,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "CS": {
     "lun": [
@@ -1042,16 +898,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "EST": {
     "lun": [
@@ -1104,16 +951,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "BA": {
     "lun": [
@@ -1166,16 +1004,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "AA": {
     "lun": [
@@ -1228,16 +1057,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "FD": {
     "lun": [
@@ -1290,16 +1110,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "FER": {
     "lun": [
@@ -1352,16 +1163,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "CB": {
     "lun": [
@@ -1414,16 +1216,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "GP": {
     "lun": [
@@ -1476,16 +1269,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "GLO": {
     "lun": [
@@ -1538,16 +1322,7 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   },
   "LP": {
     "lun": [
@@ -1600,15 +1375,6 @@
       true,
       true
     ],
-    "sab": [
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
-    ]
+    "sab": []
   }
 }

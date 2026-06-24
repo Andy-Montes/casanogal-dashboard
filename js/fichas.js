@@ -101,9 +101,9 @@ const Fichas = {
     const c = UI.colorNino(n.id_nino);
     return `<div class="ficha-card" data-id="${n.id_nino}">
       <div class="ficha-card-head">
-        <span class="ficha-avatar" style="background:${c.bg};color:${c.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>
+        <span class="ficha-avatar" style="background:${c.bg};color:${c.text};${UI.ringIntensivo(n)}">${UI.esc(UI.initials(n.nombre_completo))}</span>
         <div style="flex:1;min-width:0">
-          <div class="ficha-name">${UI.esc(n.nombre_completo)}</div>
+          <div class="ficha-name">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div>
           <div class="ficha-prog">${UI.esc(n.programa_nombre)}${n.semana_actual?` · Sem ${n.semana_actual}`:''} · ${n.edad_anios} años</div>
         </div>
       </div>
@@ -145,12 +145,12 @@ const Fichas = {
         Volver a fichas
       </button>
 
-      <div class="ficha-detail-head">
-        ${n.foto_url
-          ? `<img class="ficha-avatar-lg ficha-avatar" src="${UI.esc(n.foto_url)}" alt="">`
-          : `<span class="ficha-avatar-lg ficha-avatar" style="background:${cNino.bg};color:${cNino.text}">${UI.esc(UI.initials(n.nombre_completo))}</span>`}
+      <div class="ficha-detail-head" style="border-color:${cNino.text}; box-shadow: inset 4px 0 0 ${cNino.text};">
+        ${(() => { const ringExt = UI.esIntensivo(n) ? 'var(--cn-mostaza)' : cNino.text; return n.foto_url
+          ? `<img class="ficha-avatar-lg ficha-avatar" src="${UI.esc(n.foto_url)}" alt="" style="box-shadow:0 0 0 3px ${cNino.bg}, 0 0 0 4px ${ringExt}">`
+          : `<span class="ficha-avatar-lg ficha-avatar" style="background:${cNino.bg};color:${cNino.text};box-shadow:0 0 0 3px ${cNino.bg}, 0 0 0 4px ${ringExt}">${UI.esc(UI.initials(n.nombre_completo))}</span>`; })()}
         <div>
-          <div class="ficha-detail-name">${UI.esc(n.nombre_completo)}</div>
+          <div class="ficha-detail-name">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div>
           <div class="ficha-detail-meta">
             <span>${n.edad_anios} años</span>
             <span class="mono">RUT ${UI.esc(n.rut)}</span>

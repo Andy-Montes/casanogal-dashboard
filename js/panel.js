@@ -209,13 +209,14 @@ const Panel = {
       ${disp.length
         ? disp.map(t => {
             const sala = Data.sala(t.sala_principal);
+            const otraEsp = t.especialidad !== sesion.tipo_terapia;
             return `<button class="reasignar-item" data-ter="${t.id_terapeuta}" type="button">
               <span class="reasignar-abr">${UI.esc(t.abreviacion)}</span>
-              <span class="reasignar-nombre">${UI.esc(t.nombre_completo)}</span>
+              <span class="reasignar-nombre">${UI.esc(t.nombre_completo)}<small class="reasignar-esp${otraEsp ? ' reasignar-esp-otra' : ''}">${UI.esc(t.especialidad)}</small></span>
               ${sala ? `<span class="reasignar-sala">${UI.esc(sala.nombre)}</span>` : ''}
             </button>`;
           }).join('')
-        : '<div class="reasignar-vacio">No hay otro terapeuta de esta especialidad libre a esta hora.</div>'}
+        : '<div class="reasignar-vacio">No hay ningún terapeuta libre a esta hora.</div>'}
     `;
     cont.querySelectorAll('.reasignar-item').forEach(b =>
       b.addEventListener('click', () => this._aplicarReasignar(sesion, b.dataset.ter))

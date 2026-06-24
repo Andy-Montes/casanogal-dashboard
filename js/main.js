@@ -34,6 +34,9 @@ const Main = {
       }
       State.role = 'terapeuta';
       State.currentUser = DEMO_USERS.terapeuta;
+      State.module = 'calendario';   // el terapeuta entra directo a su agenda
+      Calendar.view = 'semana';      // siempre en vista semanal
+      Calendar.dayDate = null; Calendar.monthAnchor = null;
     } else if (session.tipo === 'padres') {
       const n = State.data.ninos.find(x => x.id_nino === session.id_nino) || State.data.ninos.find(x => x.estado === 'Activo');
       if (n) {
@@ -240,7 +243,7 @@ const Main = {
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
       padres:    ['reportes','boletas','armador','equipo','ninos','salas','disponibilidad','config','permisos'],
-      terapeuta: ['config','permisos','reportes','boletas','armador','disponibilidad'],
+      terapeuta: ['config','permisos','reportes','boletas','armador','disponibilidad','equipo'],
     };
     // Boletas se manejan fuera del sistema (Temite) → ocultas en todos los roles
     const ocultar = [...(ocultosPorRol[State.role] || []), 'boletas'];

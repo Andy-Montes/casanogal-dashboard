@@ -140,7 +140,7 @@ const Login = {
             <div class="login-field">
               <label>Correo</label>
               <input type="email" id="loginPadEmail" placeholder="tu correo registrado" autocomplete="off">
-              <div class="login-hint">Demo: cualquier correo registrado de un apoderado</div>
+              <div class="login-hint">Demo: <code>carolina.perez@gmail.com</code></div>
             </div>
             <div class="login-field">
               <label>Contraseña</label>
