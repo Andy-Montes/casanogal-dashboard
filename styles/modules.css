@@ -943,6 +943,10 @@
   margin: 18px 0 8px;
 }
 .hist-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.hist-filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 12px; }
+.hist-filtro-sel { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-soft); color: var(--text); font-size: 12.5px; font-family: inherit; cursor: pointer; }
+.hist-filtro-sel:focus { outline: 2px solid var(--cn-azul); outline-offset: 1px; }
+.hist-filtro-count { font-size: 12px; color: var(--text-3); margin-left: auto; }
 
 /* Sesión píldora */
 .session {

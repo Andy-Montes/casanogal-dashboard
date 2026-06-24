@@ -254,6 +254,25 @@ const Fichas = {
         btn.textContent = (abierto ? 'Revisar ' : 'Ocultar ') + btn.dataset.label;
       });
     });
+    // Filtros del registro de atenciones (especialidad + período): ocultan/muestran items sin re-render.
+    const fEsp = document.getElementById('filtroEsp');
+    const fMes = document.getElementById('filtroMes');
+    const fCount = document.getElementById('filtroCount');
+    if (fEsp && fMes) {
+      const aplicar = () => {
+        const esp = fEsp.value, mes = fMes.value;
+        let visibles = 0;
+        document.querySelectorAll('#histPasadasList .timeline-item').forEach(it => {
+          const ok = (!esp || it.dataset.esp === esp) && (!mes || it.dataset.mes === mes);
+          it.style.display = ok ? '' : 'none';
+          if (ok) visibles++;
+        });
+        if (fCount) fCount.textContent = `${visibles} sesion${visibles === 1 ? '' : 'es'}`;
+      };
+      fEsp.addEventListener('change', aplicar);
+      fMes.addEventListener('change', aplicar);
+      aplicar();
+    }
     document.getElementById('addReuBtn')?.addEventListener('click', () => this._abrirModalReunion(n.id_nino));
     document.querySelectorAll('.reu-delete').forEach(b => {
       b.addEventListener('click', (e) => {
@@ -497,7 +516,7 @@ const Fichas = {
       const ter = Data.terapeuta(s.id_terapeuta);
       const editable = puedeAnotar && s.estado === 'Realizada';
       const faltaNota = editable && !hayNota;
-      return `<div class="timeline-item${faltaNota ? ' open nota-pendiente' : ''}" data-sesion-id="${UI.esc(s.id_sesion)}">
+      return `<div class="timeline-item${faltaNota ? ' open nota-pendiente' : ''}" data-sesion-id="${UI.esc(s.id_sesion)}" data-esp="${UI.esc(s.tipo_terapia || '')}" data-mes="${UI.esc((s.fecha || '').slice(0, 7))}">
         <div class="timeline-head">
           <span class="timeline-date mono">${UI.fmtFechaCorta(s.fecha)}</span>
           <div>
@@ -542,6 +561,24 @@ const Fichas = {
     const lblPasadas = `sesiones pasadas · ${pasadas.length}${sinNota > 0 ? ' · ' + sinNota + ' sin nota' : ''}`;
     const lblFuturas = `futuras agendadas · ${futuras.length}`;
 
+    // Filtros del registro de atenciones (lo pidió Trini): por especialidad y por período.
+    const espPasadas = [...new Set(pasadas.map(s => s.tipo_terapia).filter(Boolean))].sort();
+    const mesesPasadas = [...new Set(pasadas.map(s => (s.fecha || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+    const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const mesLabel = (ym) => { const [y, m] = ym.split('-'); return `${MESES[Number(m)]} ${y}`; };
+    const filtrosPasadas = (espPasadas.length > 1 || mesesPasadas.length > 1) ? `
+      <div class="hist-filtros">
+        <select id="filtroEsp" class="hist-filtro-sel" aria-label="Filtrar por especialidad">
+          <option value="">Todas las especialidades</option>
+          ${espPasadas.map(e => `<option value="${UI.esc(e)}">${UI.esc(e)}</option>`).join('')}
+        </select>
+        <select id="filtroMes" class="hist-filtro-sel" aria-label="Filtrar por período">
+          <option value="">Todo el período</option>
+          ${mesesPasadas.map(m => `<option value="${m}">${UI.esc(mesLabel(m))}</option>`).join('')}
+        </select>
+        <span class="hist-filtro-count" id="filtroCount"></span>
+      </div>` : '';
+
     return `<section class="ficha-section">
       <h2 class="ficha-section-title">Sesiones${sinNota > 0 ? ` <span class="ficha-section-hint" style="color:var(--alert)">${sinNota} sin nota</span>` : ''}</h2>
       ${hoySes.length ? `
@@ -558,7 +595,8 @@ const Fichas = {
       </div>
       <div id="histPasadas" style="display:none">
         <div class="hist-sub">Sesiones pasadas · más reciente primero</div>
-        ${pasadas.length ? `<div class="timeline">${pasadas.slice(0, 40).map(histItem).join('')}</div>` : `<div class="empty-state"><div class="empty-state-title">Sin sesiones pasadas</div></div>`}
+        ${filtrosPasadas}
+        ${pasadas.length ? `<div class="timeline" id="histPasadasList">${pasadas.slice(0, 40).map(histItem).join('')}</div>` : `<div class="empty-state"><div class="empty-state-title">Sin sesiones pasadas</div></div>`}
       </div>
       <div id="histFuturas" style="display:none">
         <div class="hist-sub">Todas las sesiones agendadas</div>

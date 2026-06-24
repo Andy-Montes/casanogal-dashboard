@@ -23,8 +23,9 @@ const Panel = {
     const showNotas = State.role !== 'padres';
     const esTerapeuta = State.role === 'terapeuta';
     const esAdmin = State.role === 'coordinacion';
-    // Las notas se registran en la ficha del niño; al pinchar el horario solo se visualizan.
-    const editable = false;
+    // El terapeuta (y coordinación) puede registrar la nota DESDE el calendario al pinchar
+    // la sesión; se guarda en la ficha del niño (mismo store casanogal_notas que lee la ficha).
+    const editable = (esTerapeuta || esAdmin) && sesion.estado === 'Realizada';
     const storedNotas = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
     const notaRaw = storedNotas[sesion.id_sesion];
     // Backwards compat: si es string plano, asumir autor terapeuta legacy
@@ -60,9 +61,10 @@ const Panel = {
       </div>
 
       <div class="panel-field">
-        <span class="panel-field-label">Sala</span>
+        <span class="panel-field-label">Sala ${esAdmin ? '<button class="panel-reasignar-link" id="panelReasignarSalaBtn" type="button">Cambiar</button>' : ''}</span>
         <span class="panel-field-value">${UI.esc(sala?.nombre || sesion.sala_nombre)} <span style="font-weight:400;color:var(--text-3);font-size:12px">· ${UI.esc(sala?.tipo_principal || '')}</span></span>
       </div>
+      ${esAdmin ? '<div id="panelReasignarSala" class="panel-reasignar"></div>' : ''}
 
       <div class="panel-field">
         <span class="panel-field-label">Día y hora</span>
@@ -162,8 +164,24 @@ const Panel = {
       Main._renderModule();
     });
 
+    // Registrar la nota clínica desde el calendario → se guarda en la ficha del niño.
+    document.getElementById('notaSaveBtn')?.addEventListener('click', () => {
+      const txt = (document.getElementById('notaTextarea')?.value || '').trim();
+      const store = JSON.parse(localStorage.getItem('casanogal_notas') || '{}');
+      if (txt) store[sesion.id_sesion] = { texto: txt, autor: esAdmin ? 'admin' : 'terapeuta', autor_nombre: State.currentUser?.name || null };
+      else delete store[sesion.id_sesion];
+      localStorage.setItem('casanogal_notas', JSON.stringify(store));
+      UI.toast(txt ? 'Nota guardada en la ficha del niño' : 'Nota eliminada', 'success');
+      if (typeof Main?.renderPendientes === 'function') Main.renderPendientes();
+      Panel.open(sesion);
+      if (State.module === 'calendario') Calendar.render();
+    });
+    document.getElementById('notaCancelBtn')?.addEventListener('click', () => Panel.open(sesion));
+
     // Reasignar terapeuta (coordinación): cuando uno falta, ver quién está libre a esa hora
     document.getElementById('panelReasignarBtn')?.addEventListener('click', () => Panel._renderReasignar(sesion));
+    // Cambiar sala: ver qué salas están libres en ese bloque
+    document.getElementById('panelReasignarSalaBtn')?.addEventListener('click', () => Panel._renderReasignarSala(sesion));
 
     // Cambiar estado de la sesión (realizada / no asistió / cancelada / agendada)
     document.querySelectorAll('.estado-btn').forEach(b =>
@@ -221,6 +239,41 @@ const Panel = {
     cont.querySelectorAll('.reasignar-item').forEach(b =>
       b.addEventListener('click', () => this._aplicarReasignar(sesion, b.dataset.ter))
     );
+  },
+
+  // Salas libres en la fecha+bloque de la sesión (excluye la sala actual y las ocupadas).
+  _renderReasignarSala(sesion) {
+    const cont = document.getElementById('panelReasignarSala');
+    if (!cont) return;
+    if (cont.innerHTML) { cont.innerHTML = ''; return; } // toggle cerrar
+    const ocupadas = new Set((Data.sesionesPorDiaYBloque(sesion.fecha, sesion.id_bloque) || [])
+      .filter(s => s.id_sesion !== sesion.id_sesion).map(s => s.id_sala));
+    const libres = (State.data.salas || []).filter(sa => sa.id_sala !== sesion.id_sala && !ocupadas.has(sa.id_sala));
+    cont.innerHTML = `
+      <div class="panel-reasignar-head">Salas libres el ${UI.esc(sesion.dia_semana)} ${UI.esc(sesion.hora_inicio)}</div>
+      ${libres.length
+        ? libres.map(sa => {
+            const c = UI.colorSala(sa.tipo_principal);
+            return `<button class="reasignar-item" data-sala="${sa.id_sala}" type="button">
+              <span class="reasignar-abr" style="background:${c.bg};color:${c.text}">sala</span>
+              <span class="reasignar-nombre">${UI.esc(sa.nombre)}<small class="reasignar-esp">${UI.esc(sa.tipo_principal)}</small></span>
+            </button>`;
+          }).join('')
+        : '<div class="reasignar-vacio">No hay salas libres a esta hora.</div>'}
+    `;
+    cont.querySelectorAll('.reasignar-item').forEach(b =>
+      b.addEventListener('click', () => this._aplicarReasignarSala(sesion, b.dataset.sala))
+    );
+  },
+
+  _aplicarReasignarSala(sesion, idSala) {
+    const sa = Data.sala(idSala);
+    if (!sa) return;
+    sesion.id_sala = idSala;
+    sesion.sala_nombre = sa.nombre;
+    UI.toast(`Sala cambiada a ${sa.nombre}`, 'success');
+    this.close();
+    if (State.module === 'calendario') Calendar.render();
   },
 
   _aplicarReasignar(sesion, idTer) {
