@@ -71,15 +71,20 @@ const Comunicacion = {
       </div>`;
   },
 
-  // Una sesión es "de los papás" si los papás participan (observación, vincular, individual)
-  // o es la sesión de psicología con papás. Se separa del horario de terapias del niño.
-  _esSesionPadres(s) {
-    return !!s.tipo_sesion_padre || s.tipo_actividad === 'Sesión de padres' || s.tipo_actividad === 'Sesión vincular';
+  // El niño está CON los papás (el papá acompaña): va en el calendario del hijo, marcado con color.
+  _esConPapas(s) {
+    return s.tipo_sesion_padre === 'observacion' || s.tipo_sesion_padre === 'vincular' || s.tipo_actividad === 'Sesión vincular';
+  },
+  // Los papás van SOLOS, sin el niño (psicología con papás, individual): van en el 2º calendario.
+  _esPadresSolos(s) {
+    return s.tipo_sesion_padre === 'individual_padre' || s.tipo_actividad === 'Sesión de padres';
   },
 
   _paHorario(n) {
     const fechas = fechasSemana();
-    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esSesionPadres(s) && fechas.includes(s.fecha));
+    // El calendario del hijo incluye sus terapias y las sesiones "con papás" (marcadas);
+    // excluye las reuniones de equipo y las sesiones de papás solos (esas van al 2º calendario).
+    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esPadresSolos(s) && fechas.includes(s.fecha));
     const porDia = fechas.map(f => sesNino.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
     const cols = fechas.map((f, i) => {
       const [, , d] = f.split('-').map(Number);
@@ -111,24 +116,23 @@ const Comunicacion = {
       </section>`;
   },
 
-  // Horario SEPARADO de los papás: las sesiones donde ustedes participan (lo pidió Trini).
+  // SEGUNDO calendario, solo de los papás (sesiones sin el niño). Misma grilla semanal
+  // que el del hijo. Se oculta si el niño no tiene ninguna sesión de papás solos.
   _paHorarioPadres(n) {
-    const ses = Data.sesionesDeNino(n.id_nino)
-      .filter(s => this._esSesionPadres(s))
-      .sort((a, b) => (a.fecha + (a.hora_inicio || '')).localeCompare(b.fecha + (b.hora_inicio || '')));
-    if (!ses.length) return '';
-    const items = ses.map(s => {
-      const tp = s.tipo_sesion_padre;
-      const badge = tp === 'observacion' ? 'Observación'
-                  : tp === 'vincular' ? 'Con su hijo'
-                  : tp === 'individual_padre' ? 'Para ustedes'
-                  : (s.tipo_actividad === 'Sesión de padres' ? 'Con ustedes' : (s.tipo_actividad || ''));
-      const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
-      return `<div class="pa-padres-item">
-        <div class="pa-padres-when mono">${UI.esc(UI.fmtFechaCorta(s.fecha))} · ${UI.esc(rango)}</div>
-        <div class="pa-padres-tipo">${UI.esc(s.tipo_terapia || 'Sesión con ustedes')}</div>
-        <div class="pa-padres-badge">${UI.esc(badge)}</div>
-      </div>`;
+    if (!Data.sesionesDeNino(n.id_nino).some(s => this._esPadresSolos(s))) return '';
+    const fechas = fechasSemana();
+    const ses = Data.sesionesDeNino(n.id_nino).filter(s => this._esPadresSolos(s) && fechas.includes(s.fecha));
+    const porDia = fechas.map(f => ses.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
+    const cols = fechas.map((f, i) => {
+      const [, , d] = f.split('-').map(Number);
+      const dd = porDia[i];
+      const esHoy = f === HOY_ISO;
+      const cuerpo = dd.length ? dd.map(s => this._paSesionCard(s)).join('') : '<div class="pa-day-empty">—</div>';
+      return `
+        <div class="pa-day${esHoy ? ' is-today' : ''}">
+          <div class="pa-day-head"><span class="pa-day-name">${DIAS_ABBR[i]}</span><span class="pa-day-date">${d}</span></div>
+          <div class="pa-day-body">${cuerpo}</div>
+        </div>`;
     }).join('');
     return `
       <section class="pa-card pa-padres-card">
@@ -138,7 +142,7 @@ const Comunicacion = {
             <h2 class="pa-card-title">Sus sesiones como papás</h2>
           </div>
         </div>
-        <div class="pa-padres-list">${items}</div>
+        <div class="pa-week">${cols}</div>
       </section>`;
   },
 

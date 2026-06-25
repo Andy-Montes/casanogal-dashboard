@@ -117,7 +117,7 @@ const Main = {
         State.searchQuery = '';
         State.filterFicha = 'all';
         State.filterNino = 'all';
-        State.filterPrograma = newRole === 'coordinacion' ? 'INT' : 'all';
+        State.filterPrograma = 'all';
         // Solo el admin puede cambiar rol entre pills (preview). Terapeuta no ve pills.
         if (newRole === 'terapeuta') {
           // Admin previsualiza vista terapeuta — abre selector sin password
@@ -254,6 +254,9 @@ const Main = {
       const visibles = sec.querySelectorAll('.nav-item:not([style*="display: none"])').length;
       sec.style.display = visibles === 0 ? 'none' : '';
     });
+    // "Nueva sesión" solo para coordinación (super admin); papás y terapeutas no crean sesiones.
+    const newBtn = document.getElementById('newSessionBtn');
+    if (newBtn) newBtn.style.display = State.role === 'coordinacion' ? '' : 'none';
   },
 
   _openTerapeutaSelector(pillEl) {
@@ -614,7 +617,6 @@ const Main = {
         { id:'p-informe', t:'warn',  msg:'Informe mensual disponible',           detail:'El informe de avance del último mes está listo.', action:'Coordinación te lo envía por correo. También aparecerá en el botón Descargar PDF de esta vista.' },
         { id:'p-reu',     t:'ok',    msg:'Reunión con el equipo terapéutico',    detail:'Reunión bimensual programada para revisar avances y objetivos.', action:'Confirma la asistencia respondiendo al correo enviado por coordinación.' },
         { id:'p-conf',    t:'warn',  msg:'Confirmar asistencia próxima semana',  detail:'Necesitamos confirmar la asistencia para los días de la próxima semana.', action:'Responde al correo de coordinación indicando los días disponibles.' },
-        { id:'p-pago',    t:'warn',  msg:'Boleta de mayo pendiente',             detail:`La boleta del mes de mayo de ${UI.esc(n.nombre_completo || 'tu hijo')} está pendiente.`, action:'El detalle del monto y los datos de transferencia los recibirás por correo desde coordinación.' },
       ];
     }
     if (State.role === 'terapeuta') {
@@ -638,7 +640,6 @@ const Main = {
       pend.push(
         { id:'t-obj',   t:'warn',  msg:'Revisar objetivos del mes',              detail:'Los objetivos terapéuticos de tus niños asignados deben revisarse mensualmente.', action:'En Fichas clínicas abre la ficha de cada niño asignado y revisa la pestaña Objetivos.' },
         { id:'t-reu',   t:'ok',    msg:'Reunión de equipo programada',           detail:'Reunión de coordinación del programa Intensivo esta semana.', action:'Revisa el detalle en el correo del centro.' },
-        { id:'t-horas', t:'ok',    msg:'Tu hoja de horas está lista',            detail:`Tus horas trabajadas en mayo están calculadas, ${UI.esc(tName)}.`, action:'En el módulo Boletas ves tu resumen de horas, valor hora y liquidación.' },
       );
       return pend;
     }
@@ -672,7 +673,6 @@ const Main = {
       });
     }
     pend.push(
-      { id:'c-bol',   t:'warn',  msg:'5 boletas listas para emitir',           detail:'Hay 5 boletas del mes con sesiones realizadas y monto calculado automáticamente.', action:'En el módulo Boletas se ve la tabla completa para emitir.' },
       { id:'c-equi',  t:'warn',  msg:'3 fichas con equipo incompleto',         detail:'Hay 3 niños que aún no tienen todo el equipo terapéutico asignado.', action:'En Fichas clínicas abre la ficha del niño y revisa la pestaña Equipo.' },
       { id:'c-cierre',t:'ok',    msg:'Cierre semanal del Intensivo · viernes', detail:'Hoy viernes corresponde el cierre semanal del programa Intensivo 40.', action:'Revisa la semana completa en el módulo Calendario.' },
       { id:'c-eval',  t:'ok',    msg:'2 nuevas evaluaciones esta semana',      detail:'Se sumaron 2 niños al programa de Evaluación inicial.', action:'En Fichas clínicas aparecen en el grupo "Otros programas".' },

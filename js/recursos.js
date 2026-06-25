@@ -444,11 +444,6 @@ const Recursos = {
             <span class="toggle-pill"></span>
           </label>
           <label class="toggle-row">
-            <div><div class="toggle-title">Boletas listas para emitir</div><div class="toggle-sub">Notificar cuando hay boletas del mes pendientes de emitir.</div></div>
-            <input type="checkbox" id="cfg-n2" ${cfg.notif_boletas ? 'checked' : ''} class="toggle-input">
-            <span class="toggle-pill"></span>
-          </label>
-          <label class="toggle-row">
             <div><div class="toggle-title">Envío automático a padres</div><div class="toggle-sub">Mandar el horario semanal a los apoderados por correo (lunes 8am).</div></div>
             <input type="checkbox" id="cfg-n3" ${cfg.notif_padres ? 'checked' : ''} class="toggle-input">
             <span class="toggle-pill"></span>
@@ -474,7 +469,6 @@ const Recursos = {
         idioma: document.getElementById('cfg-idi').value,
         zona_horaria: document.getElementById('cfg-zh').value,
         notif_conflictos: document.getElementById('cfg-n1').checked,
-        notif_boletas:    document.getElementById('cfg-n2').checked,
         notif_padres:     document.getElementById('cfg-n3').checked,
         backup_auto:      document.getElementById('cfg-n4').checked,
       };
@@ -500,14 +494,12 @@ const Recursos = {
       { id: 'fichas_ver',   label: 'Ver fichas clínicas',             desc: 'Acceso a fichas con historial, notas, objetivos.' },
       { id: 'fichas_edit',  label: 'Editar fichas clínicas',          desc: 'Modificar datos del niño, agregar diagnósticos, alergias.' },
       { id: 'notas_edit',   label: 'Escribir notas clínicas',         desc: 'Agregar y editar notas de sesión, objetivos trabajados.' },
-      { id: 'boletas_ver',  label: 'Ver boletas de todos',            desc: 'Tabla de boletas del mes con todos los niños.' },
-      { id: 'boletas_emit', label: 'Emitir y marcar boletas',         desc: 'Marcar como pagadas, emitir PDF.' },
       { id: 'pagos_otros',  label: 'Ver pagos de otros profesionales',desc: 'Solo super admin. Cada terapeuta solo ve su propia liquidación.' },
       { id: 'agend_reu',    label: 'Agendar reuniones',               desc: 'Crear reuniones de equipo o con apoderados.' },
       { id: 'config_sys',   label: 'Modificar configuración',         desc: 'Cambiar datos del centro, notificaciones, parámetros.' },
     ];
     const MATRIZ = {
-      coordinacion: ['cal_ver','cal_editar','fichas_ver','fichas_edit','notas_edit','boletas_ver','boletas_emit','pagos_otros','agend_reu','config_sys'],
+      coordinacion: ['cal_ver','cal_editar','fichas_ver','fichas_edit','notas_edit','pagos_otros','agend_reu','config_sys'],
       terapeuta:    ['cal_ver','cal_editar','fichas_ver','notas_edit','agend_reu'],
       padres:       [],
     };
@@ -549,7 +541,7 @@ const Recursos = {
             </tr>`).join('')}
             <tr style="background:var(--cn-mostaza-bg)">
               <td><b>Acceso adicional para Padres:</b><br><span style="font-size:11px;color:var(--text-2)">Ver solo la agenda y los datos del hijo asociado. Descargar PDF del horario semanal.</span></td>
-              <td colspan="3" style="font-size:12px;color:var(--text-2)">Por seguridad, los padres no tienen acceso a notas clínicas internas ni a boletas de otros niños.</td>
+              <td colspan="3" style="font-size:12px;color:var(--text-2)">Por seguridad, los padres no tienen acceso a notas clínicas internas ni a información de otros niños.</td>
             </tr>
           </tbody>
         </table>
