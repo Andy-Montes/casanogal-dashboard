@@ -209,7 +209,7 @@ const PDFPadres = {
     const esp = s.tipo_terapia || '';
     const estado = s.estado || '';
     const estadoClass = estado === 'Realizada' ? 'is-done'
-                      : estado === 'Cancelada' ? 'is-cancel'
+                      : estado === 'Suspendida' ? 'is-cancel'
                       : estado === 'No Asistió' ? 'is-miss' : 'is-next';
     const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
     return `

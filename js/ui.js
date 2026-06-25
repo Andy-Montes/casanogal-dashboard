@@ -48,7 +48,7 @@ const UI = {
     return 'int';
   },
   estadoClass(estado) {
-    const map = { 'Realizada':'realizada', 'Agendada':'agendada', 'Cancelada':'cancelada', 'No Asistió':'no_asistio' };
+    const map = { 'Realizada':'realizada', 'Agendada':'agendada', 'Suspendida':'cancelada', 'Cancelada':'cancelada', 'No Asistió':'no_asistio' };
     return map[estado] || 'agendada';
   },
 

@@ -51,7 +51,7 @@ const Reportes = {
     const cuenta = (e) => ses.filter(s => s.estado === e).length;
     const realizadas = cuenta('Realizada');
     const agendadas  = cuenta('Agendada');
-    const canceladas = cuenta('Cancelada');
+    const canceladas = cuenta('Suspendida');
     const noAsistio  = cuenta('No Asistió');
     const cerradas = realizadas + canceladas + noAsistio;
     const asistencia = cerradas ? Math.round(realizadas / cerradas * 100) : 0;
@@ -62,7 +62,7 @@ const Reportes = {
       { label: 'Realizadas', n: realizadas, color: 'var(--success)' },
       { label: 'Agendadas',  n: agendadas,  color: 'var(--cn-azul)' },
       { label: 'No asistió', n: noAsistio,  color: 'var(--cn-mostaza)' },
-      { label: 'Canceladas', n: canceladas, color: 'var(--alert)' },
+      { label: 'Suspendidas', n: canceladas, color: 'var(--alert)' },
     ];
     const totEstados = estados.reduce((a, e) => a + e.n, 0) || 1;
 

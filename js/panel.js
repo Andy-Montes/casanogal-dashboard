@@ -81,7 +81,7 @@ const Panel = {
         <div class="panel-estado-acciones">
           <span class="panel-field-label">Marcar asistencia</span>
           <div class="estado-btns">
-            ${['Realizada', 'No Asistió', 'Cancelada', 'Agendada'].map(e =>
+            ${['Realizada', 'No Asistió', 'Suspendida', 'Agendada'].map(e =>
               `<button class="estado-btn ${sesion.estado === e ? 'is-activo' : ''}" data-estado="${e}" type="button">${e}</button>`
             ).join('')}
           </div>

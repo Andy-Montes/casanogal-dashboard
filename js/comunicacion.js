@@ -157,7 +157,7 @@ const Comunicacion = {
     const cls = tp === 'observacion' ? 'is-observacion'
               : (tp === 'vincular' || tp === 'individual_padre') ? 'is-padre'
               : estado === 'Realizada' ? 'is-done'
-              : estado === 'Cancelada' ? 'is-cancel'
+              : estado === 'Suspendida' ? 'is-cancel'
               : estado === 'No Asistió' ? 'is-miss' : 'is-next';
     const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
     return `

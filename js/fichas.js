@@ -135,7 +135,7 @@ const Fichas = {
 
     // Stats rápidas
     const realizadas = sesiones.filter(s => s.estado === 'Realizada').length;
-    const canceladas = sesiones.filter(s => s.estado === 'Cancelada').length;
+    const canceladas = sesiones.filter(s => s.estado === 'Suspendida').length;
     const noAsistio = sesiones.filter(s => s.estado === 'No Asistió').length;
     const agendadas = sesiones.filter(s => s.estado === 'Agendada' && s.fecha >= HOY_ISO).length;
 
@@ -175,7 +175,7 @@ const Fichas = {
         <div class="quick-stat"><div class="quick-stat-v" style="color:var(--success)">${realizadas}</div><div class="quick-stat-l">Realizadas</div></div>
         <div class="quick-stat"><div class="quick-stat-v" style="color:var(--cn-azul-deep)">${agendadas}</div><div class="quick-stat-l">Agendadas (próx.)</div></div>
         <div class="quick-stat"><div class="quick-stat-v" style="color:var(--alert)">${noAsistio}</div><div class="quick-stat-l">No asistió</div></div>
-        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--text-3)">${canceladas}</div><div class="quick-stat-l">Canceladas</div></div>
+        <div class="quick-stat"><div class="quick-stat-v" style="color:var(--text-3)">${canceladas}</div><div class="quick-stat-l">Suspendidas</div></div>
       </div>
 
       <!-- Ficha unificada: una sola vista con secciones -->
@@ -363,8 +363,10 @@ const Fichas = {
       const cuerpo = items.length
         ? items.map(s => {
             const t = Data.terapeuta(s.id_terapeuta);
+            const sala = Data.sala(s.id_sala);
             const c = ESPECIALIDAD_VAR[s.tipo_terapia] || {};
-            return `<div class="hsem-item" style="border-left-color:${c.main || 'var(--cn-azul)'}"><span class="mono">${UI.esc(s.hora_inicio || '')}</span> ${UI.esc(s.tipo_terapia || '')}<small>${UI.esc(t?.abreviacion || '')}</small></div>`;
+            const salaTxt = sala?.nombre || s.sala_nombre;
+            return `<div class="hsem-item" style="border-left-color:${c.main || 'var(--cn-azul)'}"><span class="mono">${UI.esc(s.hora_inicio || '')}</span> ${UI.esc(s.tipo_terapia || '')}<small>${UI.esc(t?.abreviacion || '')}${salaTxt && salaTxt !== '—' ? ` · ${UI.esc(salaTxt)}` : ''}</small></div>`;
           }).join('')
         : '<div class="hsem-empty">—</div>';
       return `<div class="hsem-day"><div class="hsem-day-h">${DIAS_ABBR[i]} ${dnum}</div><div class="hsem-day-body">${cuerpo}</div></div>`;
@@ -439,8 +441,10 @@ const Fichas = {
     return `<section class="ficha-section">
       <h2 class="ficha-section-title">Datos generales</h2>
       <div class="info-grid">
-        <div class="panel-field"><span class="panel-field-label">Fecha de nacimiento</span><span class="panel-field-value mono">${UI.fmtFechaCorta(n.fecha_nacimiento)}</span></div>
-        <div class="panel-field"><span class="panel-field-label">Apoderado principal</span><span class="panel-field-value">${UI.esc(n.apoderado_principal)}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Fecha de nacimiento</span><span class="panel-field-value mono">${UI.fmtFechaCorta(n.fecha_nacimiento)}${n.edad_anios ? ` · <span style="font-family:var(--font)">${n.edad_anios} años</span>` : ''}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Estado civil de los padres</span><span class="panel-field-value">${UI.esc(n.estado_civil_padres) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Madre / apoderada</span><span class="panel-field-value">${UI.esc(n.madre || n.apoderado_principal) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Padre / apoderado</span><span class="panel-field-value">${UI.esc(n.padre) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
         <div class="panel-field"><span class="panel-field-label">Teléfono</span><span class="panel-field-value mono">${UI.esc(n.telefono_apoderado || '—')}</span></div>
         <div class="panel-field"><span class="panel-field-label">Email</span><span class="panel-field-value">${UI.esc(n.email_apoderado || '—')}</span></div>
         <div class="panel-field"><span class="panel-field-label">Colegio</span><span class="panel-field-value">${UI.esc(n.colegio || '—')}</span></div>
