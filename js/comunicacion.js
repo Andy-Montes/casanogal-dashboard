@@ -27,7 +27,7 @@ const Comunicacion = {
       <div id="paRoot" class="pa-root">
         ${this._paHeader(n)}
         <div class="pa-grid">
-          <div class="pa-col-main">${this._paHorario(n)}</div>
+          <div class="pa-col-main">${this._paHorario(n)}${this._paHorarioPadres(n)}</div>
           <aside class="pa-col-side">
             ${this._paEquipo(n)}
             ${this._paDocs(n)}
@@ -71,9 +71,15 @@ const Comunicacion = {
       </div>`;
   },
 
+  // Una sesión es "de los papás" si los papás participan (observación, vincular, individual)
+  // o es la sesión de psicología con papás. Se separa del horario de terapias del niño.
+  _esSesionPadres(s) {
+    return !!s.tipo_sesion_padre || s.tipo_actividad === 'Sesión de padres' || s.tipo_actividad === 'Sesión vincular';
+  },
+
   _paHorario(n) {
     const fechas = fechasSemana();
-    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && fechas.includes(s.fecha));
+    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esSesionPadres(s) && fechas.includes(s.fecha));
     const porDia = fechas.map(f => sesNino.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
     const cols = fechas.map((f, i) => {
       const [, , d] = f.split('-').map(Number);
@@ -92,8 +98,8 @@ const Comunicacion = {
       <section id="paHorarioWrap" class="pa-card">
         <div class="pa-card-head">
           <div>
-            <div class="pa-card-eyebrow">Horario</div>
-            <h2 class="pa-card-title">Sus sesiones esta semana</h2>
+            <div class="pa-card-eyebrow">Horario del niño</div>
+            <h2 class="pa-card-title">Las terapias de ${UI.esc((n.nombre_completo || '').split(' ')[0])} esta semana</h2>
           </div>
           <div class="pa-week-nav">
             <button class="pa-week-btn" data-pa-week="-7" aria-label="Semana anterior">‹</button>
@@ -102,6 +108,37 @@ const Comunicacion = {
           </div>
         </div>
         <div class="pa-week">${cols}</div>
+      </section>`;
+  },
+
+  // Horario SEPARADO de los papás: las sesiones donde ustedes participan (lo pidió Trini).
+  _paHorarioPadres(n) {
+    const ses = Data.sesionesDeNino(n.id_nino)
+      .filter(s => this._esSesionPadres(s))
+      .sort((a, b) => (a.fecha + (a.hora_inicio || '')).localeCompare(b.fecha + (b.hora_inicio || '')));
+    if (!ses.length) return '';
+    const items = ses.map(s => {
+      const tp = s.tipo_sesion_padre;
+      const badge = tp === 'observacion' ? 'Observación'
+                  : tp === 'vincular' ? 'Con su hijo'
+                  : tp === 'individual_padre' ? 'Para ustedes'
+                  : (s.tipo_actividad === 'Sesión de padres' ? 'Con ustedes' : (s.tipo_actividad || ''));
+      const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
+      return `<div class="pa-padres-item">
+        <div class="pa-padres-when mono">${UI.esc(UI.fmtFechaCorta(s.fecha))} · ${UI.esc(rango)}</div>
+        <div class="pa-padres-tipo">${UI.esc(s.tipo_terapia || 'Sesión con ustedes')}</div>
+        <div class="pa-padres-badge">${UI.esc(badge)}</div>
+      </div>`;
+    }).join('');
+    return `
+      <section class="pa-card pa-padres-card">
+        <div class="pa-card-head">
+          <div>
+            <div class="pa-card-eyebrow">Para ustedes</div>
+            <h2 class="pa-card-title">Sus sesiones como papás</h2>
+          </div>
+        </div>
+        <div class="pa-padres-list">${items}</div>
       </section>`;
   },
 

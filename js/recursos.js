@@ -75,12 +75,13 @@ const Recursos = {
     const filas = ters.map(t => {
       const c = ESPECIALIDAD_VAR[t.especialidad] || {};
       const celdas = bloques.map(b => {
+        const base = `data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" data-fecha="${dia}"`;
         if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo" title="Bloque de reunión de equipo">reunión</td>`;
         const disp = t.disponibilidad_bloques;
-        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
+        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" ${base} title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
-        if (s) return `<td class="disp-cell disp-ocupado" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)}">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
-        return `<td class="disp-cell disp-libre" title="Libre">libre</td>`;
+        if (s) return `<td class="disp-cell disp-ocupado" ${base} draggable="true" data-id="${s.id_sesion}" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · arrastra para mover o reasignar">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+        return `<td class="disp-cell disp-libre" ${base} title="Libre · suelta aquí para mover">libre</td>`;
       }).join('');
       return `<tr>
         <td class="disp-ter"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span class="disp-ter-nom">${UI.esc(t.nombre_completo)}<small>${UI.esc(t.especialidad)}</small></span></td>
@@ -112,7 +113,7 @@ const Recursos = {
         return `<td class="disp-cell disp-libre" title="Sin sesión">libre</td>`;
       }).join('');
       return `<tr>
-        <td class="disp-ter"><span class="disp-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span><span class="disp-ter-nom">${UI.esc(n.nombre_visible)}${UI.badgeIntensivo(n)}<small>${UI.esc(n.programa_nombre || '')}</small></span></td>
+        <td class="disp-ter"><span class="disp-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span><span class="disp-ter-nom">${UI.esc(n.nombre_visible)}<small>${n.edad_anios ? UI.esc(n.edad_anios) + ' años' : ''}</small></span></td>
         ${celdas}
       </tr>`;
     }).join('');
@@ -147,6 +148,54 @@ const Recursos = {
       </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this.renderDisponibilidad(); }));
+    this._wireDispDrag();
+  },
+
+  // Arrastrar y soltar en la planilla por terapeuta: mueve de bloque y/o reasigna terapeuta.
+  _wireDispDrag() {
+    let dragId = null;
+    const validar = (cell, sesion) => {
+      if (!sesion) return 'No hay sesión';
+      const { fecha, bloque: idBloque, ter: idTer } = cell.dataset;
+      if (!idTer || !idBloque) return 'Destino inválido';
+      if (cell.classList.contains('disp-nodisp')) return 'Ese terapeuta no atiende en ese bloque';
+      if (cell.classList.contains('disp-fijo')) return 'Bloque reservado para reuniones';
+      const otras = State.data.sesiones.filter(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
+      if (otras.some(s => s.id_terapeuta === idTer)) return 'Ese terapeuta ya tiene una sesión en ese bloque';
+      if (sesion.id_sala && otras.some(s => s.id_sala === sesion.id_sala)) return 'La sala ya está ocupada en ese bloque';
+      return null;
+    };
+    document.querySelectorAll('.disp-table .disp-ocupado[draggable="true"]').forEach(cell => {
+      cell.addEventListener('dragstart', e => { dragId = cell.dataset.id; cell.classList.add('disp-dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      cell.addEventListener('dragend', () => { cell.classList.remove('disp-dragging'); document.querySelectorAll('.disp-cell.disp-drop, .disp-cell.disp-drop-bad').forEach(c => c.classList.remove('disp-drop', 'disp-drop-bad')); dragId = null; });
+    });
+    document.querySelectorAll('.disp-table .disp-cell').forEach(cell => {
+      if (!cell.dataset.ter) return; // solo celdas de la tabla por terapeuta
+      cell.addEventListener('dragover', e => {
+        if (!dragId) return;
+        e.preventDefault();
+        const sesion = State.data.sesiones.find(s => s.id_sesion === dragId);
+        cell.classList.add(validar(cell, sesion) ? 'disp-drop-bad' : 'disp-drop');
+      });
+      cell.addEventListener('dragleave', () => cell.classList.remove('disp-drop', 'disp-drop-bad'));
+      cell.addEventListener('drop', e => {
+        if (!dragId) return;
+        e.preventDefault();
+        cell.classList.remove('disp-drop', 'disp-drop-bad');
+        const sesion = State.data.sesiones.find(s => s.id_sesion === dragId);
+        const err = validar(cell, sesion);
+        if (err) { UI.toast('⚠ ' + err, 'alert'); return; }
+        const t = Data.terapeuta(cell.dataset.ter);
+        const b = Data.bloque(cell.dataset.bloque);
+        sesion.id_terapeuta = cell.dataset.ter;
+        if (t) sesion.terapeuta_abr = t.abreviacion;
+        sesion.id_bloque = cell.dataset.bloque;
+        if (b) { sesion.hora_inicio = b.hora_inicio; sesion.hora_fin = b.hora_fin; }
+        sesion.conflicto_detectado = null;
+        UI.toast(`${sesion.nino_visible} movido a ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}`, 'success');
+        this.renderDisponibilidad();
+      });
+    });
   },
 
   renderSalas() {
