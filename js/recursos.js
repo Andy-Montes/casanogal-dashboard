@@ -54,6 +54,13 @@ const Recursos = {
 
   // Vista general de disponibilidad: matriz terapeutas × horas de un día.
   // Es la "hoja de trabajo" de Trini: ver de un vistazo quién está libre a cada hora.
+  // "Franco Villalba" -> "Franco V." para que la columna por terapeuta pese lo mismo que la de niños.
+  _nombreCorto(nombre) {
+    const p = (nombre || '').trim().split(/\s+/);
+    if (p.length < 2) return p[0] || '';
+    return `${p[0]} ${p[1][0]}.`;
+  },
+
   renderDisponibilidad() {
     const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
     const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo')
@@ -83,8 +90,9 @@ const Recursos = {
         if (s) return `<td class="disp-cell disp-ocupado" ${base} draggable="true" data-id="${s.id_sesion}" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · arrastra para mover o reasignar">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
         return `<td class="disp-cell disp-libre" ${base} title="Libre · suelta aquí para mover">libre</td>`;
       }).join('');
+      const nomCorto = this._nombreCorto(t.nombre_completo);
       return `<tr>
-        <td class="disp-ter"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span class="disp-ter-nom">${UI.esc(t.nombre_completo)}<small>${UI.esc(t.especialidad)}</small></span></td>
+        <td class="disp-ter"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span class="disp-ter-nom">${UI.esc(nomCorto)}<small>${UI.esc(t.especialidad)}</small></span></td>
         ${celdas}
       </tr>`;
     }).join('');

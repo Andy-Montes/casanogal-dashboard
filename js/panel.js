@@ -67,9 +67,10 @@ const Panel = {
       ${esAdmin ? '<div id="panelReasignarSala" class="panel-reasignar"></div>' : ''}
 
       <div class="panel-field">
-        <span class="panel-field-label">Día y hora</span>
+        <span class="panel-field-label">Día y hora ${esAdmin ? '<button class="panel-reasignar-link" id="panelReasignarHorarioBtn" type="button">Cambiar</button>' : ''}</span>
         <span class="panel-field-value mono">${UI.esc(UI.fmtFecha(sesion.fecha))} · ${UI.esc(sesion.hora_inicio)}–${UI.esc(sesion.hora_fin)}</span>
       </div>
+      ${esAdmin ? '<div id="panelReasignarHorario" class="panel-reasignar"></div>' : ''}
 
       <div class="panel-field">
         <span class="panel-field-label">Estado</span>
@@ -182,6 +183,8 @@ const Panel = {
     document.getElementById('panelReasignarBtn')?.addEventListener('click', () => Panel._renderReasignar(sesion));
     // Cambiar sala: ver qué salas están libres en ese bloque
     document.getElementById('panelReasignarSalaBtn')?.addEventListener('click', () => Panel._renderReasignarSala(sesion));
+    // Cambiar horario: mover al niño a otro bloque del mismo día sin chocar con su terapeuta/sala
+    document.getElementById('panelReasignarHorarioBtn')?.addEventListener('click', () => Panel._renderReasignarHorario(sesion));
 
     // Cambiar estado de la sesión (realizada / no asistió / cancelada / agendada)
     document.querySelectorAll('.estado-btn').forEach(b =>
@@ -271,6 +274,45 @@ const Panel = {
     cont.querySelectorAll('.reasignar-item').forEach(b =>
       b.addEventListener('click', () => this._aplicarReasignarSala(sesion, b.dataset.sala))
     );
+  },
+
+  // Horarios libres ese mismo día donde el niño puede moverse sin chocar con su terapeuta ni su sala.
+  _renderReasignarHorario(sesion) {
+    const cont = document.getElementById('panelReasignarHorario');
+    if (!cont) return;
+    if (cont.innerHTML) { cont.innerHTML = ''; return; } // toggle cerrar
+    const delDia = State.data.sesiones.filter(s => s.fecha === sesion.fecha && s.id_sesion !== sesion.id_sesion);
+    const ocupTer  = new Set(delDia.filter(s => s.id_terapeuta === sesion.id_terapeuta).map(s => s.id_bloque));
+    const ocupSala = new Set(delDia.filter(s => s.id_sala && s.id_sala === sesion.id_sala).map(s => s.id_bloque));
+    const ocupNino = new Set(delDia.filter(s => s.id_nino === sesion.id_nino).map(s => s.id_bloque));
+    const bloques = (State.data.bloques_horarios || [])
+      .filter(b => !b.es_reunion_equipo && b.id_bloque !== sesion.id_bloque && b.periodo !== 'Tarde')
+      .filter(b => !ocupTer.has(b.id_bloque) && !ocupSala.has(b.id_bloque) && !ocupNino.has(b.id_bloque))
+      .sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    cont.innerHTML = `
+      <div class="panel-reasignar-head">Horarios libres el ${UI.esc(sesion.dia_semana)} · sin chocar con su terapeuta ni su sala</div>
+      ${bloques.length
+        ? bloques.map(b => `<button class="reasignar-item" data-bloque="${b.id_bloque}" type="button">
+            <span class="reasignar-abr" style="font-family:'JetBrains Mono',monospace">${UI.esc(b.hora_inicio)}</span>
+            <span class="reasignar-nombre">${UI.esc(b.hora_inicio)}–${UI.esc(b.hora_fin)}<small class="reasignar-esp">${UI.esc(b.periodo || '')}</small></span>
+          </button>`).join('')
+        : '<div class="reasignar-vacio">No hay otro horario libre ese día sin chocar con el terapeuta o la sala.</div>'}
+    `;
+    cont.querySelectorAll('.reasignar-item').forEach(b =>
+      b.addEventListener('click', () => this._aplicarReasignarHorario(sesion, b.dataset.bloque))
+    );
+  },
+
+  _aplicarReasignarHorario(sesion, idBloque) {
+    const b = Data.bloque(idBloque);
+    if (!b) return;
+    sesion.id_bloque = idBloque;
+    sesion.hora_inicio = b.hora_inicio;
+    sesion.hora_fin = b.hora_fin;
+    sesion.conflicto_detectado = null;
+    UI.toast(`Horario cambiado a ${b.hora_inicio}`, 'success');
+    this.close();
+    if (State.module === 'calendario') Calendar.render();
   },
 
   _aplicarReasignarSala(sesion, idSala) {
