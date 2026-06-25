@@ -1274,6 +1274,10 @@
 .fichas-search input:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
 .fichas-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
 .fichas-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fichas-diag { display: flex; align-items: center; gap: 7px; }
+.fichas-diag label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); }
+.fichas-diag select { height: 38px; padding: 0 30px 0 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 13px; color: var(--text); cursor: pointer; max-width: 240px; }
+.fichas-diag select:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
 
 .fichas-grid {
   display: grid;
@@ -1683,6 +1687,27 @@
 .objetivo-area { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
 .objetivo-desc { font-size: 13.5px; color: var(--text); font-weight: 500; }
 .objetivo-card .meta { font-size: 11px; color: var(--text-3); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+/* Objetivos en estructura CIF (Objetivo 1..4 × 5 dominios) */
+.objetivo-bloque { border: 1px solid var(--border); border-radius: var(--r-md); margin-top: 12px; overflow: hidden; }
+.objetivo-bloque-h { background: var(--cn-azul-bg); color: var(--cn-azul-deep); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.cif-grid { display: grid; }
+.cif-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.cif-row:last-child { border-bottom: 0; }
+.cif-row.is-empty { background: var(--bg-soft); }
+.cif-label { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-3); }
+.cif-desc { font-size: 13px; color: var(--text); font-weight: 500; display: flex; flex-direction: column; gap: 1px; }
+.cif-desc small { font-size: 10.5px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+.cif-desc.cif-vacio { color: var(--text-3); font-weight: 400; font-style: italic; }
+@media (max-width: 720px) { .cif-row { grid-template-columns: 1fr; gap: 4px; } }
+
+.banco-obj { margin-top: 16px; border: 1px dashed var(--border); border-radius: var(--r-md); padding: 4px 14px; background: var(--bg-soft); }
+.banco-obj > summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--cn-azul-deep); padding: 8px 0; letter-spacing: 0.02em; }
+.banco-cif { padding: 4px 0 10px; }
+.banco-cif-h { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin: 6px 0 4px; }
+.banco-item { display: inline-block; margin: 0 6px 6px 0; padding: 5px 10px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-pill, 999px); color: var(--text-2); cursor: pointer; transition: transform 120ms var(--ease, ease), border-color 120ms; }
+.banco-item:hover { border-color: var(--cn-azul); color: var(--cn-azul-deep); }
+.banco-item:active { transform: scale(0.97); }
 
 .docs-list { display: grid; gap: 8px; }
 .doc-row {

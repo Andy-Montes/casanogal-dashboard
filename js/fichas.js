@@ -13,9 +13,12 @@ const Fichas = {
     const q = State.searchQuery.toLowerCase();
     const filtered = ninos.filter(n => {
       if (State.filterFicha !== 'all' && n.id_programa !== 'PROG-' + State.filterFicha) return false;
+      if (State.filterDiagnostico !== 'all' && !(n.diagnosticos || []).includes(State.filterDiagnostico)) return false;
       if (q && !n.nombre_completo.toLowerCase().includes(q)) return false;
       return true;
     });
+    // Catálogo de diagnósticos presentes (para el filtro desplegable)
+    const diagnosticos = [...new Set(ninos.flatMap(n => n.diagnosticos || []))].sort((a, b) => a.localeCompare(b));
 
     const conteo = { all: ninos.length };
     ['INT','CONT','EVAL','APR','AT'].forEach(k => conteo[k] = ninos.filter(n => n.id_programa === 'PROG-' + k).length);
@@ -61,6 +64,13 @@ const Fichas = {
           <button class="chip ${State.filterFicha==='APR'?'active':''}" data-f="APR">Apraxia <span class="chip-count">${conteo.APR}</span></button>
           <button class="chip ${State.filterFicha==='AT'?'active':''}" data-f="AT">AT <span class="chip-count">${conteo.AT}</span></button>
         </div>
+        <div class="fichas-diag">
+          <label for="fichaDiag">Diagnóstico</label>
+          <select id="fichaDiag">
+            <option value="all">Todos</option>
+            ${diagnosticos.map(d => `<option value="${UI.esc(d)}" ${State.filterDiagnostico===d?'selected':''}>${UI.esc(d)}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       ${filtered.length === 0 ? `
@@ -85,6 +95,9 @@ const Fichas = {
     });
     document.querySelectorAll('.fichas-toolbar [data-f]').forEach(b => {
       b.addEventListener('click', () => { State.filterFicha = b.dataset.f; this._renderLista(); });
+    });
+    document.getElementById('fichaDiag')?.addEventListener('change', (e) => {
+      State.filterDiagnostico = e.target.value; this._renderLista();
     });
     document.querySelectorAll('.ficha-card').forEach(c => {
       c.addEventListener('click', () => { State.fichaActiva = c.dataset.id; this.render(); });
@@ -192,6 +205,10 @@ const Fichas = {
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => UI.toast(`Ficha de ${n.nombre_completo.split(' ')[0]} enviada a tu correo como PDF`, 'success'));
     document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
+    // Banco de objetivos: elegir uno predefinido
+    document.querySelectorAll('.banco-item').forEach(b =>
+      b.addEventListener('click', () => UI.toast(`Objetivo agregado: "${b.dataset.obj}"`, 'success'))
+    );
     // Click en el body de la fila abre el panel; el caret expande/colapsa la nota inline
     document.querySelectorAll('.timeline-item').forEach(item => {
       const head = item.querySelector('.timeline-head');
@@ -609,31 +626,63 @@ const Fichas = {
     </section>`;
   },
 
+  // Dominios CIF (Clasificación Internacional del Funcionamiento) — pedido de Trini.
+  CIF_SUBCATS: ['Funciones Corporales', 'Estructuras Corporales', 'Actividades', 'Participación', 'Ambiente'],
+  AREA_CIF: {
+    'Cognitivo': 'Funciones Corporales',
+    'Psicología': 'Funciones Corporales',
+    'Kinesiología': 'Estructuras Corporales',
+    'Terapia Ocupacional': 'Actividades',
+    'Fonoaudiología': 'Actividades',
+    'RDI': 'Participación',
+    'Habilidad Adaptativa': 'Participación',
+  },
+  BANCO_OBJETIVOS: {
+    'Funciones Corporales': ['Sostener atención conjunta con figura referente', 'Mejorar autorregulación emocional ante la frustración', 'Regular la respuesta sensorial ante estímulos del entorno'],
+    'Estructuras Corporales': ['Mejorar el control postural del tronco', 'Fortalecer la musculatura proximal de cintura escapular'],
+    'Actividades': ['Lograr autonomía en el vestido superior', 'Mejorar la coordinación motora fina en la pinza', 'Ampliar el repertorio de juego funcional'],
+    'Participación': ['Iniciar interacción social con pares en juego', 'Participar en rutinas grupales del aula', 'Aumentar la intención comunicativa con gestos'],
+    'Ambiente': ['Adecuar apoyos visuales en el hogar', 'Coordinar estrategias comunes con el colegio'],
+  },
+
   _seccionObjetivos(objetivos) {
-    if (!objetivos.length) {
-      return `<section class="ficha-section">
-        <h2 class="ficha-section-title">Objetivos terapéuticos</h2>
-        <div class="empty-state"><div class="empty-state-title">Sin objetivos planteados</div></div>
-      </section>`;
-    }
-    const grupos = {};
-    objetivos.forEach(o => { (grupos[o.area] = grupos[o.area] || []).push(o); });
+    const pillEstado = (e) => `<span class="estado-pill ${e==='Logrado'?'realizada':e==='Pausa'?'cancelada':'agendada'}">${UI.esc(e || '—')}</span>`;
+    // Reparte los objetivos por dominio CIF y los agrupa en Objetivo 1..4 (uno por dominio en cada nivel).
+    const porCif = {};
+    this.CIF_SUBCATS.forEach(c => porCif[c] = []);
+    objetivos.forEach(o => { const cif = this.AREA_CIF[o.area] || 'Actividades'; porCif[cif].push(o); });
+    const nObjetivos = Math.min(4, Math.max(1, ...this.CIF_SUBCATS.map(c => porCif[c].length)));
+
+    const bloques = Array.from({ length: nObjetivos }, (_, k) => {
+      const filas = this.CIF_SUBCATS.map(cif => {
+        const o = porCif[cif][k];
+        return `<div class="cif-row${o ? '' : ' is-empty'}">
+          <span class="cif-label">${UI.esc(cif)}</span>
+          ${o
+            ? `<span class="cif-desc">${UI.esc(o.descripcion)}<small>${UI.esc(o.area)}</small></span>${pillEstado(o.estado)}`
+            : `<span class="cif-desc cif-vacio">— sin objetivo en esta área —</span>`}
+        </div>`;
+      }).join('');
+      return `<div class="objetivo-bloque">
+        <div class="objetivo-bloque-h">Objetivo ${k + 1}</div>
+        <div class="cif-grid">${filas}</div>
+      </div>`;
+    }).join('');
+
+    const banco = `<details class="banco-obj">
+      <summary>Banco de objetivos · elegir uno predefinido</summary>
+      ${this.CIF_SUBCATS.map(cif => `
+        <div class="banco-cif">
+          <div class="banco-cif-h">${UI.esc(cif)}</div>
+          ${(this.BANCO_OBJETIVOS[cif] || []).map(t => `<button class="banco-item" type="button" data-obj="${UI.esc(t)}">${UI.esc(t)}</button>`).join('')}
+        </div>`).join('')}
+    </details>`;
+
     return `<section class="ficha-section">
       <h2 class="ficha-section-title">Objetivos terapéuticos <span class="ficha-section-count">${objetivos.length}</span></h2>
-      ${Object.entries(grupos).map(([area, list]) => {
-        const c = ESPECIALIDAD_VAR[area] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
-        return `<h3 style="font-size:13px;margin:18px 0 8px;color:${c?.text || 'var(--text-2)'};letter-spacing:0.04em;text-transform:uppercase">${UI.esc(area)} <span style="color:var(--text-3);font-weight:400">· ${list.length}</span></h3>
-        <div class="objetivos-list">
-          ${list.map(o => `<div class="objetivo-card" style="border-left-color:${c?.main || 'var(--cn-azul)'}">
-            <div class="head">
-              <span class="objetivo-area">${UI.esc(o.categoria)}</span>
-              <span class="estado-pill ${o.estado==='Logrado'?'realizada':o.estado==='Pausa'?'cancelada':'agendada'}">${UI.esc(o.estado)}</span>
-            </div>
-            <div class="objetivo-desc">${UI.esc(o.descripcion)}</div>
-            <div class="meta">${UI.fmtFechaCorta(o.fecha_planteamiento)} → ${UI.fmtFechaCorta(o.fecha_estimada_logro)}</div>
-          </div>`).join('')}
-        </div>`;
-      }).join('')}
+      <div class="ficha-section-hint">Organizados por objetivo y desglosados en los 5 dominios CIF.</div>
+      ${objetivos.length ? bloques : '<div class="empty-state"><div class="empty-state-title">Sin objetivos planteados</div></div>'}
+      ${banco}
     </section>`;
   },
 

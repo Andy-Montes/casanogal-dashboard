@@ -8,6 +8,7 @@ const State = {
   weekStart: '2026-05-11',       // semana visible (lunes 11 may · SEM 4 del intensivo)
   filterPrograma: 'all',         // default: todos los programas. all | INT | CONT | EVAL | APR | AT
   filterFicha: 'all',
+  filterDiagnostico: 'all',     // filtro por diagnóstico en Fichas clínicas
   filterNino: 'all',             // filtro por niño en la agenda (coordinación)
   fichaActiva: null,             // id_nino abierto en vista B
   searchQuery: '',
