@@ -226,7 +226,7 @@
     {
       "id_terapeuta": "TER-03",
       "nombre_completo": "Pamela Tapia",
-      "nombre_visible": "Pame Tapia",
+      "nombre_visible": "Pame",
       "abreviacion": "PT",
       "especialidad": "Terapia Ocupacional",
       "email": "pametapia@casanogal.cl",
@@ -1090,7 +1090,7 @@
     {
       "id_terapeuta": "TER-15",
       "nombre_completo": "Camila Bravo",
-      "nombre_visible": "Clau Bravo",
+      "nombre_visible": "Camila",
       "abreviacion": "CB",
       "especialidad": "Psicología",
       "email": "claubravo@casanogal.cl",

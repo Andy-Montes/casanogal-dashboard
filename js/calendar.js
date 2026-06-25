@@ -540,7 +540,8 @@ const Calendar = {
         out.push(g);
       }
       const g = grupos.get(k);
-      if (s.terapeuta_abr && !g._abrevs.includes(s.terapeuta_abr)) g._abrevs.push(s.terapeuta_abr);
+      const abr = (Data.terapeuta(s.id_terapeuta) || {}).abreviacion || s.terapeuta_abr;
+      if (abr && !g._abrevs.includes(abr)) g._abrevs.push(abr);
       g._ids.push(s.id_sesion);
     });
     return out;
@@ -566,8 +567,9 @@ const Calendar = {
     const isConflict = !!s.conflicto_detectado;
     const isDupla = s.es_dupla;
     let extraCls = '';
-    // Color base = color del niño (consistente en todas las vistas). La dupla mantiene su gradiente.
-    let extraStyle = isDupla ? '' : `background:${cn.bg};color:${cn.text};border-left-color:${cn.bg};`;
+    // Identidad por color del niño como ACENTO (barra lateral), no fondo saturado:
+    // fondo en un tinte muy suave del color + texto oscuro legible. La dupla mantiene su gradiente.
+    let extraStyle = isDupla ? '' : `background:color-mix(in srgb, ${cn.bg} 13%, var(--bg, #fff));border-left-color:${cn.bg};color:var(--text);`;
     let nombre = UI.esc(s.nino_visible);
     let sub = `${UI.esc(s.tipo_terapia)} · ${UI.esc(s.sala_nombre)}`;
     if (isConflict) extraCls += ' s-conflict';
