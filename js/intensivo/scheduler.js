@@ -410,8 +410,6 @@ const Scheduler = (() => {
   return { generar, generarSemana };
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = Scheduler;
-
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = Scheduler;
 } else if (typeof window !== 'undefined') {

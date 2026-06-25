@@ -354,7 +354,7 @@ const Config = {
               const opts = (sel, conVacio) => `${conVacio ? '<option value="">— sin asignar —</option>' : ''}${salas.map(s => `<option value="${s.id_sala}" ${sel === s.id_sala ? 'selected' : ''}>${UI.esc(s.nombre)}</option>`).join('')}`;
               return `
               <div class="cfg-field" style="grid-column:1/-1"><label>Salas del profesional <small style="font-weight:400;color:var(--text-3)">· la opción 2 y 3 se usan cuando la principal está ocupada</small></label></div>
-              <div class="cfg-field"><label>Sala principal</label><select id="ter-sala1">${opts(t?.sala_principal, false)}</select></div>
+              <div class="cfg-field"><label>Sala principal</label><select id="ter-sala1">${opts(t?.sala_principal, true)}</select></div>
               <div class="cfg-field"><label>Sala opción 2</label><select id="ter-sala2">${opts(t?.sala_opcion_2, true)}</select></div>
               <div class="cfg-field"><label>Sala opción 3</label><select id="ter-sala3">${opts(t?.sala_opcion_3, true)}</select></div>`;
             })()}
