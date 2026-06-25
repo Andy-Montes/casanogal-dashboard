@@ -417,8 +417,8 @@ const Calendar = {
       </div>`;
       DIAS.forEach((dia, i) => {
         const fecha = fechas[i];
-        const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque)
-          .filter(s => this._matchPrograma(s));
+        const sesiones = this._colapsarReuniones(Data.sesionesPorDiaYBloque(fecha, b.id_bloque)
+          .filter(s => this._matchPrograma(s)));
         const isToday = i === hoyIdx;
         const cellCls = `cal-cell ${isToday?'today-col':''} ${sesiones.length===0?'empty':''}${divCls}${feriados.includes(fecha)?' cal-feriado':''}`;
         html += `<div class="${cellCls}" data-dia="${dia}" data-bloque="${b.id_bloque}" data-fecha="${fecha}">`;
@@ -468,7 +468,7 @@ const Calendar = {
       html += `<div class="cal-time${divCls}">
         <span>${b.hora_inicio}</span>
       </div>`;
-      const sesiones = Data.sesionesPorDiaYBloque(fecha, b.id_bloque).filter(s => this._matchPrograma(s));
+      const sesiones = this._colapsarReuniones(Data.sesionesPorDiaYBloque(fecha, b.id_bloque).filter(s => this._matchPrograma(s)));
       const cellCls = `cal-cell ${isToday ? 'today-col' : ''} ${sesiones.length === 0 ? 'empty' : ''}${divCls}${esFeriado ? ' cal-feriado' : ''}`;
       html += `<div class="${cellCls}" data-dia="${dia}" data-bloque="${b.id_bloque}" data-fecha="${fecha}">`;
       sesiones.forEach((s, idx) => { html += this._renderSesion(s, idx); });
@@ -525,15 +525,39 @@ const Calendar = {
     return s.id_programa === 'PROG-' + State.filterPrograma;
   },
 
+  // Colapsa las "Reunión de equipo" del mismo niño en UNA entrada (la reunión es una sola
+  // aunque se guarde como una sesión por terapeuta). Junta las abreviaciones en _abrevs.
+  // Las demás sesiones pasan sin tocar. Conserva el orden original.
+  _colapsarReuniones(sesiones) {
+    const grupos = new Map();
+    const out = [];
+    sesiones.forEach(s => {
+      if (s.tipo_actividad !== 'Reunión de equipo') { out.push(s); return; }
+      const k = s.id_nino || s.id_sesion;
+      if (!grupos.has(k)) {
+        const g = { ...s, _abrevs: [], _ids: [] };
+        grupos.set(k, g);
+        out.push(g);
+      }
+      const g = grupos.get(k);
+      if (s.terapeuta_abr && !g._abrevs.includes(s.terapeuta_abr)) g._abrevs.push(s.terapeuta_abr);
+      g._ids.push(s.id_sesion);
+    });
+    return out;
+  },
+
   _renderSesion(s, idx) {
-    // Reunión de equipo: tarjeta gris. Es POR NIÑO (ej. "Reunión de equipo · León A.").
+    // Reunión de equipo: UNA tarjeta por niño (aunque participen varios terapeutas).
+    // Las sesiones-reunión del mismo niño+bloque ya vienen colapsadas con _abrevs.
     if (s.tipo_actividad === 'Reunión de equipo') {
       const ninoReu = Data.nino(s.id_nino);
       const etiqueta = ninoReu ? `Reunión de equipo · ${UI.esc(ninoReu.nombre_visible)}`
                                : UI.esc(s.nino_visible || 'Reunión de equipo');
-      return `<div class="session s-reunion-equipo" data-id="${s.id_sesion}" style="animation-delay:${idx * 30}ms" title="${etiqueta} · ${UI.esc(s.hora_inicio)}">
-        <div class="session-name">${etiqueta}<span class="ter mono">${UI.esc(s.terapeuta_abr || '')}</span></div>
-        <div class="session-sub">Equipo de ${ninoReu ? UI.esc(ninoReu.nombre_visible) : 'trabajo'}</div>
+      const abrevs = (s._abrevs && s._abrevs.length) ? s._abrevs : (s.terapeuta_abr ? [s.terapeuta_abr] : []);
+      const equipoStr = abrevs.length ? abrevs.map(a => UI.esc(a)).join(' · ') : 'Todo el equipo';
+      return `<div class="session s-reunion-equipo" data-id="${s.id_sesion}" style="animation-delay:${idx * 30}ms" title="${etiqueta} · ${UI.esc(s.hora_inicio)} · ${equipoStr}">
+        <div class="session-name">${etiqueta}</div>
+        <div class="session-sub">${equipoStr}</div>
       </div>`;
     }
     const ter = Data.terapeuta(s.id_terapeuta);
