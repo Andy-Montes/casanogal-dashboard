@@ -16,6 +16,27 @@ const Armador = {
   KEY_TOUR: 'casanogal_armador_tour',
   KEY_FUENTE: 'casanogal_armador_fuente',
   KEY_NINOS_EXTRA: 'casanogal_armador_ninos_extra',
+  KEY_SALAS_CAP: 'casanogal_armador_salas_cap',     // overrides de cupo de sala
+  KEY_RESTRICC: 'casanogal_armador_restricc',       // restricciones custom (texto)
+
+  // Cupo de sala: base del JSON + lo que ajuste coordinación (persistido).
+  _salasCapOverrides() {
+    try { const o = JSON.parse(localStorage.getItem(this.KEY_SALAS_CAP) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch { return {}; }
+  },
+  _salasCapEfectiva() {
+    return { ...(this._cache?.salasCapacidad || {}), ...this._salasCapOverrides() };
+  },
+  _setSalaCap(sala, valor) {
+    const o = this._salasCapOverrides();
+    o[sala] = valor;
+    localStorage.setItem(this.KEY_SALAS_CAP, JSON.stringify(o));
+  },
+  _restriccCustom() {
+    try { const a = JSON.parse(localStorage.getItem(this.KEY_RESTRICC) || '[]'); return Array.isArray(a) ? a : []; }
+    catch { return []; }
+  },
+  _setRestriccCustom(arr) { localStorage.setItem(this.KEY_RESTRICC, JSON.stringify(arr)); },
 
   async _cargar() {
     if (this._cache) return this._cache;
@@ -78,11 +99,11 @@ const Armador = {
   },
 
   _generar() {
-    const { intensivo, catalogo, disponibilidad, salasCapacidad } = this._cache;
+    const { intensivo, catalogo, disponibilidad } = this._cache;
     this._resultado = Scheduler.generar(intensivo, catalogo, {
       semilla: this._semilla,
       disponibilidad,
-      salasCapacidad,
+      salasCapacidad: this._salasCapEfectiva(),
     });
     this._kidsSlotsPorSemana = this._computarKidsSlots(this._resultado);
   },
@@ -162,6 +183,7 @@ const Armador = {
         </div>
         <aside class="armador-side">
           ${this._reglasHtml(intensivo)}
+          ${this._fuente !== 'real' ? this._restriccionesHtml() : ''}
           ${this._equipoHtml(catalogo)}
           ${this._cumplimientoHtml(intensivo, agg)}
           ${res.conflictos?.length ? this._conflictosHtml(res.conflictos) : ''}
@@ -522,6 +544,49 @@ const Armador = {
     `;
   },
 
+  // Panel de restricciones editables (pedido de Trini). Los cupos de sala los usa el motor de verdad.
+  _restriccionesHtml() {
+    const cap = this._salasCapEfectiva();
+    const salasTO = ['TO', 'TO 2']; // TO1 y TO2
+    const otras = Object.keys(cap).filter(s => !salasTO.includes(s));
+    const filaCap = (sala, etiqueta) => `
+      <div class="armador-restr-row">
+        <span class="armador-restr-sala">${UI.esc(etiqueta || sala)}</span>
+        <div class="armador-restr-stepper">
+          <input type="number" min="1" max="9" class="armador-restr-input" data-sala="${UI.esc(sala)}" value="${cap[sala] || 1}">
+          <span class="armador-restr-unit">niños/bloque</span>
+        </div>
+      </div>`;
+    const custom = this._restriccCustom();
+    return `
+      <div class="armador-card">
+        <div class="armador-card-head">${this._icons.check}Restricciones de sala</div>
+        <div class="armador-card-body">
+          <div class="armador-restr-group-h">Salas de Terapia Ocupacional</div>
+          ${filaCap('TO', 'Sala TO1')}
+          ${filaCap('TO 2', 'Sala TO2')}
+          <label class="armador-restr-obs">
+            <span>Máx. observaciones por sala TO</span>
+            <input type="number" min="1" max="6" class="armador-restr-obs-input" value="2">
+          </label>
+          <details class="armador-restr-otras">
+            <summary>Otras salas</summary>
+            ${otras.map(s => filaCap(s)).join('')}
+          </details>
+          <div class="armador-restr-group-h" style="margin-top:12px">Restricciones adicionales</div>
+          <ul class="armador-restr-custom">
+            ${custom.length ? custom.map((t, i) => `<li>${UI.esc(t)}<button class="armador-restr-del" data-i="${i}" title="Quitar">×</button></li>`).join('') : '<li class="armador-restr-empty">Agrega una regla propia cuando la necesites.</li>'}
+          </ul>
+          <div class="armador-restr-add">
+            <input type="text" id="armadorRestrInput" placeholder="Ej: TO2 solo en la mañana">
+            <button class="btn btn-ghost btn-sm" id="armadorRestrAdd">Agregar</button>
+          </div>
+          <button class="btn btn-primary btn-sm" id="armadorRestrAplicar" style="margin-top:10px;width:100%">Aplicar y regenerar</button>
+        </div>
+      </div>
+    `;
+  },
+
   _equipoHtml(catalogo) {
     const disciplinas = {};
     Object.entries(catalogo.terapeutas).forEach(([sigla, t]) => {
@@ -659,6 +724,33 @@ const Armador = {
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
     document.getElementById('armadorAddBtn')?.addEventListener('click', () => this._abrirFormNino());
     document.getElementById('armadorTourBtn')?.addEventListener('click', () => this._abrirTour());
+
+    // Restricciones de sala
+    document.querySelectorAll('.armador-restr-input').forEach(inp =>
+      inp.addEventListener('change', () => {
+        const v = Math.max(1, parseInt(inp.value, 10) || 1);
+        inp.value = v;
+        this._setSalaCap(inp.dataset.sala, v);
+      })
+    );
+    document.getElementById('armadorRestrAdd')?.addEventListener('click', () => {
+      const inp = document.getElementById('armadorRestrInput');
+      const txt = (inp?.value || '').trim();
+      if (!txt) return;
+      const arr = this._restriccCustom(); arr.push(txt); this._setRestriccCustom(arr);
+      this.render();
+    });
+    document.querySelectorAll('.armador-restr-del').forEach(b =>
+      b.addEventListener('click', () => {
+        const arr = this._restriccCustom(); arr.splice(parseInt(b.dataset.i, 10), 1); this._setRestriccCustom(arr);
+        this.render();
+      })
+    );
+    document.getElementById('armadorRestrAplicar')?.addEventListener('click', () => {
+      this._generar();
+      this.render();
+      UI.toast(this._resultado.ok ? 'Restricciones aplicadas · horario regenerado' : 'Aplicadas · quedaron conflictos por revisar', this._resultado.ok ? 'success' : 'warning');
+    });
 
     // Toggle fuente real/generado
     document.querySelectorAll('.armador-fuente-btn').forEach(btn => {

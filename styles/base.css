@@ -26,9 +26,9 @@ img, svg { display: block; max-width: 100%; }
 
 h1, h2, h3, h4 { letter-spacing: -0.035em; font-weight: 700; line-height: 1.15; }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 2px solid var(--bg-soft); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 1px solid var(--bg-soft); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
 /* Utilidades */

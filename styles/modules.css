@@ -379,9 +379,28 @@
 /* SIDEBAR */
 .armador-side { display: flex; flex-direction: column; gap: 10px; }
 .armador-card {
-  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md);
   overflow: hidden;
 }
+.armador-restr-group-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 8px; }
+.armador-restr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.armador-restr-sala { font-size: 13px; color: var(--text); font-weight: 500; }
+.armador-restr-stepper { display: flex; align-items: center; gap: 6px; }
+.armador-restr-input { width: 48px; height: 32px; text-align: center; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 13px; font-weight: 600; color: var(--text); background: var(--bg); }
+.armador-restr-input:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
+.armador-restr-unit { font-size: 11px; color: var(--text-3); }
+.armador-restr-obs { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text); margin: 4px 0 6px; }
+.armador-restr-obs-input { width: 48px; height: 32px; text-align: center; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 13px; font-weight: 600; }
+.armador-restr-otras { margin-top: 4px; }
+.armador-restr-otras > summary { cursor: pointer; font-size: 12px; color: var(--cn-azul-deep); font-weight: 600; padding: 4px 0; }
+.armador-restr-custom { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.armador-restr-custom li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-2); background: var(--bg-soft); border-radius: var(--r-sm); padding: 6px 9px; }
+.armador-restr-empty { color: var(--text-3) !important; font-style: italic; background: transparent !important; padding: 4px 0 !important; }
+.armador-restr-del { border: none; background: none; color: var(--text-3); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; }
+.armador-restr-del:hover { color: var(--alert); }
+.armador-restr-add { display: flex; gap: 6px; margin-top: 6px; }
+.armador-restr-add input { flex: 1; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 12.5px; }
+.armador-restr-add input:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
 .armador-card.alert { border-color: var(--alert); }
 .armador-card-head {
   padding: 12px 16px; font-weight: 600; font-size: 13px;
