@@ -2465,6 +2465,12 @@
 .disp-mov-cancel { margin-left: auto; background: var(--bg); border: 1px solid var(--cn-azul); color: var(--cn-azul-deep); border-radius: var(--r-pill); padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .disp-mov-cancel:hover { background: var(--cn-azul); color: #fff; }
 .disp-col-salas { margin-top: 22px; }
+/* Vista unificada: un solo eje de horarios, secciones apiladas (profesionales / niños / salas) */
+.disp-table-uni { width: 100%; }
+.disp-sec td { background: var(--cn-azul-deep, #1A3C6E); color: #fff; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; padding: 5px 10px; border: 1px solid var(--border); position: sticky; left: 0; }
+.disp-table-uni .disp-th-ter, .disp-table-uni .disp-ter { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+.disp-table-uni thead .disp-th-ter { z-index: 2; background: var(--bg-soft); }
+.disp-table-uni tbody tr:nth-child(even) .disp-ter { background: var(--bg-soft); }
 
 /* ====== Hero compacto (vista terapeuta) ====== */
 .hero-compact { padding: 14px 18px !important; }

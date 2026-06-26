@@ -291,34 +291,18 @@ const Recursos = {
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       ${movSes ? `<div class="disp-moving">Moviendo a <b>${UI.esc(movSes.nino_visible)}</b> · elige un bloque libre marcado en verde <button class="disp-mov-cancel" id="dispMovCancel">Cancelar</button></div>` : ''}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
-      <div class="disp-split">
-        <div class="disp-col">
-          <div class="disp-col-head">Por terapeuta</div>
-          <div class="table-wrap disp-wrap">
-            <table class="disp-table">
-              <thead><tr><th class="disp-th-ter">Terapeuta</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
-              <tbody>${filas}</tbody>
-            </table>
-          </div>
-        </div>
-        <div class="disp-col">
-          <div class="disp-col-head">Por niño</div>
-          <div class="table-wrap disp-wrap">
-            <table class="disp-table">
-              <thead><tr><th class="disp-th-ter">Niño</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
-              <tbody>${filasNino || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin atención de niños este día.</td></tr>`}</tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="disp-col disp-col-salas">
-        <div class="disp-col-head">Por sala</div>
-        <div class="table-wrap disp-wrap">
-          <table class="disp-table">
-            <thead><tr><th class="disp-th-ter">Sala</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
-            <tbody>${filasSala || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin salas configuradas.</td></tr>`}</tbody>
-          </table>
-        </div>
+      <div class="table-wrap disp-wrap">
+        <table class="disp-table disp-table-uni">
+          <thead><tr><th class="disp-th-ter">Horario →</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
+          <tbody>
+            <tr class="disp-sec"><td colspan="${bloques.length + 1}">Profesionales · ${ters.length}</td></tr>
+            ${filas}
+            <tr class="disp-sec"><td colspan="${bloques.length + 1}">Niños · ${ninos.length}</td></tr>
+            ${filasNino || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin atención de niños este día.</td></tr>`}
+            <tr class="disp-sec"><td colspan="${bloques.length + 1}">Salas · ${salas.length}</td></tr>
+            ${filasSala || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin salas configuradas.</td></tr>`}
+          </tbody>
+        </table>
       </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this._movDisp = null; this.renderDisponibilidad(); }));
