@@ -196,7 +196,7 @@ const Recursos = {
         const disp = t.disponibilidad_bloques;
         if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" ${base} title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
-        if (s) return `<td class="disp-cell disp-ocupado" ${base} draggable="true" data-id="${s.id_sesion}" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · arrastra para mover o reasignar">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+        if (s) return `<td class="disp-cell disp-ocupado" ${base} style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · arrastra para mover o reasignar"><span class="disp-grab" draggable="true" data-id="${s.id_sesion}">${UI.esc((s.nino_visible || '').split(' ')[0])}</span></td>`;
         return `<td class="disp-cell disp-libre" ${base} title="Libre · suelta aquí para mover">libre</td>`;
       }).join('');
       const nomCorto = this._nombreCorto(t.nombre_completo);
@@ -282,9 +282,9 @@ const Recursos = {
       if (sesion.id_sala && otras.some(s => s.id_sala === sesion.id_sala)) return 'La sala ya está ocupada en ese bloque';
       return null;
     };
-    document.querySelectorAll('.disp-table .disp-ocupado[draggable="true"]').forEach(cell => {
-      cell.addEventListener('dragstart', e => { dragId = cell.dataset.id; cell.classList.add('disp-dragging'); e.dataTransfer.effectAllowed = 'move'; });
-      cell.addEventListener('dragend', () => { cell.classList.remove('disp-dragging'); document.querySelectorAll('.disp-cell.disp-drop, .disp-cell.disp-drop-bad').forEach(c => c.classList.remove('disp-drop', 'disp-drop-bad')); dragId = null; });
+    document.querySelectorAll('.disp-table .disp-grab').forEach(grab => {
+      grab.addEventListener('dragstart', e => { dragId = grab.dataset.id; grab.closest('td')?.classList.add('disp-dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch {} });
+      grab.addEventListener('dragend', () => { grab.closest('td')?.classList.remove('disp-dragging'); document.querySelectorAll('.disp-cell.disp-drop, .disp-cell.disp-drop-bad').forEach(c => c.classList.remove('disp-drop', 'disp-drop-bad')); dragId = null; });
     });
     document.querySelectorAll('.disp-table .disp-cell').forEach(cell => {
       if (!cell.dataset.ter) return; // solo celdas de la tabla por terapeuta
