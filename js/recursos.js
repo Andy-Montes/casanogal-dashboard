@@ -332,20 +332,21 @@ const Recursos = {
     this._wireDispMove(dia, diaNombre);
   },
 
-  // Armar una reunión de equipo: un niño, un bloque y los terapeutas que participan.
-  _abrirFormReunion(dia, diaNombre) {
+  // Modal SIMPLE de reunión: junta al equipo + el niño + la sala (nada más).
+  _abrirFormReunion(dia, diaNombre, prefill = {}) {
     // Reuniones de equipo solo en las franjas 08:00–08:35 y 12:30–13:00
     const bloques = (State.data.bloques_horarios || []).filter(b => b.hora_inicio === '08:00' || b.hora_inicio === '12:30').sort((a, b) => (a.orden || 0) - (b.orden || 0));
     const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    const salas = State.data.salas || [];
     const html = `
       <div class="pendiente-modal-overlay" id="reuDispOverlay">
         <div class="pendiente-modal" style="width:min(560px,94vw)">
           <div class="pendiente-modal-head">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
             <div>
-              <div class="pendiente-modal-title">Armar reunión de equipo</div>
-              <div class="pendiente-modal-eyebrow">${UI.esc(UI.fmtFecha(dia))}</div>
+              <div class="pendiente-modal-title">Reunión de equipo</div>
+              <div class="pendiente-modal-eyebrow">Junta al equipo · ${UI.esc(UI.fmtFecha(dia))}</div>
             </div>
             <button class="panel-close" id="reuDispClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
@@ -355,12 +356,18 @@ const Recursos = {
                 <select class="field-select" id="reuNino">${ninos.map(n => `<option value="${n.id_nino}">${UI.esc(n.nombre_completo)}</option>`).join('')}</select>
               </div>
               <div class="field"><label class="field-label">Bloque</label>
-                <select class="field-select" id="reuBloque">${bloques.map(b => `<option value="${b.id_bloque}">${b.hora_inicio}–${b.hora_fin}</option>`).join('')}</select>
+                <select class="field-select" id="reuBloque">${bloques.map(b => `<option value="${b.id_bloque}" ${prefill.id_bloque === b.id_bloque ? 'selected' : ''}>${b.hora_inicio}–${b.hora_fin}</option>`).join('')}</select>
               </div>
             </div>
+            <div class="field"><label class="field-label">Sala</label>
+              <select class="field-select" id="reuSala">
+                <option value="">— sin sala —</option>
+                ${salas.map(sa => `<option value="${sa.id_sala}" ${prefill.id_sala === sa.id_sala ? 'selected' : ''}>${UI.esc(sa.nombre)}</option>`).join('')}
+              </select>
+            </div>
             <div class="field">
-              <label class="field-label">Terapeutas que participan</label>
-              <div class="reu-ters">${ters.map(t => `<label class="reu-ter-chk"><input type="checkbox" value="${t.id_terapeuta}"><span>${UI.esc(t.nombre_completo)} <small>${UI.esc(t.especialidad)}</small></span></label>`).join('')}</div>
+              <label class="field-label">Equipo que participa</label>
+              <div class="reu-ters">${ters.map(t => `<label class="reu-ter-chk"><input type="checkbox" value="${t.id_terapeuta}" ${prefill.id_terapeuta === t.id_terapeuta ? 'checked' : ''}><span>${UI.esc(t.nombre_completo)} <small>${UI.esc(t.especialidad)}</small></span></label>`).join('')}</div>
             </div>
           </div>
           <div class="pendiente-modal-foot">
@@ -377,10 +384,12 @@ const Recursos = {
     document.getElementById('reuDispSave').addEventListener('click', () => {
       const idNino = document.getElementById('reuNino').value;
       const idBloque = document.getElementById('reuBloque').value;
+      const idSala = document.getElementById('reuSala').value || null;
       const seleccion = [...document.querySelectorAll('.reu-ters input:checked')].map(i => i.value);
-      if (!seleccion.length) { UI.toast('Marca al menos un terapeuta', 'error'); return; }
+      if (!seleccion.length) { UI.toast('Marca al menos un integrante del equipo', 'error'); return; }
       const nino = Data.nino(idNino);
       const b = Data.bloque(idBloque);
+      const sa = idSala ? Data.sala(idSala) : null;
       let maxNum = State.data.sesiones.reduce((m, s) => { const n = parseInt(String(s.id_sesion).replace(/\D/g, ''), 10); return Number.isFinite(n) && n > m ? n : m; }, 0);
       seleccion.forEach(idTer => {
         const t = Data.terapeuta(idTer);
@@ -391,14 +400,14 @@ const Recursos = {
           id_nino: idNino, nino_visible: 'Reunión de equipo · ' + (nino?.nombre_visible || ''),
           id_terapeuta: idTer, terapeuta_abr: t?.abreviacion,
           id_terapeuta_secundario: null, id_nino_secundario: null,
-          id_sala: null, sala_nombre: '—',
+          id_sala: idSala, sala_nombre: sa?.nombre || '—',
           tipo_terapia: 'Reunión de equipo', tipo_actividad: 'Reunión de equipo',
           es_dupla: false, estado: 'Agendada', id_programa: nino?.id_programa,
           notas_admin: null, conflicto_detectado: null,
           creado_por: State.currentUser?.id, fecha_creacion: HOY_ISO,
         });
       });
-      UI.toast(`Reunión creada con ${seleccion.length} terapeuta${seleccion.length === 1 ? '' : 's'}`, 'success');
+      UI.toast(`Reunión creada · equipo de ${seleccion.length} integrante${seleccion.length === 1 ? '' : 's'}`, 'success');
       cerrar();
       this.renderDisponibilidad();
     });
@@ -434,13 +443,15 @@ const Recursos = {
         if (self._movDisp || cell.classList.contains('disp-target')) return; // si está moviendo, no crear
         const { ter, sala, bloque } = cell.dataset;
         const b = Data.bloque(bloque);
-        // La reunión de equipo solo se permite en las franjas 08:00–08:35 y 12:30–13:00
-        const permitirReunion = !!b && (b.hora_inicio === '08:00' || b.hora_inicio === '12:30');
-        if (ter) {
+        // En las franjas de reunión (08:00 y 12:30) abre el modal simple de REUNIÓN; el resto, sesión normal.
+        const esFranjaReunion = !!b && (b.hora_inicio === '08:00' || b.hora_inicio === '12:30');
+        if (esFranjaReunion) {
+          self._abrirFormReunion(dia, diaNombre, { id_bloque: bloque, id_terapeuta: ter || null, id_sala: sala || null });
+        } else if (ter) {
           const t = Data.terapeuta(ter);
-          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre, permitirReunion });
+          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre });
         } else if (sala) {
-          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre, permitirReunion });
+          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre });
         }
       });
     });

@@ -2485,15 +2485,15 @@
 
 /* ===== Vista en bandas: horarios arriba (columnas) · Profesionales/Niños/Salas en filas ===== */
 .disp-wrap-bandas { max-height: 72vh; overflow: auto; }
-.disp-table-bandas { width: auto; border-collapse: collapse; table-layout: fixed; }
+.disp-table-bandas { width: 100%; min-width: 820px; border-collapse: collapse; table-layout: fixed; }
 .disp-table-bandas thead th { position: sticky; top: 0; z-index: 3; height: 40px; background: var(--bg-soft); }
-.disp-table-bandas .disp-th-rowlabel { width: 146px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
-.disp-table-bandas .disp-hora-h { width: 74px !important; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.05; }
+.disp-table-bandas .disp-th-rowlabel { width: 150px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
+.disp-table-bandas .disp-hora-h { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.05; }
 .disp-hora-ini { display: block; font-weight: 700; }
 .disp-hora-fin { display: block; font-size: 11px; color: var(--text-3); font-weight: 500; }
-/* Filas bajas */
-.disp-table-bandas tbody .disp-cell { width: 74px !important; height: 32px; }
-.disp-table-bandas .disp-ter { width: 146px !important; height: 32px; padding: 2px 8px; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+/* Filas bajas · las columnas de horario se reparten el ancho disponible */
+.disp-table-bandas tbody .disp-cell { height: 32px; }
+.disp-table-bandas .disp-ter { width: 150px !important; height: 32px; padding: 2px 8px; position: sticky; left: 0; z-index: 1; background: var(--bg); }
 .disp-table-bandas .disp-ter-nom { line-height: 1.0; font-size: 11px; }
 .disp-table-bandas .disp-ter-nom small { font-size: 8.5px; }
 .disp-table-bandas .disp-nino { line-height: 1.0; }

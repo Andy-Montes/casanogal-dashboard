@@ -44,7 +44,7 @@ const ESPECIALIDAD_VAR = {
 
 // Modalidades de sesión (pedido de Trini): además de la individual, sesiones de papás,
 // talleres grupales, coaching y la supervisión semanal de neurología.
-const MODALIDADES = ['Sesión', 'Reunión de equipo', 'Sesión de padres', 'Taller grupal', 'Coaching a padres', 'Supervisión neurología'];
+const MODALIDADES = ['Sesión', 'Sesión de padres', 'Taller grupal', 'Coaching a padres', 'Supervisión neurología'];
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
