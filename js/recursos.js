@@ -339,8 +339,9 @@ const Recursos = {
 
   // Modal SIMPLE de reunión: junta al equipo + el niño + la sala (nada más).
   _abrirFormReunion(dia, diaNombre, prefill = {}) {
-    // Reuniones de equipo solo en las franjas 08:00–08:35 y 12:30–13:00
-    const bloques = (State.data.bloques_horarios || []).filter(b => b.hora_inicio === '08:00' || b.hora_inicio === '12:30').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    // Si vino de pinchar una celda, queda fijo ese bloque; si no, se puede elegir cualquiera.
+    const bloquesAll = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const bloques = prefill.id_bloque ? bloquesAll.filter(b => b.id_bloque === prefill.id_bloque) : bloquesAll;
     const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const salas = State.data.salas || [];
@@ -420,7 +421,8 @@ const Recursos = {
 
   // Reunión GENERAL (en cualquier bloque): equipo terapéutico + administrativo (todos) + externos (máx 3).
   _abrirFormReunionGeneral(dia, diaNombre, prefill = {}) {
-    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const bloquesAll = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const bloques = prefill.id_bloque ? bloquesAll.filter(b => b.id_bloque === prefill.id_bloque) : bloquesAll;
     const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const admin = State.data.equipo_centro || [];
     const salas = State.data.salas || [];
