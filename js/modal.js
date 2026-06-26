@@ -164,6 +164,9 @@ const Modal = {
 
   save() {
     const f = this._readForm();
+    // Si es reunión de equipo: sin sala y tipo de terapia = Reunión
+    const esReunion = f.tipo_actividad === 'Reunión de equipo';
+    if (esReunion) { f.tipo_terapia = 'Reunión de equipo'; f.id_sala = null; }
     const nino = Data.nino(f.id_nino);
     const ter = Data.terapeuta(f.id_terapeuta);
     const sala = Data.sala(f.id_sala);
@@ -186,7 +189,7 @@ const Modal = {
         id_terapeuta: f.id_terapeuta,
         terapeuta_abr: ter?.abreviacion,
         id_sala: f.id_sala,
-        sala_nombre: sala?.nombre,
+        sala_nombre: sala?.nombre || (esReunion ? '—' : null),
         id_bloque: f.id_bloque,
         hora_inicio: bloque?.hora_inicio,
         hora_fin: bloque?.hora_fin,
@@ -219,7 +222,7 @@ const Modal = {
         id_terapeuta_secundario: null,
         id_nino_secundario: null,
         id_sala: f.id_sala,
-        sala_nombre: sala?.nombre,
+        sala_nombre: sala?.nombre || (esReunion ? '—' : null),
         tipo_terapia: f.tipo_terapia,
         tipo_actividad: f.tipo_actividad,
         es_dupla: false,
