@@ -229,7 +229,7 @@ const Recursos = {
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
         if (s && s.tipo_actividad === 'Reunión de equipo') {
           const nn = (Data.nino(s.id_nino)?.nombre_visible) || (s.nino_visible || '').replace('Reunión de equipo · ', '');
-          return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-nino="${s.id_nino}" data-reu-bloque="${b.id_bloque}" title="Reunión de equipo · ${UI.esc(nn)} · clic para ver quiénes participan"><span class="disp-nino">Reunión</span><span class="disp-sala">${UI.esc(nn)}</span></td>`;
+          return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-id="${s.id_reunion || ''}" data-reu-nino="${s.id_nino || ''}" data-reu-bloque="${b.id_bloque}" title="Reunión · ${UI.esc(nn)} · clic para ver quiénes participan"><span class="disp-nino">Reunión</span><span class="disp-sala">${UI.esc(nn)}</span></td>`;
         }
         if (s) {
           const picked = movId === s.id_sesion;
@@ -249,7 +249,7 @@ const Recursos = {
       const celdas = bloques.map(b => {
         const lista = ocupNino[n.id_nino + '|' + b.id_bloque] || [];
         const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
-        if (reu) return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-nino="${n.id_nino}" data-reu-bloque="${b.id_bloque}" title="Reunión de equipo · clic para ver quiénes participan">Reunión</td>`;
+        if (reu) return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-id="${reu.id_reunion || ''}" data-reu-nino="${n.id_nino}" data-reu-bloque="${b.id_bloque}" title="Reunión de equipo · clic para ver quiénes participan">Reunión</td>`;
         const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
         if (clin.length === 1) {
           const s = clin[0];
@@ -418,11 +418,106 @@ const Recursos = {
     });
   },
 
+  // Reunión GENERAL (en cualquier bloque): equipo terapéutico + administrativo (todos) + externos (máx 3).
+  _abrirFormReunionGeneral(dia, diaNombre, prefill = {}) {
+    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    const admin = State.data.equipo_centro || [];
+    const salas = State.data.salas || [];
+    const html = `
+      <div class="pendiente-modal-overlay" id="reuGenOverlay">
+        <div class="pendiente-modal" style="width:min(600px,94vw)">
+          <div class="pendiente-modal-head">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            <div>
+              <div class="pendiente-modal-title">Reunión general</div>
+              <div class="pendiente-modal-eyebrow">Equipo + administración + externos · ${UI.esc(UI.fmtFecha(dia))}</div>
+            </div>
+            <button class="panel-close" id="reuGenClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="field"><label class="field-label">Tema / nombre de la reunión</label>
+              <input type="text" class="field-input" id="reuGenTema" maxlength="60" placeholder="Ej: Reunión administrativa mensual">
+            </div>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Bloque (cualquiera)</label>
+                <select class="field-select" id="reuGenBloque">${bloques.map(b => `<option value="${b.id_bloque}" ${prefill.id_bloque === b.id_bloque ? 'selected' : ''}>${b.hora_inicio}–${b.hora_fin}</option>`).join('')}</select>
+              </div>
+              <div class="field"><label class="field-label">Sala</label>
+                <select class="field-select" id="reuGenSala"><option value="">— sin sala —</option>${salas.map(sa => `<option value="${sa.id_sala}" ${prefill.id_sala === sa.id_sala ? 'selected' : ''}>${UI.esc(sa.nombre)}</option>`).join('')}</select>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Equipo terapéutico</label>
+              <div class="reu-ters">${ters.map(t => `<label class="reu-ter-chk"><input type="checkbox" data-ter value="${t.id_terapeuta}" ${prefill.id_terapeuta === t.id_terapeuta ? 'checked' : ''}><span>${UI.esc(t.nombre_completo)} <small>${UI.esc(t.especialidad)}</small></span></label>`).join('')}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Equipo administrativo</label>
+              <div class="reu-ters">${admin.map((p, i) => `<label class="reu-ter-chk"><input type="checkbox" data-admin value="${i}"><span>${UI.esc(p.nombre)} <small>${UI.esc(p.cargo || '')}</small></span></label>`).join('')}</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Personas externas <small style="font-weight:400;color:var(--text-3)">· máximo 3</small></label>
+              <div class="reu-ext"><input type="text" class="field-input reu-ext-in" maxlength="50" placeholder="Nombre externo 1"><input type="text" class="field-input reu-ext-in" maxlength="50" placeholder="Nombre externo 2"><input type="text" class="field-input reu-ext-in" maxlength="50" placeholder="Nombre externo 3"></div>
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="reuGenCancel">Cancelar</button>
+            <button class="btn btn-primary" id="reuGenSave">Crear reunión</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('reuGenOverlay')?.remove();
+    document.getElementById('reuGenClose').addEventListener('click', cerrar);
+    document.getElementById('reuGenCancel').addEventListener('click', cerrar);
+    document.getElementById('reuGenOverlay').addEventListener('click', e => { if (e.target.id === 'reuGenOverlay') cerrar(); });
+    document.getElementById('reuGenSave').addEventListener('click', () => {
+      const tema = document.getElementById('reuGenTema').value.trim() || 'Reunión general';
+      const idBloque = document.getElementById('reuGenBloque').value;
+      const idSala = document.getElementById('reuGenSala').value || null;
+      const terSel = [...document.querySelectorAll('.reu-ters input[data-ter]:checked')].map(i => i.value);
+      const adminSel = [...document.querySelectorAll('.reu-ters input[data-admin]:checked')].map(i => admin[Number(i.value)]);
+      const externos = [...document.querySelectorAll('.reu-ext-in')].map(i => i.value.trim()).filter(Boolean);
+      if (externos.length > 3) { UI.toast('Máximo 3 personas externas', 'error'); return; }
+      if (!terSel.length) { UI.toast('Elige al menos un profesional (ancla la reunión en el horario)', 'error'); return; }
+      const extra = [
+        ...adminSel.map(p => `${p.nombre}${p.cargo ? ' (' + p.cargo + ')' : ''}`),
+        ...externos.map(n => `${n} (externo)`),
+      ];
+      const b = Data.bloque(idBloque);
+      const sa = idSala ? Data.sala(idSala) : null;
+      const idReunion = 'REU-' + (State.data.sesiones.reduce((m, s) => { const n = parseInt(String(s.id_reunion || '').replace(/\D/g, ''), 10); return Number.isFinite(n) && n > m ? n : m; }, 0) + 1);
+      let maxNum = State.data.sesiones.reduce((m, s) => { const n = parseInt(String(s.id_sesion).replace(/\D/g, ''), 10); return Number.isFinite(n) && n > m ? n : m; }, 0);
+      terSel.forEach(idTer => {
+        const t = Data.terapeuta(idTer);
+        State.data.sesiones.push({
+          id_sesion: 'SES-' + String(++maxNum).padStart(4, '0'),
+          id_reunion: idReunion,
+          fecha: dia, dia_semana: diaNombre, id_bloque: idBloque,
+          hora_inicio: b?.hora_inicio, hora_fin: b?.hora_fin,
+          id_nino: null, nino_visible: tema,
+          id_terapeuta: idTer, terapeuta_abr: t?.abreviacion,
+          id_terapeuta_secundario: null, id_nino_secundario: null,
+          id_sala: idSala, sala_nombre: sa?.nombre || '—',
+          tipo_terapia: 'Reunión de equipo', tipo_actividad: 'Reunión de equipo',
+          participantes_extra: extra,
+          es_dupla: false, estado: 'Agendada', id_programa: null,
+          notas_admin: null, conflicto_detectado: null,
+          creado_por: State.currentUser?.id, fecha_creacion: HOY_ISO,
+        });
+      });
+      UI.toast(`Reunión general creada · ${terSel.length} del equipo${extra.length ? ' + ' + extra.length + ' más' : ''}`, 'success');
+      cerrar();
+      this.renderDisponibilidad();
+    });
+  },
+
   // Al pinchar un bloque libre: elegir qué agendar; cada opción lleva a su formulario.
   _abrirChooserActividad(dia, diaNombre, ctx) {
     const b = Data.bloque(ctx.bloque);
     const ops = [
-      { k: 'reunion', label: 'Reunión de equipo', desc: 'Junta al equipo + niño + sala' },
+      { k: 'reunion', label: 'Reunión de equipo del niño', desc: 'El equipo que atiende a un niño' },
+      { k: 'reunion_general', label: 'Reunión general', desc: 'Equipo terapéutico + administrativo + externos' },
       { k: 'Sesión', label: 'Sesión', desc: 'Terapia individual' },
       { k: 'Sesión de padres', label: 'Sesión de padres', desc: 'Psicología con los papás' },
       { k: 'Taller grupal', label: 'Taller grupal', desc: 'Actividad grupal' },
@@ -450,6 +545,8 @@ const Recursos = {
         cerrar();
         if (k === 'reunion') {
           this._abrirFormReunion(dia, diaNombre, { id_bloque: ctx.bloque, id_terapeuta: ctx.ter || null, id_sala: ctx.sala || null, id_nino: ctx.nino || null });
+        } else if (k === 'reunion_general') {
+          this._abrirFormReunionGeneral(dia, diaNombre, { id_bloque: ctx.bloque, id_terapeuta: ctx.ter || null, id_sala: ctx.sala || null });
         } else {
           const t = ctx.ter ? Data.terapeuta(ctx.ter) : null;
           Modal.openCreate({ id_nino: ctx.nino || undefined, id_terapeuta: ctx.ter || undefined, tipo_terapia: t?.especialidad, id_sala: ctx.sala || undefined, id_bloque: ctx.bloque, dia: diaNombre, tipo_actividad: k });
@@ -458,30 +555,36 @@ const Recursos = {
     });
   },
 
-  // Ver quiénes participan en una reunión ya agendada (mismo niño + bloque + día).
-  _verReunion(idNino, idBloque, dia) {
-    const sesiones = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_nino === idNino && s.tipo_actividad === 'Reunión de equipo');
+  // Ver quiénes participan en una reunión ya agendada (por id de reunión, o por niño+bloque para las antiguas).
+  _verReunion(reuId, idNino, idBloque, dia) {
+    const sesiones = reuId
+      ? State.data.sesiones.filter(s => s.id_reunion === reuId)
+      : State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_nino === idNino && s.tipo_actividad === 'Reunión de equipo');
     if (!sesiones.length) return;
-    const nino = Data.nino(idNino);
-    const b = Data.bloque(idBloque);
+    const nino = idNino ? Data.nino(idNino) : null;
+    const titulo = nino?.nombre_visible || nino?.nombre_completo || sesiones[0].nino_visible || 'Reunión';
+    const b = Data.bloque(sesiones[0].id_bloque);
     const salaNombre = sesiones.find(s => s.sala_nombre && s.sala_nombre !== '—')?.sala_nombre;
     const participantes = sesiones.map(s => Data.terapeuta(s.id_terapeuta)).filter(Boolean);
+    const extra = sesiones[0].participantes_extra || [];
     const html = `
       <div class="pendiente-modal-overlay" id="verReuOverlay">
         <div class="pendiente-modal" style="width:min(480px,94vw)">
           <div class="pendiente-modal-head">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
             <div>
-              <div class="pendiente-modal-title">Reunión de equipo · ${UI.esc(nino?.nombre_visible || nino?.nombre_completo || '')}</div>
+              <div class="pendiente-modal-title">Reunión · ${UI.esc(titulo)}</div>
               <div class="pendiente-modal-eyebrow">${b ? b.hora_inicio + '–' + b.hora_fin : ''} · ${UI.esc(UI.fmtFecha(dia))}${salaNombre ? ' · ' + UI.esc(salaNombre) : ''}</div>
             </div>
             <button class="panel-close" id="verReuClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="pendiente-modal-body">
-            <div class="ter-metrica-h">Participan ${participantes.length} del equipo</div>
+            <div class="ter-metrica-h">Equipo terapéutico (${participantes.length})</div>
             <div class="reu-part-list">
               ${participantes.map(t => { const c = ESPECIALIDAD_VAR[t.especialidad] || {}; return `<div class="reu-part"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span>${UI.esc(t.nombre_completo)}<small>${UI.esc(t.especialidad)}</small></span></div>`; }).join('')}
             </div>
+            ${extra.length ? `<div class="ter-metrica-h" style="margin-top:14px">Administración y externos (${extra.length})</div>
+            <div class="reu-part-list">${extra.map(e => `<div class="reu-part"><span class="disp-abr" style="background:var(--bg-soft);color:var(--text-2)">+</span><span>${UI.esc(e)}</span></div>`).join('')}</div>` : ''}
           </div>
           <div class="pendiente-modal-foot">
             <button class="btn btn-danger" id="verReuDel">Eliminar reunión</button>
@@ -529,7 +632,7 @@ const Recursos = {
 
     // Ver participantes de una reunión ya agendada
     document.querySelectorAll('.disp-table-bandas .disp-reu-ver').forEach(cell => {
-      cell.addEventListener('click', () => self._verReunion(cell.dataset.reuNino, cell.dataset.reuBloque, dia));
+      cell.addEventListener('click', () => self._verReunion(cell.dataset.reuId, cell.dataset.reuNino, cell.dataset.reuBloque, dia));
     });
 
     // Crear sesión al hacer clic en un espacio LIBRE (de un terapeuta o de una sala) — pedido de Trini
