@@ -226,6 +226,7 @@ const Recursos = {
         const disp = t.disponibilidad_bloques;
         if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
+        if (s && s.tipo_actividad === 'Reunión de equipo') return `<td class="disp-cell disp-fijo" title="Reunión de equipo · ${UI.esc(s.nino_visible || '')}">reu</td>`;
         if (s) {
           const picked = movId === s.id_sesion;
           const sala = Data.sala(s.id_sala);
