@@ -49,9 +49,9 @@
 - [ ] "Intensivo 41" navegable: ver niños y horario de cada intensivo histórico
 
 ## 👩‍⚕️ Terapeutas
-- [ ] Explicar/mostrar cómo quedan marcadas las observaciones en su horario
-- [ ] Registrar asistencia del terapeuta: faltó / llegó tarde / se fue temprano
-- [ ] % de tiempo en terapias efectivas vs reuniones (con tope, ej. no más de 80%)
+- [x] Explicar/mostrar cómo quedan marcadas las observaciones en su horario (nota en el detalle)
+- [x] Registrar asistencia del terapeuta: faltó / llegó tarde / se fue temprano (detalle de terapeuta, por día)
+- [x] % de tiempo en terapias efectivas vs reuniones (con tope, ej. no más de 80%) — columna "Carga semana" + detalle
 
 ## 🔔 Notificaciones (roadmap a maquetar)
 - [ ] Sistema de notificaciones a terapeutas (o a quien se elija)

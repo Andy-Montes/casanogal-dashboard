@@ -30,6 +30,7 @@ const Comunicacion = {
           <div class="pa-col-main">${this._paHorario(n)}${this._paHorarioPadres(n)}</div>
           <aside class="pa-col-side">
             ${this._paEquipo(n)}
+            ${this._paCapsulas(n)}
             ${this._paDocs(n)}
           </aside>
         </div>
@@ -203,6 +204,30 @@ const Comunicacion = {
       </li>`;
   },
 
+  // Cápsulas educativas para los papás (pedido de Trini). Coordinación las administra;
+  // acá van como ejemplo. El link real se completa al cargar cada cápsula.
+  _paCapsulas(n) {
+    const caps = (State.data.meta?.capsulas_padres) || [
+      { titulo: 'Rutinas predecibles en casa', desc: 'Cómo anticipar el día con apoyos visuales.', dur: '6 min' },
+      { titulo: 'Manejo de la desregulación', desc: 'Qué hacer ante una crisis sensorial.', dur: '8 min' },
+      { titulo: 'Juego que conecta', desc: 'Ideas de juego para fortalecer el vínculo.', dur: '5 min' },
+    ];
+    const cuerpo = caps.map((c, i) => `
+      <li class="pa-cap" data-cap="${i}" data-url="${UI.esc(c.url || '')}">
+        <span class="pa-cap-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+        <span class="pa-cap-main">
+          <span class="pa-cap-tit">${UI.esc(c.titulo)}</span>
+          <span class="pa-cap-desc">${UI.esc(c.desc || '')}</span>
+        </span>
+        ${c.dur ? `<span class="pa-cap-dur mono">${UI.esc(c.dur)}</span>` : ''}
+      </li>`).join('');
+    return `
+      <section class="pa-card">
+        <div class="pa-card-head"><div><div class="pa-card-eyebrow">Para acompañar en casa</div><h2 class="pa-card-title">Cápsulas recomendadas</h2></div></div>
+        <ul class="pa-cap-list">${cuerpo}</ul>
+      </section>`;
+  },
+
   _paDocs(n) {
     const docs = Data.documentosDeNino(n.id_nino)
       .slice()
@@ -272,7 +297,13 @@ const Comunicacion = {
       }
       if (e.target.closest('#paDescargar')) { Main._downloadPDF(); return; }
       const doc = e.target.closest('[data-pa-doc]');
-      if (doc) { UI.toast('En la versión final el documento se descarga aquí', 'success'); }
+      if (doc) { UI.toast('En la versión final el documento se descarga aquí', 'success'); return; }
+      const cap = e.target.closest('[data-cap]');
+      if (cap) {
+        const url = cap.dataset.url;
+        if (url) window.open(url, '_blank', 'noopener');
+        else UI.toast('Aquí se abrirá el video de la cápsula', '');
+      }
     });
   },
 

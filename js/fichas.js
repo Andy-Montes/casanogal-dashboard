@@ -71,6 +71,7 @@ const Fichas = {
             ${diagnosticos.map(d => `<option value="${UI.esc(d)}" ${State.filterDiagnostico===d?'selected':''}>${UI.esc(d)}</option>`).join('')}
           </select>
         </div>
+        <button class="btn btn-secondary" id="dlTodasFichas" style="height:38px">Descargar todas</button>
       </div>
 
       ${filtered.length === 0 ? `
@@ -99,6 +100,7 @@ const Fichas = {
     document.getElementById('fichaDiag')?.addEventListener('change', (e) => {
       State.filterDiagnostico = e.target.value; this._renderLista();
     });
+    document.getElementById('dlTodasFichas')?.addEventListener('click', () => this._descargarTodasFichas());
     document.querySelectorAll('.ficha-card').forEach(c => {
       c.addEventListener('click', () => { State.fichaActiva = c.dataset.id; this.render(); });
     });
@@ -203,7 +205,7 @@ const Fichas = {
     `;
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
-    document.getElementById('exportFicha').addEventListener('click', () => UI.toast(`Ficha de ${n.nombre_completo.split(' ')[0]} enviada a tu correo como PDF`, 'success'));
+    document.getElementById('exportFicha').addEventListener('click', () => this._descargarFicha(n));
     document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
     // Banco de objetivos: elegir uno predefinido
     document.querySelectorAll('.banco-item').forEach(b =>
@@ -624,6 +626,67 @@ const Fichas = {
         <div class="prox-block">${futuras.map(proxRow).join('')}</div>
       </div>
     </section>`;
+  },
+
+  // ----- Descarga de ficha completa en Word (pedido de Trini) -----
+  _fichaDocHtml(n) {
+    const equipo = Data.equipoDeNino(n.id_nino).map(e => {
+      const t = Data.terapeuta(e.id_terapeuta);
+      return t ? `${t.nombre_completo} (${t.especialidad})` : '';
+    }).filter(Boolean);
+    const objetivos = Data.objetivosDeNino(n.id_nino);
+    const sesiones = Data.sesionesDeNino(n.id_nino);
+    const realizadas = sesiones.filter(s => s.estado === 'Realizada').length;
+    const fila = (k, v) => `<tr><td style="padding:4px 10px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:bold;width:200px">${k}</td><td style="padding:4px 10px;border:1px solid #cbd5e1">${v || '—'}</td></tr>`;
+    const objHtml = objetivos.length
+      ? `<ul>${objetivos.map(o => `<li><b>${o.area}:</b> ${o.descripcion} <i>(${o.estado})</i></li>`).join('')}</ul>`
+      : '<p>Sin objetivos planteados.</p>';
+    return `
+      <h2 style="font-size:17px;color:#1B6B8A;border-bottom:2px solid #1B6B8A;padding-bottom:4px">${n.nombre_completo}</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:13px;margin-bottom:10px">
+        ${fila('Programa', n.programa_nombre)}
+        ${fila('Fecha de nacimiento', `${UI.fmtFechaCorta(n.fecha_nacimiento)}${n.edad_anios ? ' · ' + n.edad_anios + ' años' : ''}`)}
+        ${fila('Estado civil de los padres', n.estado_civil_padres)}
+        ${fila('Madre / apoderada', n.madre || n.apoderado_principal)}
+        ${fila('Padre / apoderado', n.padre)}
+        ${fila('Teléfono', n.telefono_apoderado)}
+        ${fila('Email', n.email_apoderado)}
+        ${fila('Colegio', n.colegio)}
+        ${fila('Médico externo', n.medico_externo)}
+        ${fila('Alergias', n.alergias)}
+        ${fila('Diagnósticos', (n.diagnosticos || []).join(', '))}
+      </table>
+      <p style="font-size:13px"><b>Equipo tratante:</b> ${equipo.join(' · ') || '—'}</p>
+      <p style="font-size:13px"><b>Sesiones:</b> ${sesiones.length} registradas · ${realizadas} realizadas</p>
+      <h3 style="font-size:14px;color:#1B6B8A">Objetivos terapéuticos</h3>
+      <div style="font-size:13px">${objHtml}</div>`;
+  },
+
+  _descargarDoc(titulo, cuerpo, filename) {
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"><title>${titulo}</title></head>
+      <body style="font-family:Calibri,Arial,sans-serif">
+        <h1 style="font-size:20px;color:#1B6B8A">Casa Nogal · ${titulo}</h1>
+        ${cuerpo}
+      </body></html>`;
+    const blob = new Blob(['﻿', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  _descargarFicha(n) {
+    this._descargarDoc(`Ficha clínica · ${n.nombre_completo}`, this._fichaDocHtml(n), `ficha-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
+    UI.toast(`Ficha de ${n.nombre_completo.split(' ')[0]} descargada`, 'success');
+  },
+
+  _descargarTodasFichas() {
+    const ninos = Data.ninosVisibles();
+    const cuerpo = ninos.map(n => this._fichaDocHtml(n)).join('<hr style="margin:24px 0;border:none;border-top:2px solid #cbd5e1">');
+    this._descargarDoc('Fichas clínicas de todos los pacientes', cuerpo, 'fichas-todos-los-pacientes.doc');
+    UI.toast(`${ninos.length} fichas descargadas`, 'success');
   },
 
   // Dominios CIF (Clasificación Internacional del Funcionamiento) — pedido de Trini.
