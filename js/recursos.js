@@ -295,10 +295,15 @@ const Recursos = {
     }
 
     document.getElementById('main').innerHTML = `
-      <div class="section-head"><div>
+      <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div>
         <div class="section-title">Disponibilidad</div>
         <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. <b>Arrastra</b> una sesión a un bloque <b>verde</b>; al soltar eliges la sala (a la derecha). Clic en un espacio libre para crear una sesión.</div>
-      </div></div>
+      </div>
+        <button class="btn btn-secondary" id="dispAddReuBtn" style="flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Armar reunión
+        </button>
+      </div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
@@ -320,7 +325,79 @@ const Recursos = {
       </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); }));
+    document.getElementById('dispAddReuBtn')?.addEventListener('click', () => this._abrirFormReunion(dia, diaNombre));
     this._wireDispMove(dia, diaNombre);
+  },
+
+  // Armar una reunión de equipo: un niño, un bloque y los terapeutas que participan.
+  _abrirFormReunion(dia, diaNombre) {
+    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    const html = `
+      <div class="pendiente-modal-overlay" id="reuDispOverlay">
+        <div class="pendiente-modal" style="width:min(560px,94vw)">
+          <div class="pendiente-modal-head">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            <div>
+              <div class="pendiente-modal-title">Armar reunión de equipo</div>
+              <div class="pendiente-modal-eyebrow">${UI.esc(UI.fmtFecha(dia))}</div>
+            </div>
+            <button class="panel-close" id="reuDispClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="field-row">
+              <div class="field"><label class="field-label">Niño</label>
+                <select class="field-select" id="reuNino">${ninos.map(n => `<option value="${n.id_nino}">${UI.esc(n.nombre_completo)}</option>`).join('')}</select>
+              </div>
+              <div class="field"><label class="field-label">Bloque</label>
+                <select class="field-select" id="reuBloque">${bloques.map(b => `<option value="${b.id_bloque}">${b.hora_inicio}–${b.hora_fin}</option>`).join('')}</select>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Terapeutas que participan</label>
+              <div class="reu-ters">${ters.map(t => `<label class="reu-ter-chk"><input type="checkbox" value="${t.id_terapeuta}"><span>${UI.esc(t.nombre_completo)} <small>${UI.esc(t.especialidad)}</small></span></label>`).join('')}</div>
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="reuDispCancel">Cancelar</button>
+            <button class="btn btn-primary" id="reuDispSave">Crear reunión</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('reuDispOverlay')?.remove();
+    document.getElementById('reuDispClose').addEventListener('click', cerrar);
+    document.getElementById('reuDispCancel').addEventListener('click', cerrar);
+    document.getElementById('reuDispOverlay').addEventListener('click', e => { if (e.target.id === 'reuDispOverlay') cerrar(); });
+    document.getElementById('reuDispSave').addEventListener('click', () => {
+      const idNino = document.getElementById('reuNino').value;
+      const idBloque = document.getElementById('reuBloque').value;
+      const seleccion = [...document.querySelectorAll('.reu-ters input:checked')].map(i => i.value);
+      if (!seleccion.length) { UI.toast('Marca al menos un terapeuta', 'error'); return; }
+      const nino = Data.nino(idNino);
+      const b = Data.bloque(idBloque);
+      let maxNum = State.data.sesiones.reduce((m, s) => { const n = parseInt(String(s.id_sesion).replace(/\D/g, ''), 10); return Number.isFinite(n) && n > m ? n : m; }, 0);
+      seleccion.forEach(idTer => {
+        const t = Data.terapeuta(idTer);
+        State.data.sesiones.push({
+          id_sesion: 'SES-' + String(++maxNum).padStart(4, '0'),
+          fecha: dia, dia_semana: diaNombre, id_bloque: idBloque,
+          hora_inicio: b?.hora_inicio, hora_fin: b?.hora_fin,
+          id_nino: idNino, nino_visible: 'Reunión de equipo · ' + (nino?.nombre_visible || ''),
+          id_terapeuta: idTer, terapeuta_abr: t?.abreviacion,
+          id_terapeuta_secundario: null, id_nino_secundario: null,
+          id_sala: null, sala_nombre: '—',
+          tipo_terapia: 'Reunión de equipo', tipo_actividad: 'Reunión de equipo',
+          es_dupla: false, estado: 'Agendada', id_programa: nino?.id_programa,
+          notas_admin: null, conflicto_detectado: null,
+          creado_por: State.currentUser?.id, fecha_creacion: HOY_ISO,
+        });
+      });
+      UI.toast(`Reunión creada con ${seleccion.length} terapeuta${seleccion.length === 1 ? '' : 's'}`, 'success');
+      cerrar();
+      this.renderDisponibilidad();
+    });
   },
 
   // Salas con CUPO en (fecha, bloque destino); respeta capacidad_personas (TO1=4, TO2=2…).
