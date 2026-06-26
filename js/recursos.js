@@ -262,46 +262,47 @@ const Recursos = {
       return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text, n.edad_anios ? n.edad_anios + ' años' : '')}${celdas}</tr>`;
     }).join('');
 
-    // Banda SALAS (lectura): una fila por sala
+    // Banda SALAS (lectura): una fila por sala · respeta la capacidad (TO1=4, TO2=2…)
     const filasSala = salas.map(sa => {
+      const cap = sa.capacidad_personas || 1;
       const celdas = bloques.map(b => {
         const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
         if (lista.length) {
-          const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
-          const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+');
-          return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
+          const full = lista.length >= cap;
+          const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ') + (cap > 1 ? ` · ${lista.length}/${cap}` : '');
+          const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+') + (cap > 1 ? ` <small>${lista.length}/${cap}</small>` : '');
+          return `<td class="disp-cell disp-ocupado${full ? '' : ' disp-parcial'}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
         }
         return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
       }).join('');
-      return `<tr>${rotulo((sa.nombre || '').slice(0, 4), sa.nombre, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)')}${celdas}</tr>`;
+      return `<tr>${rotulo((sa.nombre || '').slice(0, 4), sa.nombre, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)', cap > 1 ? 'cap. ' + cap : '')}${celdas}</tr>`;
     }).join('');
 
-    // Banner: paso 1 (elegir destino) o paso 2 (elegir sala libre)
-    let banner = '';
-    if (movSes && !dest) {
-      banner = `<div class="disp-moving">Moviendo a <b>${UI.esc(movSes.nino_visible)}</b> · elige un bloque libre marcado en verde <button class="disp-mov-cancel" id="dispMovCancel">Cancelar</button></div>`;
-    } else if (movSes && dest) {
+    // Panel de salas a la DERECHA cuando ya se soltó la sesión en un destino (lo pidió Andy)
+    let salaPanel = '';
+    if (movSes && dest) {
       const tDest = Data.terapeuta(dest.idTer);
       const bDest = Data.bloque(dest.idBloque);
       const libres = this._salasLibres(movSes, dest, dia);
-      banner = `<div class="disp-moving disp-moving-sala">
-        <span>Mover <b>${UI.esc(movSes.nino_visible)}</b> a <b>${UI.esc(tDest?.nombre_visible || tDest?.nombre_completo || '')}</b> · ${bDest?.hora_inicio || ''} · elige sala:</span>
-        <span class="disp-sala-chips">${libres.length
-          ? libres.map(sl => `<button class="disp-sala-chip${sl.pref ? ' is-pref' : ''}${sl.actual ? ' is-actual' : ''}" data-sala="${sl.id}" title="${sl.pref ? 'Sala preferida del profesional' : ''}">${UI.esc(sl.nombre)}${sl.actual ? ' ·actual' : (sl.pref ? ' ·pref' : '')}</button>`).join('')
-          : '<button class="disp-sala-chip" data-sala="">No hay sala libre · mover sin sala</button>'}</span>
+      salaPanel = `<aside class="disp-sala-panel">
+        <div class="disp-sala-panel-head">Elige sala para <b>${UI.esc(movSes.nino_visible)}</b></div>
+        <div class="disp-sala-panel-sub">${UI.esc(tDest?.nombre_visible || tDest?.nombre_completo || '')} · ${bDest?.hora_inicio || ''}–${bDest?.hora_fin || ''}</div>
+        <div class="disp-sala-list">${libres.length
+          ? libres.map(sl => `<button class="disp-sala-chip${sl.pref ? ' is-pref' : ''}${sl.actual ? ' is-actual' : ''}" data-sala="${sl.id}">${UI.esc(sl.nombre)}${sl.cupo ? ` <small>${sl.cupo} cupo${sl.cupo === 1 ? '' : 's'}</small>` : ''}${sl.actual ? ' · actual' : (sl.pref ? ' · pref' : '')}</button>`).join('')
+          : '<button class="disp-sala-chip" data-sala="">No hay sala disponible · mover sin sala</button>'}</div>
         <button class="disp-mov-cancel" id="dispMovCancel">Cancelar</button>
-      </div>`;
+      </aside>`;
     }
 
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. Para mover: <b>arrastra</b> una sesión a un bloque <b>verde</b> destino; al soltar eliges la sala y todo se actualiza solo.</div>
+        <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. <b>Arrastra</b> una sesión a un bloque <b>verde</b>; al soltar eliges la sala (a la derecha). Clic en un espacio libre para crear una sesión.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
-      ${banner}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
+      <div class="disp-layout">
       <div class="table-wrap disp-wrap disp-wrap-bandas">
         <table class="disp-table disp-table-bandas${movSes ? ' is-moving' : ''}">
           <thead><tr><th class="disp-th-rowlabel">Horario →</th>${headHoras}</tr></thead>
@@ -315,23 +316,30 @@ const Recursos = {
           </tbody>
         </table>
       </div>
+      ${salaPanel}
+      </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); }));
     this._wireDispMove(dia, diaNombre);
   },
 
-  // Salas libres en (fecha, bloque destino); marca las preferidas del profesional destino y la sala actual.
+  // Salas con CUPO en (fecha, bloque destino); respeta capacidad_personas (TO1=4, TO2=2…).
   _salasLibres(movSes, dest, dia) {
-    const ocupadas = new Set(State.data.sesiones
+    const uso = {};
+    State.data.sesiones
       .filter(s => s.fecha === dia && s.id_bloque === dest.idBloque && s.id_sesion !== movSes.id_sesion && s.id_sala)
-      .map(s => s.id_sala));
+      .forEach(s => { uso[s.id_sala] = (uso[s.id_sala] || 0) + 1; });
     const tDest = Data.terapeuta(dest.idTer);
     const pref = [tDest?.sala_principal, tDest?.sala_opcion_2, tDest?.sala_opcion_3].filter(Boolean);
     const rank = id => { const i = pref.indexOf(id); return i === -1 ? 99 : i; };
     return (State.data.salas || [])
-      .filter(sa => !ocupadas.has(sa.id_sala))
+      .filter(sa => (uso[sa.id_sala] || 0) < (sa.capacidad_personas || 1))
       .sort((a, b) => rank(a.id_sala) - rank(b.id_sala) || a.nombre.localeCompare(b.nombre))
-      .map(sa => ({ id: sa.id_sala, nombre: sa.nombre, pref: pref.includes(sa.id_sala), actual: sa.id_sala === movSes.id_sala }));
+      .map(sa => {
+        const cap = sa.capacidad_personas || 1;
+        const libres = cap - (uso[sa.id_sala] || 0);
+        return { id: sa.id_sala, nombre: sa.nombre, pref: pref.includes(sa.id_sala), actual: sa.id_sala === movSes.id_sala, cupo: cap > 1 ? libres : 0 };
+      });
   },
 
   // Mover una sesión ARRASTRÁNDOLA (eventos de puntero · confiable en tablas). Al soltar, eliges sala.

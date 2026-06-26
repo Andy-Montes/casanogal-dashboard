@@ -1174,7 +1174,7 @@
       "id_sala": "SALA-02",
       "nombre": "Sala TO 2",
       "tipo_principal": "Terapia Ocupacional",
-      "capacidad_personas": 4,
+      "capacidad_personas": 2,
       "equipamiento": "Colchonetas, pelota Bobath, espejo",
       "disponible": true,
       "notas": ""
