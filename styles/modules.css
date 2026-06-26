@@ -2464,23 +2464,28 @@
 .disp-moving { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--cn-azul-bg); color: var(--cn-azul-deep); border: 1px solid var(--cn-azul); border-radius: var(--r-md); padding: 9px 13px; margin-bottom: 10px; font-size: 13px; }
 .disp-mov-cancel { margin-left: auto; background: var(--bg); border: 1px solid var(--cn-azul); color: var(--cn-azul-deep); border-radius: var(--r-pill); padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .disp-mov-cancel:hover { background: var(--cn-azul); color: #fff; }
-.disp-col-salas { margin-top: 22px; }
-/* Vista unificada: un solo eje de horarios, secciones apiladas (profesionales / niños / salas) */
-.disp-wrap-uni { max-height: 68vh; overflow: auto; }
-.disp-table-uni { width: 100%; }
-.disp-table-uni thead th { position: sticky; top: 0; z-index: 3; }
-.disp-table-uni .disp-th-ter, .disp-table-uni .disp-ter { position: sticky; left: 0; z-index: 1; background: var(--bg); }
-.disp-table-uni thead .disp-th-ter { z-index: 4; background: var(--bg-soft); }
-.disp-table-uni tbody tr:nth-child(even) .disp-ter { background: var(--bg-soft); }
-/* Bandas de sección, más compactas y fijas arriba al hacer scroll */
-.disp-sec td { background: var(--cn-azul-deep, #1A3C6E); color: #fff; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border: 1px solid var(--border); position: sticky; left: 0; }
-/* Filas más bajas en la vista unificada */
-.disp-table-uni .disp-table th, .disp-table-uni th { height: 30px; }
-.disp-table-uni .disp-ter { height: 30px; padding: 2px 8px; }
-.disp-table-uni .disp-cell { height: 30px; }
-.disp-table-uni .disp-abr { font-size: 9px; padding: 1px 4px; }
-.disp-table-uni .disp-ter-nom { font-size: 11px; }
-.disp-table-uni .disp-ter-nom small { display: none; }
+/* ===== Agenda invertida: horarios en filas, profesionales en columnas ===== */
+.disp-wrap-agenda { max-height: 70vh; overflow: auto; }
+.disp-table-agenda { border-collapse: collapse; table-layout: fixed; }
+.disp-table-agenda thead th { position: sticky; top: 0; z-index: 3; height: 46px; padding: 3px 4px; vertical-align: middle; background: var(--bg-soft); border: 1px solid var(--border); }
+.disp-table-agenda .disp-th-hora { width: 58px; position: sticky; left: 0; z-index: 4; }
+.disp-prof-h { width: 86px; }
+.disp-prof-h { font-weight: 600; }
+.disp-prof-abr { display: inline-block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 9px; padding: 1px 5px; border-radius: var(--r-xs); }
+.disp-prof-nom { display: block; font-size: 10px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disp-hora { position: sticky; left: 0; z-index: 1; width: 58px; background: var(--bg-soft); border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-2); text-align: center; }
+.disp-table-agenda .disp-cell { width: 86px; height: 44px; padding: 2px; vertical-align: middle; }
+.disp-table-agenda .disp-ocupado { display: table-cell; }
+.disp-nino { display: block; font-size: 11px; font-weight: 700; color: var(--text); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disp-sala { display: block; font-size: 9px; color: var(--text-3); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disp-target { color: #2E6B3A; font-size: 15px; font-weight: 700; }
+/* Chips de sala en el banner de movimiento */
+.disp-moving-sala { align-items: flex-start; }
+.disp-sala-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.disp-sala-chip { background: var(--bg); border: 1px solid var(--cn-azul); color: var(--cn-azul-deep); border-radius: var(--r-pill); padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.disp-sala-chip:hover { background: var(--cn-azul); color: #fff; }
+.disp-sala-chip.is-pref { border-color: var(--cn-mostaza); color: var(--cn-mostaza-deep, #9A6B00); }
+.disp-sala-chip.is-actual { background: var(--cn-azul); color: #fff; }
 
 /* ====== Hero compacto (vista terapeuta) ====== */
 .hero-compact { padding: 14px 18px !important; }
