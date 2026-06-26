@@ -2475,15 +2475,22 @@
 .disp-sala-chip.is-actual { background: var(--cn-azul); color: #fff; }
 
 /* ===== Vista en bandas: horarios arriba (columnas) · Profesionales/Niños/Salas en filas ===== */
-.disp-wrap-bandas { max-height: 70vh; overflow: auto; }
-.disp-table-bandas { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.disp-table-bandas thead th { position: sticky; top: 0; z-index: 3; height: 40px; background: var(--bg-soft); }
-.disp-table-bandas .disp-th-rowlabel { width: 160px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
-.disp-table-bandas .disp-hora-h { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-.disp-table-bandas .disp-ter { width: 160px !important; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+.disp-wrap-bandas { max-height: 72vh; overflow: auto; }
+.disp-table-bandas { width: auto; border-collapse: collapse; table-layout: fixed; }
+.disp-table-bandas thead th { position: sticky; top: 0; z-index: 3; height: 36px; background: var(--bg-soft); }
+.disp-table-bandas .disp-th-rowlabel { width: 150px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
+.disp-table-bandas .disp-hora-h { width: 78px !important; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.disp-table-bandas tbody .disp-cell { width: 78px !important; height: 36px; }
+.disp-table-bandas .disp-ter { width: 150px !important; position: sticky; left: 0; z-index: 1; background: var(--bg); }
 .disp-table-bandas tbody tr:nth-child(even) .disp-ter { background: var(--bg-soft); }
 .disp-table-bandas .disp-cell { font-size: 11px; }
 .disp-table-bandas .disp-nino { font-size: 11px; }
+/* Celdas libres NEUTRAS (no verdes) para que los destinos válidos resalten */
+.disp-table-bandas .disp-libre { background: var(--bg); color: var(--text-3); font-weight: 400; }
+/* Al mover: atenuar todo menos los destinos válidos y la sesión tomada */
+.disp-table-bandas.is-moving .disp-cell:not(.disp-target):not(.disp-picked) { opacity: 0.4; }
+.disp-table-bandas.is-moving .disp-target { background: #2FA84F !important; color: #fff !important; opacity: 1; font-size: 16px; outline: 2px solid #1E5E2C; outline-offset: -2px; }
+.disp-table-bandas.is-moving .disp-target:hover { background: #228B3C !important; }
 /* Bandas de sección (rótulos de grupo de filas) */
 .disp-sec td { position: sticky; left: 0; background: var(--cn-azul-deep, #1A3C6E); color: #fff; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 5px 12px; border: 1px solid var(--border); }
 .disp-sec-nino td { background: var(--cn-mostaza-deep, #9A6B00); }

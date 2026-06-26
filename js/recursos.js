@@ -216,7 +216,7 @@ const Recursos = {
     // Cabecera: una columna por bloque (horario), arriba (lo prefiere Trini)
     const headHoras = bloques.map(b => `<th class="disp-hora-h">${b.hora_inicio}</th>`).join('');
     const nCols = bloques.length + 1;
-    const rotulo = (abr, nom, bg, fg) => `<td class="disp-ter"><span class="disp-abr" style="background:${bg};color:${fg}">${UI.esc(abr)}</span><span class="disp-ter-nom">${UI.esc(nom)}</span></td>`;
+    const rotulo = (abr, nom, bg, fg, sub) => `<td class="disp-ter"><span class="disp-abr" style="background:${bg};color:${fg}">${UI.esc(abr)}</span><span class="disp-ter-nom">${UI.esc(nom)}${sub ? `<small>${UI.esc(sub)}</small>` : ''}</span></td>`;
 
     // Banda PROFESIONALES (editable): una fila por profesional
     const filasProf = ters.map(t => {
@@ -246,14 +246,19 @@ const Recursos = {
         const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
         if (reu) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">reu</td>`;
         const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
-        if (clin.length) {
+        if (clin.length === 1) {
+          const s = clin[0];
+          const picked = movId === s.id_sesion;
+          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(s.tipo_terapia)} (${UI.esc(s.terapeuta_abr || '')}) · clic para mover">${UI.esc(s.terapeuta_abr || '·')}</td>`;
+        }
+        if (clin.length > 1) {
           const det = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
           const abr = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
           return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
         }
         return `<td class="disp-cell disp-libre" title="Sin sesión"></td>`;
       }).join('');
-      return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text)}${celdas}</tr>`;
+      return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text, n.edad_anios ? n.edad_anios + ' años' : '')}${celdas}</tr>`;
     }).join('');
 
     // Banda SALAS (lectura): una fila por sala
@@ -290,14 +295,14 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Horarios arriba en columnas · filas agrupadas en <b>Profesionales · Niños · Salas</b>. Clic en una sesión (banda Profesionales) y luego en un bloque libre verde para moverla; al reasignar eliges la sala disponible y las bandas Niños y Salas se actualizan solas.</div>
+        <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. Para mover: <b>haz clic</b> en una sesión (no se arrastra) y luego clic en un bloque <b>verde</b> destino; eliges la sala y todo se actualiza solo.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       ${banner}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
       <div class="table-wrap disp-wrap disp-wrap-bandas">
-        <table class="disp-table disp-table-bandas">
+        <table class="disp-table disp-table-bandas${movSes ? ' is-moving' : ''}">
           <thead><tr><th class="disp-th-rowlabel">Horario →</th>${headHoras}</tr></thead>
           <tbody>
             <tr class="disp-sec disp-sec-prof"><td colspan="${nCols}">Profesionales · ${ters.length}</td></tr>
