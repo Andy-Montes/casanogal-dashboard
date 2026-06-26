@@ -270,8 +270,8 @@ const Recursos = {
         if (lista.length) {
           const full = lista.length >= cap;
           const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ') + (cap > 1 ? ` · ${lista.length}/${cap}` : '');
-          const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+') + (cap > 1 ? ` <small>${lista.length}/${cap}</small>` : '');
-          return `<td class="disp-cell disp-ocupado${full ? '' : ' disp-parcial'}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
+          const ninosCelda = lista.map(s => `<span class="disp-sala-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>`).join('');
+          return `<td class="disp-cell disp-ocupado disp-sala-cell${full ? '' : ' disp-parcial'}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${ninosCelda}${cap > 1 ? `<span class="disp-sala-cap">${lista.length}/${cap}</span>` : ''}</td>`;
         }
         return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
       }).join('');

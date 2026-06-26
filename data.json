@@ -1246,7 +1246,7 @@
       "id_sala": "SALA-10",
       "nombre": "KIDS",
       "tipo_principal": "Habilidad Adaptativa",
-      "capacidad_personas": 6,
+      "capacidad_personas": 4,
       "equipamiento": "Cocina pedagógica, baño adaptado",
       "disponible": true,
       "notas": ""

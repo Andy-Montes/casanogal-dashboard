@@ -2500,6 +2500,10 @@
 .disp-table-bandas .disp-sala { line-height: 1.0; margin-top: 0; }
 .disp-parcial { opacity: 0.85; }
 .disp-parcial small { font-weight: 700; color: var(--cn-mostaza-deep, #9A6B00); }
+/* Sala con varios niños: se listan hacia abajo dentro de la celda */
+.disp-sala-cell { vertical-align: top !important; padding: 2px !important; height: auto !important; }
+.disp-sala-nino { display: block; font-size: 10px; line-height: 1.25; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disp-sala-cap { display: block; font-size: 8.5px; font-weight: 700; color: var(--cn-mostaza-deep, #9A6B00); margin-top: 1px; }
 /* Libre clickeable para crear sesión */
 .disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover { background: var(--cn-azul-bg) !important; color: var(--cn-azul-deep) !important; cursor: pointer; }
 .disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover::after { content: '＋'; font-size: 14px; font-weight: 700; }
