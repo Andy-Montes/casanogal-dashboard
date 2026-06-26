@@ -291,7 +291,7 @@ const Recursos = {
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       ${movSes ? `<div class="disp-moving">Moviendo a <b>${UI.esc(movSes.nino_visible)}</b> · elige un bloque libre marcado en verde <button class="disp-mov-cancel" id="dispMovCancel">Cancelar</button></div>` : ''}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
-      <div class="table-wrap disp-wrap">
+      <div class="table-wrap disp-wrap disp-wrap-uni">
         <table class="disp-table disp-table-uni">
           <thead><tr><th class="disp-th-ter">Horario →</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
           <tbody>
