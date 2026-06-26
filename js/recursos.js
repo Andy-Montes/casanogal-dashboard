@@ -227,7 +227,10 @@ const Recursos = {
         // En las franjas de reunión las celdas vacías quedan libres (para agendar más reuniones), no bloqueadas
         if (!esFranjaReu && disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
-        if (s && s.tipo_actividad === 'Reunión de equipo') return `<td class="disp-cell disp-fijo" title="Reunión de equipo · ${UI.esc(s.nino_visible || '')}">reu</td>`;
+        if (s && s.tipo_actividad === 'Reunión de equipo') {
+          const nn = (Data.nino(s.id_nino)?.nombre_visible) || (s.nino_visible || '').replace('Reunión de equipo · ', '');
+          return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-nino="${s.id_nino}" data-reu-bloque="${b.id_bloque}" title="Reunión de equipo · ${UI.esc(nn)} · clic para ver quiénes participan"><span class="disp-nino">Reunión</span><span class="disp-sala">${UI.esc(nn)}</span></td>`;
+        }
         if (s) {
           const picked = movId === s.id_sesion;
           const sala = Data.sala(s.id_sala);
@@ -246,7 +249,7 @@ const Recursos = {
       const celdas = bloques.map(b => {
         const lista = ocupNino[n.id_nino + '|' + b.id_bloque] || [];
         const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
-        if (reu) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">reu</td>`;
+        if (reu) return `<td class="disp-cell disp-fijo disp-reu disp-reu-ver" data-reu-nino="${n.id_nino}" data-reu-bloque="${b.id_bloque}" title="Reunión de equipo · clic para ver quiénes participan">Reunión</td>`;
         const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
         if (clin.length === 1) {
           const s = clin[0];
@@ -414,6 +417,91 @@ const Recursos = {
     });
   },
 
+  // Al pinchar un bloque libre: elegir qué agendar; cada opción lleva a su formulario.
+  _abrirChooserActividad(dia, diaNombre, ctx) {
+    const b = Data.bloque(ctx.bloque);
+    const ops = [
+      { k: 'reunion', label: 'Reunión de equipo', desc: 'Junta al equipo + niño + sala' },
+      { k: 'Sesión', label: 'Sesión', desc: 'Terapia individual' },
+      { k: 'Sesión de padres', label: 'Sesión de padres', desc: 'Psicología con los papás' },
+      { k: 'Taller grupal', label: 'Taller grupal', desc: 'Actividad grupal' },
+      { k: 'Supervisión neurología', label: 'Supervisión neurológica', desc: 'La doctora supervisa' },
+    ];
+    const html = `
+      <div class="pendiente-modal-overlay" id="chooserOverlay">
+        <div class="pendiente-modal" style="width:min(440px,94vw)">
+          <div class="pendiente-modal-head">
+            <div><div class="pendiente-modal-title">¿Qué quieres agendar?</div><div class="pendiente-modal-eyebrow">${b ? b.hora_inicio + '–' + b.hora_fin : ''} · ${UI.esc(UI.fmtFecha(dia))}</div></div>
+            <button class="panel-close" id="chooserClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body chooser-list">
+            ${ops.map(o => `<button class="chooser-opt" data-k="${UI.esc(o.k)}"><span class="chooser-opt-t">${o.label}</span><span class="chooser-opt-d">${o.desc}</span></button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('chooserOverlay')?.remove();
+    document.getElementById('chooserClose').addEventListener('click', cerrar);
+    document.getElementById('chooserOverlay').addEventListener('click', e => { if (e.target.id === 'chooserOverlay') cerrar(); });
+    document.querySelectorAll('.chooser-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.k;
+        cerrar();
+        if (k === 'reunion') {
+          this._abrirFormReunion(dia, diaNombre, { id_bloque: ctx.bloque, id_terapeuta: ctx.ter || null, id_sala: ctx.sala || null });
+        } else {
+          const t = ctx.ter ? Data.terapeuta(ctx.ter) : null;
+          Modal.openCreate({ id_terapeuta: ctx.ter || undefined, tipo_terapia: t?.especialidad, id_sala: ctx.sala || undefined, id_bloque: ctx.bloque, dia: diaNombre, tipo_actividad: k });
+        }
+      });
+    });
+  },
+
+  // Ver quiénes participan en una reunión ya agendada (mismo niño + bloque + día).
+  _verReunion(idNino, idBloque, dia) {
+    const sesiones = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_nino === idNino && s.tipo_actividad === 'Reunión de equipo');
+    if (!sesiones.length) return;
+    const nino = Data.nino(idNino);
+    const b = Data.bloque(idBloque);
+    const salaNombre = sesiones.find(s => s.sala_nombre && s.sala_nombre !== '—')?.sala_nombre;
+    const participantes = sesiones.map(s => Data.terapeuta(s.id_terapeuta)).filter(Boolean);
+    const html = `
+      <div class="pendiente-modal-overlay" id="verReuOverlay">
+        <div class="pendiente-modal" style="width:min(480px,94vw)">
+          <div class="pendiente-modal-head">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cn-azul)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            <div>
+              <div class="pendiente-modal-title">Reunión de equipo · ${UI.esc(nino?.nombre_visible || nino?.nombre_completo || '')}</div>
+              <div class="pendiente-modal-eyebrow">${b ? b.hora_inicio + '–' + b.hora_fin : ''} · ${UI.esc(UI.fmtFecha(dia))}${salaNombre ? ' · ' + UI.esc(salaNombre) : ''}</div>
+            </div>
+            <button class="panel-close" id="verReuClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body">
+            <div class="ter-metrica-h">Participan ${participantes.length} del equipo</div>
+            <div class="reu-part-list">
+              ${participantes.map(t => { const c = ESPECIALIDAD_VAR[t.especialidad] || {}; return `<div class="reu-part"><span class="disp-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span>${UI.esc(t.nombre_completo)}<small>${UI.esc(t.especialidad)}</small></span></div>`; }).join('')}
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-danger" id="verReuDel">Eliminar reunión</button>
+            <button class="btn btn-primary" id="verReuClose2">Cerrar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('verReuOverlay')?.remove();
+    document.getElementById('verReuClose').addEventListener('click', cerrar);
+    document.getElementById('verReuClose2').addEventListener('click', cerrar);
+    document.getElementById('verReuOverlay').addEventListener('click', e => { if (e.target.id === 'verReuOverlay') cerrar(); });
+    document.getElementById('verReuDel').addEventListener('click', () => {
+      const ids = new Set(sesiones.map(s => s.id_sesion));
+      State.data.sesiones = State.data.sesiones.filter(s => !ids.has(s.id_sesion));
+      UI.toast('Reunión eliminada', 'success');
+      cerrar();
+      this.renderDisponibilidad();
+    });
+  },
+
   // Salas con CUPO en (fecha, bloque destino); respeta capacidad_personas (TO1=4, TO2=2…).
   _salasLibres(movSes, dest, dia) {
     const uso = {};
@@ -438,22 +526,17 @@ const Recursos = {
     const self = this;
     document.getElementById('dispMovCancel')?.addEventListener('click', () => { this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); });
 
+    // Ver participantes de una reunión ya agendada
+    document.querySelectorAll('.disp-table-bandas .disp-reu-ver').forEach(cell => {
+      cell.addEventListener('click', () => self._verReunion(cell.dataset.reuNino, cell.dataset.reuBloque, dia));
+    });
+
     // Crear sesión al hacer clic en un espacio LIBRE (de un terapeuta o de una sala) — pedido de Trini
     document.querySelectorAll('.disp-table-bandas .disp-crear').forEach(cell => {
       cell.addEventListener('click', () => {
         if (self._movDisp || cell.classList.contains('disp-target')) return; // si está moviendo, no crear
         const { ter, sala, bloque } = cell.dataset;
-        const b = Data.bloque(bloque);
-        // En las franjas de reunión (08:00 y 12:30) abre el modal simple de REUNIÓN; el resto, sesión normal.
-        const esFranjaReunion = !!b && (b.hora_inicio === '08:00' || b.hora_inicio === '12:30');
-        if (esFranjaReunion) {
-          self._abrirFormReunion(dia, diaNombre, { id_bloque: bloque, id_terapeuta: ter || null, id_sala: sala || null });
-        } else if (ter) {
-          const t = Data.terapeuta(ter);
-          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre });
-        } else if (sala) {
-          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre });
-        }
+        self._abrirChooserActividad(dia, diaNombre, { ter: ter || null, sala: sala || null, bloque });
       });
     });
 

@@ -2511,6 +2511,21 @@
 .reu-ter-chk input { width: 15px; height: 15px; accent-color: var(--cn-azul); flex-shrink: 0; }
 .reu-ter-chk small { color: var(--text-3); font-size: 10.5px; }
 @media (max-width: 600px) { .reu-ters { grid-template-columns: 1fr; } }
+/* Selector "¿Qué quieres agendar?" */
+.chooser-list { display: flex; flex-direction: column; gap: 8px; }
+.chooser-opt { text-align: left; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); cursor: pointer; display: flex; flex-direction: column; gap: 2px; transition: border-color .12s, background .12s, transform .1s; }
+.chooser-opt:hover { border-color: var(--cn-azul); background: var(--cn-azul-bg); }
+.chooser-opt:active { transform: scale(0.99); }
+.chooser-opt-t { font-weight: 700; font-size: 14px; color: var(--text); }
+.chooser-opt-d { font-size: 12px; color: var(--text-3); }
+/* Participantes de una reunión */
+.reu-part-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.reu-part { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text); }
+.reu-part > span:last-child { display: flex; flex-direction: column; line-height: 1.2; }
+.reu-part small { color: var(--text-3); font-size: 11px; }
+/* Celda de reunión clickeable */
+.disp-reu-ver { cursor: pointer; }
+.disp-reu-ver:hover { outline: 2px solid var(--cn-azul); outline-offset: -2px; }
 /* Libre clickeable para crear sesión */
 .disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover { background: var(--cn-azul-bg) !important; color: var(--cn-azul-deep) !important; cursor: pointer; }
 .disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover::after { content: '＋'; font-size: 14px; font-weight: 700; }
