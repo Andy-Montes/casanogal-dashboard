@@ -588,7 +588,7 @@ const Calendar = {
       data-id="${s.id_sesion}"
       style="animation-delay:${idx * 30}ms;${extraStyle}"
       title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(ter?.nombre_visible || '—')} · ${UI.esc(s.hora_inicio)}–${UI.esc(s.hora_fin)}">
-      <div class="session-name">${nombre}${UI.badgeIntensivo(nino)}<span class="ter mono">${dot}${UI.esc(ter?.abreviacion || '—')}</span></div>
+      <div class="session-name"><span class="session-name-txt">${nombre}${UI.badgeIntensivo(nino)}</span><span class="ter mono">${dot}${UI.esc(ter?.abreviacion || '—')}</span></div>
       <div class="session-sub">${sub}</div>
     </div>`;
   },

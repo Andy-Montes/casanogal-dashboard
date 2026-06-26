@@ -1014,6 +1014,7 @@
   gap: 5px;
   line-height: 1.15;
 }
+.session-name-txt { display: inline-flex; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-name .ter {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
