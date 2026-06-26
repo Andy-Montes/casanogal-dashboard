@@ -416,18 +416,32 @@ const Fichas = {
     };
     const icono = (t) => `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">${ICON[t] || ICON['Intensivo']}</svg>`;
 
-    // Hito en curso (programa vigente del niño)
+    // Hito en curso (programa vigente del niño) — muestra el set completo que Trini pidió ver dentro de cada intensivo
+    const equipoActual = Data.equipoDeNino(n.id_nino).map(e => Data.terapeuta(e.id_terapeuta)).filter(Boolean);
+    const objCurso = Data.objetivosDeNino(n.id_nino);
+    const sesCurso = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo');
+    const realCurso = sesCurso.filter(s => s.estado === 'Realizada').length;
+    const reuCurso = this._leerReuniones(n.id_nino).length;
+    const docsCurso = Data.documentosDeNino(n.id_nino).length;
     const enCurso = `
-      <div class="fhist-item fhist-curso">
-        <div class="fhist-head">
+      <details class="fhist-item fhist-curso" open>
+        <summary class="fhist-head">
           <span class="fhist-dot fhist-dot-curso">${icono('Intensivo')}</span>
           <span class="fhist-main">
             <span class="fhist-title">${UI.esc(prog?.nombre || n.programa_nombre || 'Programa')} · en curso</span>
             <span class="fhist-meta">${n.fecha_inicio_programa ? fmtMes(n.fecha_inicio_programa) : ''} · semana ${n.semana_actual || '—'} de ${prog?.duracion_semanas || '—'} · ${this._edadEn(n.fecha_nacimiento, n.fecha_inicio_programa)}</span>
           </span>
           <span class="fhist-badge fhist-badge-curso">En curso</span>
+          <svg class="fhist-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="fhist-body">
+          <div class="fhist-row"><span class="fhist-row-label">Equipo tratante</span><div class="fhist-chips">${equipoActual.map(t => `<span class="fhist-chip">${UI.esc(t.abreviacion)} · ${UI.esc(t.especialidad)}</span>`).join('') || '—'}</div></div>
+          <div class="fhist-row"><span class="fhist-row-label">Registro de atenciones</span><span>${realCurso} de ${sesCurso.length} sesiones realizadas</span></div>
+          <div class="fhist-row"><span class="fhist-row-label">Objetivos trabajados</span><span>${objCurso.length} objetivos en seguimiento</span></div>
+          <div class="fhist-row"><span class="fhist-row-label">Reuniones</span><span>${reuCurso} registrada${reuCurso===1?'':'s'}</span></div>
+          <div class="fhist-row"><span class="fhist-row-label">Documentos</span><span>${docsCurso} en la ficha</span></div>
         </div>
-      </div>`;
+      </details>`;
 
     const items = hist.map(h => {
       const rango = h.fecha_termino ? `${fmtMes(h.fecha_inicio)} – ${fmtMes(h.fecha_termino)}` : fmtMes(h.fecha_inicio);
@@ -458,6 +472,7 @@ const Fichas = {
 
     return `<section class="ficha-section">
       <h2 class="ficha-section-title">Historia de vida <span class="ficha-section-count">${hist.length}</span></h2>
+      <div class="ficha-section-hint">Dentro de cada intensivo: horario, equipo tratante, objetivos trabajados, registro de atenciones, informes, reuniones y documentos.</div>
       ${hist.length === 0
         ? `<div class="empty-state"><div class="empty-state-title">Sin ciclos anteriores</div><div class="empty-state-sub">Cuando se cierre un intensivo, queda aquí su horario, registros, objetivos e informe.</div></div>`
         : `<div class="fhist-timeline">${enCurso}${items}</div>`}
