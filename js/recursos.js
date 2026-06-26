@@ -213,58 +213,61 @@ const Recursos = {
       .sort((a, b) => { const ai = UI.esIntensivo(a) ? 0 : 1, bi = UI.esIntensivo(b) ? 0 : 1; return ai - bi || a.nombre_completo.localeCompare(b.nombre_completo); });
     const salas = (State.data.salas || []);
 
-    // Encabezado fila 2: una columna por entidad de cada grupo
-    const headProf = ters.map(t => { const c = ESPECIALIDAD_VAR[t.especialidad] || {}; return `<th class="disp-ent-h" title="${UI.esc(t.nombre_completo)} · ${UI.esc(t.especialidad)}"><span class="disp-ent-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span></th>`; }).join('');
-    const headNino = ninos.map(n => { const cn = UI.colorNino(n.id_nino); return `<th class="disp-ent-h" title="${UI.esc(n.nombre_completo)}"><span class="disp-ent-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span></th>`; }).join('');
-    const headSala = salas.map(sa => `<th class="disp-ent-h" title="${UI.esc(sa.nombre)} · ${UI.esc(sa.tipo_principal || '')}"><span class="disp-ent-sala">${UI.esc((sa.nombre || '').slice(0, 5))}</span></th>`).join('');
-    const grpRow = `<th class="disp-th-hora" rowspan="2">Hora</th>`
-      + (ters.length ? `<th class="disp-grp disp-grp-prof" colspan="${ters.length}">Profesionales · ${ters.length}</th>` : '')
-      + (ninos.length ? `<th class="disp-grp disp-grp-nino" colspan="${ninos.length}">Niños · ${ninos.length}</th>` : '')
-      + (salas.length ? `<th class="disp-grp disp-grp-sala" colspan="${salas.length}">Salas · ${salas.length}</th>` : '');
+    // Cabecera: una columna por bloque (horario), arriba (lo prefiere Trini)
+    const headHoras = bloques.map(b => `<th class="disp-hora-h">${b.hora_inicio}</th>`).join('');
+    const nCols = bloques.length + 1;
+    const rotulo = (abr, nom, bg, fg) => `<td class="disp-ter"><span class="disp-abr" style="background:${bg};color:${fg}">${UI.esc(abr)}</span><span class="disp-ter-nom">${UI.esc(nom)}</span></td>`;
 
-    // Una fila por bloque; tres secciones de columnas (Profesionales editable · Niños · Salas)
-    const filas = bloques.map(b => {
-      const celdasProf = ters.map((t, i) => {
-        const c = ESPECIALIDAD_VAR[t.especialidad] || {};
-        const start = i === 0 ? ' disp-grp-start' : '';
-        if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo${start}" title="Reunión de equipo">${ocup[t.id_terapeuta + '|' + b.id_bloque] ? 'reu' : '·'}</td>`;
+    // Banda PROFESIONALES (editable): una fila por profesional
+    const filasProf = ters.map(t => {
+      const c = ESPECIALIDAD_VAR[t.especialidad] || {};
+      const celdas = bloques.map(b => {
+        if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">${ocup[t.id_terapeuta + '|' + b.id_bloque] ? 'reu' : '·'}</td>`;
         const disp = t.disponibilidad_bloques;
-        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp${start}" title="No disponible">—</td>`;
+        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
         if (s) {
           const picked = movId === s.id_sesion;
           const sala = Data.sala(s.id_sala);
           const salaTxt = sala?.nombre || s.sala_nombre || '';
-          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}${start}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
+          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
         }
         const target = movSes && !dest && okDestino(t.id_terapeuta, b);
-        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}${start}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">${target ? '＋' : ''}</td>`;
+        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">${target ? '＋' : ''}</td>`;
       }).join('');
-      const celdasNino = ninos.map((n, i) => {
-        const start = i === 0 ? ' disp-grp-start' : '';
+      return `<tr>${rotulo(t.abreviacion, this._nombreCorto(t.nombre_completo), c.bg || 'var(--cn-azul-bg)', c.text || 'var(--cn-azul-deep)')}${celdas}</tr>`;
+    }).join('');
+
+    // Banda NIÑOS (lectura): una fila por niño
+    const filasNino = ninos.map(n => {
+      const cn = UI.colorNino(n.id_nino);
+      const celdas = bloques.map(b => {
         const lista = ocupNino[n.id_nino + '|' + b.id_bloque] || [];
         const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
-        if (reu) return `<td class="disp-cell disp-fijo${start}" title="Reunión de equipo">reu</td>`;
+        if (reu) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">reu</td>`;
         const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
         if (clin.length) {
-          const cn = UI.colorNino(n.id_nino);
           const det = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
           const abr = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
-          return `<td class="disp-cell disp-ocupado${start}" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
+          return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
         }
-        return `<td class="disp-cell disp-libre${start}" title="Sin sesión"></td>`;
+        return `<td class="disp-cell disp-libre" title="Sin sesión"></td>`;
       }).join('');
-      const celdasSala = salas.map((sa, i) => {
-        const start = i === 0 ? ' disp-grp-start' : '';
+      return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text)}${celdas}</tr>`;
+    }).join('');
+
+    // Banda SALAS (lectura): una fila por sala
+    const filasSala = salas.map(sa => {
+      const celdas = bloques.map(b => {
         const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
         if (lista.length) {
           const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
           const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+');
-          return `<td class="disp-cell disp-ocupado${start}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
+          return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
         }
-        return `<td class="disp-cell disp-libre${start}" title="Sala libre"></td>`;
+        return `<td class="disp-cell disp-libre" title="Sala libre"></td>`;
       }).join('');
-      return `<tr><td class="disp-hora">${b.hora_inicio}</td>${celdasProf}${celdasNino}${celdasSala}</tr>`;
+      return `<tr>${rotulo((sa.nombre || '').slice(0, 4), sa.nombre, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)')}${celdas}</tr>`;
     }).join('');
 
     // Banner: paso 1 (elegir destino) o paso 2 (elegir sala libre)
@@ -287,19 +290,23 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Horarios en filas · columnas agrupadas en <b>Profesionales · Niños · Salas</b>. Clic en una sesión (sección Profesionales) y luego en un bloque libre verde para moverla; al reasignar eliges la sala disponible y las columnas de Niños y Salas se actualizan solas.</div>
+        <div class="section-sub">Horarios arriba en columnas · filas agrupadas en <b>Profesionales · Niños · Salas</b>. Clic en una sesión (banda Profesionales) y luego en un bloque libre verde para moverla; al reasignar eliges la sala disponible y las bandas Niños y Salas se actualizan solas.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       ${banner}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
-      <div class="table-wrap disp-wrap disp-wrap-agenda">
-        <table class="disp-table disp-table-agenda disp-table-3grp">
-          <thead>
-            <tr class="disp-grp-row">${grpRow}</tr>
-            <tr>${headProf}${headNino}${headSala}</tr>
-          </thead>
-          <tbody>${filas}</tbody>
+      <div class="table-wrap disp-wrap disp-wrap-bandas">
+        <table class="disp-table disp-table-bandas">
+          <thead><tr><th class="disp-th-rowlabel">Horario →</th>${headHoras}</tr></thead>
+          <tbody>
+            <tr class="disp-sec disp-sec-prof"><td colspan="${nCols}">Profesionales · ${ters.length}</td></tr>
+            ${filasProf}
+            <tr class="disp-sec disp-sec-nino"><td colspan="${nCols}">Niños · ${ninos.length}</td></tr>
+            ${filasNino || `<tr><td colspan="${nCols}" class="disp-ter">Sin niños con atención hoy.</td></tr>`}
+            <tr class="disp-sec disp-sec-sala"><td colspan="${nCols}">Salas · ${salas.length}</td></tr>
+            ${filasSala}
+          </tbody>
         </table>
       </div>
     `;

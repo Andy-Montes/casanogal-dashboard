@@ -2464,21 +2464,8 @@
 .disp-moving { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--cn-azul-bg); color: var(--cn-azul-deep); border: 1px solid var(--cn-azul); border-radius: var(--r-md); padding: 9px 13px; margin-bottom: 10px; font-size: 13px; }
 .disp-mov-cancel { margin-left: auto; background: var(--bg); border: 1px solid var(--cn-azul); color: var(--cn-azul-deep); border-radius: var(--r-pill); padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .disp-mov-cancel:hover { background: var(--cn-azul); color: #fff; }
-/* ===== Agenda invertida: horarios en filas, profesionales en columnas ===== */
-.disp-wrap-agenda { max-height: 70vh; overflow: auto; }
-.disp-table-agenda { border-collapse: collapse; table-layout: fixed; }
-.disp-table-agenda thead th { position: sticky; top: 0; z-index: 3; height: 46px; padding: 3px 4px; vertical-align: middle; background: var(--bg-soft); border: 1px solid var(--border); }
-.disp-table-agenda .disp-th-hora { width: 58px; position: sticky; left: 0; z-index: 4; }
-.disp-prof-h { width: 86px; }
-.disp-prof-h { font-weight: 600; }
-.disp-prof-abr { display: inline-block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 9px; padding: 1px 5px; border-radius: var(--r-xs); }
-.disp-prof-nom { display: block; font-size: 10px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.disp-hora { position: sticky; left: 0; z-index: 1; width: 58px; background: var(--bg-soft); border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-2); text-align: center; }
-.disp-table-agenda .disp-cell { width: 86px; height: 44px; padding: 2px; vertical-align: middle; }
-.disp-table-agenda .disp-ocupado { display: table-cell; }
 .disp-nino { display: block; font-size: 11px; font-weight: 700; color: var(--text); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .disp-sala { display: block; font-size: 9px; color: var(--text-3); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.disp-target { color: #2E6B3A; font-size: 15px; font-weight: 700; }
 /* Chips de sala en el banner de movimiento */
 .disp-moving-sala { align-items: flex-start; }
 .disp-sala-chips { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -2487,26 +2474,20 @@
 .disp-sala-chip.is-pref { border-color: var(--cn-mostaza); color: var(--cn-mostaza-deep, #9A6B00); }
 .disp-sala-chip.is-actual { background: var(--cn-azul); color: #fff; }
 
-/* ===== Tres grupos de columnas: Profesionales · Niños · Salas ===== */
-.disp-table-3grp .disp-cell, .disp-table-3grp .disp-ent-h { width: 54px; }
-.disp-table-3grp .disp-cell { height: 42px; padding: 1px; }
-.disp-table-3grp .disp-nino { font-size: 10px; }
-.disp-table-3grp .disp-sala { font-size: 8.5px; }
-/* Fila 1 del header: rótulos de grupo */
-.disp-grp-row th { position: sticky; top: 0; z-index: 5; height: 24px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--border); }
-.disp-grp-prof { background: var(--cn-azul-bg); color: var(--cn-azul-deep); }
-.disp-grp-nino { background: var(--cn-mostaza-bg, #FBF3DD); color: var(--cn-mostaza-deep, #9A6B00); }
-.disp-grp-sala { background: #E7F0E9; color: #2E6B3A; }
-/* Fila 2 del header: cada entidad */
-.disp-table-3grp thead tr:nth-child(2) th { position: sticky; top: 24px; z-index: 3; height: 30px; padding: 2px; background: var(--bg-soft); border: 1px solid var(--border); }
-.disp-table-3grp .disp-th-hora { position: sticky; left: 0; z-index: 6; width: 50px; background: var(--bg-soft); }
-.disp-ent-h { font-weight: 600; }
-.disp-ent-abr { display: inline-block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 9px; padding: 1px 4px; border-radius: var(--r-xs); }
-.disp-ent-sala { display: block; font-size: 8.5px; color: var(--text-2); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Línea divisoria al inicio de cada grupo */
-.disp-grp-start { border-left: 3px solid var(--cn-azul-deep, #1A3C6E) !important; }
-.disp-grp.disp-grp-nino, .disp-grp.disp-grp-sala { border-left: 3px solid var(--cn-azul-deep, #1A3C6E); }
-.disp-table-3grp .disp-hora { width: 50px; }
+/* ===== Vista en bandas: horarios arriba (columnas) · Profesionales/Niños/Salas en filas ===== */
+.disp-wrap-bandas { max-height: 70vh; overflow: auto; }
+.disp-table-bandas { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.disp-table-bandas thead th { position: sticky; top: 0; z-index: 3; height: 40px; background: var(--bg-soft); }
+.disp-table-bandas .disp-th-rowlabel { width: 160px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
+.disp-table-bandas .disp-hora-h { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.disp-table-bandas .disp-ter { width: 160px !important; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+.disp-table-bandas tbody tr:nth-child(even) .disp-ter { background: var(--bg-soft); }
+.disp-table-bandas .disp-cell { font-size: 11px; }
+.disp-table-bandas .disp-nino { font-size: 11px; }
+/* Bandas de sección (rótulos de grupo de filas) */
+.disp-sec td { position: sticky; left: 0; background: var(--cn-azul-deep, #1A3C6E); color: #fff; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 5px 12px; border: 1px solid var(--border); }
+.disp-sec-nino td { background: var(--cn-mostaza-deep, #9A6B00); }
+.disp-sec-sala td { background: #2E6B3A; }
 
 /* ====== Hero compacto (vista terapeuta) ====== */
 .hero-compact { padding: 14px 18px !important; }
