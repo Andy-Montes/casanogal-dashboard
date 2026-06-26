@@ -90,12 +90,37 @@ const Armador = {
       return;
     }
     if (!this._resultado) this._generar();
-    main.innerHTML = this._html(data);
+    if (this._verIntensivo41) {
+      main.innerHTML = this._html41(data);
+    } else {
+      main.innerHTML = this._html(data);
+    }
     this._wire();
 
-    if (!localStorage.getItem(this.KEY_TOUR)) {
+    if (!this._verIntensivo41 && !localStorage.getItem(this.KEY_TOUR)) {
       setTimeout(() => this._abrirTour(), 400);
     }
+  },
+
+  // Vista del próximo intensivo (aún sin armar) — demuestra que cada intensivo es navegable.
+  _html41(data) {
+    return `
+      ${this._toolbarHtml(data.intensivo)}
+      <div class="armador-hero">
+        <div class="armador-hero-info">
+          <div class="armador-eyebrow">Cohorte Intensivo 41 · próximo ciclo</div>
+          <h2 class="armador-title">Intensivo 41 — aún sin armar</h2>
+          <p class="armador-subtitle">Cada intensivo queda guardado por separado. Cuando empiece el Intensivo 41, agregas a los niños y el sistema arma su horario, sin tocar el del Intensivo 40 (que queda archivado y consultable).</p>
+        </div>
+        <div class="armador-hero-cta">
+          <button class="btn btn-primary" id="armadorAddBtn">${this._icons.plus}Agregar primer niño</button>
+        </div>
+      </div>
+      <div class="empty-state" style="margin-top:18px">
+        <div class="empty-state-title">Horario en blanco</div>
+        <div class="empty-state-sub">Todavía no hay niños en el Intensivo 41. Agrega niños para construir su horario; el Intensivo 40 permanece intacto.</div>
+      </div>
+    `;
   },
 
   _generar() {
@@ -289,6 +314,13 @@ const Armador = {
     return `
       <div class="armador-toolbar">
         <div class="armador-toolbar-left">
+          <label class="armador-select">
+            <span class="armador-select-label">Intensivo:</span>
+            <select id="armadorIntensivo">
+              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · actual</option>
+              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · próximo</option>
+            </select>
+          </label>
           <label class="armador-select">
             <span class="armador-select-label">Ver niño:</span>
             <select id="armadorFiltroNino">${opcionesNino}</select>
@@ -770,6 +802,10 @@ const Armador = {
       document.getElementById('armadorBanner')?.remove();
     });
 
+    document.getElementById('armadorIntensivo')?.addEventListener('change', (e) => {
+      this._verIntensivo41 = e.target.value === '41';
+      this.render();
+    });
     document.getElementById('armadorFiltroNino')?.addEventListener('change', (e) => {
       this._filtroNino = parseInt(e.target.value, 10);
       this.render();
@@ -891,6 +927,26 @@ const Armador = {
                 ${(catalogo.franjas || []).map((fr, i) => (i !== 0 && i !== (catalogo.franjas.length - 1)) ? `<option value="${i}">${UI.esc(fr)}</option>` : '').join('')}
               </select>
             </label>
+            <label class="armador-form-field">
+              <span>Preferencia de inicio del día</span>
+              <select id="armadorFormInicio">
+                <option value="">— sin preferencia —</option>
+                <option value="TO">Partir con Terapia Ocupacional</option>
+                <option value="FONO">Partir con Fonoaudiología</option>
+                <option value="COG">Partir con Cognitivo</option>
+                <option value="PSI">Partir con Psicología</option>
+                <option value="KINE">Partir con Kinesiología</option>
+              </select>
+            </label>
+            <label class="armador-form-field">
+              <span>Modalidad</span>
+              <select id="armadorFormModalidad">
+                <option value="individual">Individual</option>
+                <option value="dupla_ter">Dupla de terapeutas (2 ter · 1 niño)</option>
+                <option value="dupla_nino">Dupla de niños (1 ter · 2 niños)</option>
+                <option value="grupal">Grupal (2 ter · 3 niños)</option>
+              </select>
+            </label>
           </div>
           <div class="armador-form-hint armador-form-hint-soft">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora.</div>
           <div class="armador-form-disc-grid">
@@ -925,6 +981,8 @@ const Armador = {
       const kids = parseInt(document.getElementById('armadorFormKids').value, 10) || 0;
       const heRaw = document.getElementById('armadorFormHoraEntrada').value;
       const horaEntrada = heRaw === '' ? null : Number(heRaw);
+      const preferenciaInicio = document.getElementById('armadorFormInicio').value || null;
+      const modalidad = document.getElementById('armadorFormModalidad').value || 'individual';
       const asignaciones = [];
       SECCIONES.forEach(s => {
         const roles = s.key === 'PSI' ? ['TUTOR', 'COT', 'PAPAS'] : ['TUTOR', 'COT'];
@@ -948,6 +1006,8 @@ const Armador = {
         encargado,
         kids_semanal: kids,
         hora_entrada: horaEntrada,  // franja índice o null; agrupa la sesión grupal a esa hora
+        preferencia_inicio: preferenciaInicio,  // disciplina con la que prefiere partir el día
+        modalidad,                               // individual | dupla_ter | dupla_nino | grupal
         total_ses_semanal: asignaciones.reduce((s, a) => s + a.sesiones, 0) + kids,
         asignaciones,
         _extra: true,  // marcador para distinguir niños agregados a mano
