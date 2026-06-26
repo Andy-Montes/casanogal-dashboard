@@ -188,16 +188,39 @@ const Recursos = {
 
     const diasBtns = fechas.map((f, i) => `<button class="disp-dia-btn ${i === idx ? 'active' : ''}" data-idx="${i}">${DIAS_ABBR[i]} ${Number(f.split('-')[2])}</button>`).join('');
 
+    // Sesión "tomada" para mover (click-para-mover, más confiable que arrastrar en tablas).
+    const movId = this._movDisp || null;
+    const movSes = movId ? State.data.sesiones.find(s => s.id_sesion === movId) : null;
+    // ¿Es válido soltar movSes en este terapeuta+bloque? (reasignar)
+    const okTer = (idTer, idBloque) => {
+      if (!movSes) return false;
+      const otras = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_sesion !== movSes.id_sesion);
+      if (otras.some(s => s.id_terapeuta === idTer)) return false;
+      if (movSes.id_sala && otras.some(s => s.id_sala === movSes.id_sala)) return false;
+      return true;
+    };
+    // ¿Es válido mover movSes a otro bloque del MISMO niño? (cambiar horario, mismo terapeuta)
+    const okNino = (idNino, idBloque) => {
+      if (!movSes || movSes.id_nino !== idNino) return false;
+      const otras = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_sesion !== movSes.id_sesion);
+      if (otras.some(s => s.id_terapeuta === movSes.id_terapeuta)) return false;
+      if (movSes.id_sala && otras.some(s => s.id_sala === movSes.id_sala)) return false;
+      return true;
+    };
+
     const filas = ters.map(t => {
       const c = ESPECIALIDAD_VAR[t.especialidad] || {};
       const celdas = bloques.map(b => {
-        const base = `data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" data-fecha="${dia}"`;
         if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo" title="Bloque de reunión de equipo">reunión</td>`;
         const disp = t.disponibilidad_bloques;
-        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" ${base} title="No disponible">—</td>`;
+        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
-        if (s) return `<td class="disp-cell disp-ocupado" ${base} style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · arrastra para mover o reasignar"><span class="disp-grab" draggable="true" data-id="${s.id_sesion}">${UI.esc((s.nino_visible || '').split(' ')[0])}</span></td>`;
-        return `<td class="disp-cell disp-libre" ${base} title="Libre · suelta aquí para mover">libre</td>`;
+        if (s) {
+          const picked = movId === s.id_sesion;
+          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:${c.bg || 'var(--bg-soft)'};color:${c.text || 'var(--text)'}" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · clic para mover">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+        }
+        const target = okTer(t.id_terapeuta, b.id_bloque);
+        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">libre</td>`;
       }).join('');
       const nomCorto = this._nombreCorto(t.nombre_completo);
       return `<tr>
@@ -222,12 +245,18 @@ const Recursos = {
         const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
         if (reu) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">reunión</td>`;
         const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
-        if (clin.length) {
+        if (clin.length === 1) {
+          const s = clin[0];
+          const picked = movId === s.id_sesion;
+          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(s.tipo_terapia)} (${UI.esc(s.terapeuta_abr || '')}) · clic para mover de horario">${UI.esc(s.terapeuta_abr || '·')}</td>`;
+        }
+        if (clin.length > 1) {
           const detalle = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
           const abrs = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
           return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(detalle)}">${abrs}</td>`;
         }
-        return `<td class="disp-cell disp-libre" title="Sin sesión">libre</td>`;
+        const target = okNino(n.id_nino, b.id_bloque);
+        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}" data-nino="${n.id_nino}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Sin sesión'}">libre</td>`;
       }).join('');
       return `<tr>
         <td class="disp-ter"><span class="disp-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span><span class="disp-ter-nom">${UI.esc(n.nombre_visible)}<small>${n.edad_anios ? UI.esc(n.edad_anios) + ' años' : ''}</small></span></td>
@@ -235,13 +264,32 @@ const Recursos = {
       </tr>`;
     }).join('');
 
+    // Tabla de DISPONIBILIDAD DE SALAS (lo pidió Andy): salas × bloques, ocupación del día.
+    const salas = (State.data.salas || []);
+    const filasSala = salas.map(sa => {
+      const celdas = bloques.map(b => {
+        const enSala = sesDia.filter(s => s.id_sala === sa.id_sala && s.id_bloque === b.id_bloque);
+        if (enSala.length) {
+          const abrs = enSala.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+');
+          const detalle = enSala.map(s => `${s.nino_visible} · ${s.tipo_terapia}`).join(' + ');
+          return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(detalle)}">${abrs}</td>`;
+        }
+        return `<td class="disp-cell disp-libre" title="Sala libre">libre</td>`;
+      }).join('');
+      return `<tr>
+        <td class="disp-ter"><span class="disp-abr" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep)">${UI.esc((sa.nombre || '').slice(0, 4))}</span><span class="disp-ter-nom">${UI.esc(sa.nombre)}<small>${UI.esc(sa.tipo_principal || '')}</small></span></td>
+        ${celdas}
+      </tr>`;
+    }).join('');
+
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Horario del día por terapeuta y por niño, lado a lado · ${ters.length} terapeutas · ${ninos.length} niños con atención. Útil para cubrir una ausencia o armar una dupla.</div>
+        <div class="section-sub">Horario del día por terapeuta, por niño y por sala · ${ters.length} terapeutas · ${ninos.length} niños · ${salas.length} salas. Clic en una sesión y luego en un bloque libre para moverla.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
+      ${movSes ? `<div class="disp-moving">Moviendo a <b>${UI.esc(movSes.nino_visible)}</b> · elige un bloque libre marcado en verde <button class="disp-mov-cancel" id="dispMovCancel">Cancelar</button></div>` : ''}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
       <div class="disp-split">
         <div class="disp-col">
@@ -263,53 +311,63 @@ const Recursos = {
           </div>
         </div>
       </div>
+      <div class="disp-col disp-col-salas">
+        <div class="disp-col-head">Por sala</div>
+        <div class="table-wrap disp-wrap">
+          <table class="disp-table">
+            <thead><tr><th class="disp-th-ter">Sala</th>${bloques.map(b => `<th>${b.hora_inicio}</th>`).join('')}</tr></thead>
+            <tbody>${filasSala || `<tr><td class="disp-ter" colspan="${bloques.length + 1}">Sin salas configuradas.</td></tr>`}</tbody>
+          </table>
+        </div>
+      </div>
     `;
-    document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this.renderDisponibilidad(); }));
-    this._wireDispDrag();
+    document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this._movDisp = null; this.renderDisponibilidad(); }));
+    this._wireDispMove();
   },
 
-  // Arrastrar y soltar en la planilla por terapeuta: mueve de bloque y/o reasigna terapeuta.
-  _wireDispDrag() {
-    let dragId = null;
-    const validar = (cell, sesion) => {
-      if (!sesion) return 'No hay sesión';
-      const { fecha, bloque: idBloque, ter: idTer } = cell.dataset;
-      if (!idTer || !idBloque) return 'Destino inválido';
-      if (cell.classList.contains('disp-nodisp')) return 'Ese terapeuta no atiende en ese bloque';
-      if (cell.classList.contains('disp-fijo')) return 'Bloque reservado para reuniones';
-      const otras = State.data.sesiones.filter(s => s.fecha === fecha && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
-      if (otras.some(s => s.id_terapeuta === idTer)) return 'Ese terapeuta ya tiene una sesión en ese bloque';
-      if (sesion.id_sala && otras.some(s => s.id_sala === sesion.id_sala)) return 'La sala ya está ocupada en ese bloque';
-      return null;
-    };
-    document.querySelectorAll('.disp-table .disp-grab').forEach(grab => {
-      grab.addEventListener('dragstart', e => { dragId = grab.dataset.id; grab.closest('td')?.classList.add('disp-dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch {} });
-      grab.addEventListener('dragend', () => { grab.closest('td')?.classList.remove('disp-dragging'); document.querySelectorAll('.disp-cell.disp-drop, .disp-cell.disp-drop-bad').forEach(c => c.classList.remove('disp-drop', 'disp-drop-bad')); dragId = null; });
-    });
-    document.querySelectorAll('.disp-table .disp-cell').forEach(cell => {
-      if (!cell.dataset.ter) return; // solo celdas de la tabla por terapeuta
-      cell.addEventListener('dragover', e => {
-        if (!dragId) return;
-        e.preventDefault();
-        const sesion = State.data.sesiones.find(s => s.id_sesion === dragId);
-        cell.classList.add(validar(cell, sesion) ? 'disp-drop-bad' : 'disp-drop');
+  // Click-para-mover: 1) clic en una sesión la "toma"; 2) clic en un bloque libre la mueve.
+  _wireDispMove() {
+    document.getElementById('dispMovCancel')?.addEventListener('click', () => { this._movDisp = null; this.renderDisponibilidad(); });
+
+    document.querySelectorAll('.disp-table .disp-pick').forEach(cell => {
+      cell.addEventListener('click', () => {
+        this._movDisp = (this._movDisp === cell.dataset.id) ? null : cell.dataset.id;
+        this.renderDisponibilidad();
       });
-      cell.addEventListener('dragleave', () => cell.classList.remove('disp-drop', 'disp-drop-bad'));
-      cell.addEventListener('drop', e => {
-        if (!dragId) return;
-        e.preventDefault();
-        cell.classList.remove('disp-drop', 'disp-drop-bad');
-        const sesion = State.data.sesiones.find(s => s.id_sesion === dragId);
-        const err = validar(cell, sesion);
-        if (err) { UI.toast('⚠ ' + err, 'alert'); return; }
-        const t = Data.terapeuta(cell.dataset.ter);
-        const b = Data.bloque(cell.dataset.bloque);
-        sesion.id_terapeuta = cell.dataset.ter;
-        if (t) sesion.terapeuta_abr = t.abreviacion;
-        sesion.id_bloque = cell.dataset.bloque;
-        if (b) { sesion.hora_inicio = b.hora_inicio; sesion.hora_fin = b.hora_fin; }
-        sesion.conflicto_detectado = null;
-        UI.toast(`${sesion.nino_visible} movido a ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}`, 'success');
+    });
+
+    if (!this._movDisp) return;
+    const movSes = State.data.sesiones.find(s => s.id_sesion === this._movDisp);
+    if (!movSes) { this._movDisp = null; return; }
+
+    document.querySelectorAll('.disp-table .disp-libre').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const { ter: idTer, nino: idNino, bloque: idBloque } = cell.dataset;
+        if (!idBloque) return;
+        const otras = State.data.sesiones.filter(s => s.fecha === movSes.fecha && s.id_bloque === idBloque && s.id_sesion !== movSes.id_sesion);
+        const b = Data.bloque(idBloque);
+        if (idTer) {
+          // Reasignar terapeuta (y horario)
+          if (otras.some(s => s.id_terapeuta === idTer)) { UI.toast('⚠ Ese terapeuta ya tiene una sesión en ese bloque', 'alert'); return; }
+          if (movSes.id_sala && otras.some(s => s.id_sala === movSes.id_sala)) { UI.toast('⚠ La sala ya está ocupada en ese bloque', 'alert'); return; }
+          const t = Data.terapeuta(idTer);
+          movSes.id_terapeuta = idTer;
+          if (t) movSes.terapeuta_abr = t.abreviacion;
+          movSes.id_bloque = idBloque;
+          if (b) { movSes.hora_inicio = b.hora_inicio; movSes.hora_fin = b.hora_fin; }
+          movSes.conflicto_detectado = null;
+          UI.toast(`${movSes.nino_visible} movido a ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}`, 'success');
+        } else if (idNino) {
+          // Cambiar horario del mismo niño (mismo terapeuta)
+          if (movSes.id_nino !== idNino) { UI.toast('⚠ Solo puedes moverlo dentro del horario del mismo niño', 'alert'); return; }
+          if (otras.some(s => s.id_terapeuta === movSes.id_terapeuta)) { UI.toast('⚠ El terapeuta ya tiene una sesión en ese bloque', 'alert'); return; }
+          if (movSes.id_sala && otras.some(s => s.id_sala === movSes.id_sala)) { UI.toast('⚠ La sala ya está ocupada en ese bloque', 'alert'); return; }
+          movSes.id_bloque = idBloque;
+          if (b) { movSes.hora_inicio = b.hora_inicio; movSes.hora_fin = b.hora_fin; }
+          movSes.conflicto_detectado = null;
+          UI.toast(`${movSes.nino_visible} movido a ${b ? b.hora_inicio : ''}`, 'success');
+        } else return;
+        this._movDisp = null;
         this.renderDisponibilidad();
       });
     });
