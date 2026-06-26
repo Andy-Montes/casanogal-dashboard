@@ -214,7 +214,7 @@ const Recursos = {
     const salas = (State.data.salas || []);
 
     // Cabecera: una columna por bloque (horario), arriba (lo prefiere Trini)
-    const headHoras = bloques.map(b => `<th class="disp-hora-h">${b.hora_inicio}</th>`).join('');
+    const headHoras = bloques.map(b => `<th class="disp-hora-h"><span class="disp-hora-ini">${b.hora_inicio}</span><span class="disp-hora-fin">${b.hora_fin}</span></th>`).join('');
     const nCols = bloques.length + 1;
     const rotulo = (abr, nom, bg, fg, sub) => `<td class="disp-ter"><span class="disp-abr" style="background:${bg};color:${fg}">${UI.esc(abr)}</span><span class="disp-ter-nom">${UI.esc(nom)}${sub ? `<small>${UI.esc(sub)}</small>` : ''}</span></td>`;
 
@@ -234,7 +234,7 @@ const Recursos = {
           return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
         }
         const target = movSes && !dest && okDestino(t.id_terapeuta, b);
-        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">${target ? '＋' : ''}</td>`;
+        return `<td class="disp-cell disp-libre disp-crear${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre · clic para crear sesión'}">${target ? '＋' : ''}</td>`;
       }).join('');
       return `<tr>${rotulo(t.abreviacion, this._nombreCorto(t.nombre_completo), c.bg || 'var(--cn-azul-bg)', c.text || 'var(--cn-azul-deep)')}${celdas}</tr>`;
     }).join('');
@@ -271,7 +271,7 @@ const Recursos = {
           const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+');
           return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
         }
-        return `<td class="disp-cell disp-libre" title="Sala libre"></td>`;
+        return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
       }).join('');
       return `<tr>${rotulo((sa.nombre || '').slice(0, 4), sa.nombre, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)')}${celdas}</tr>`;
     }).join('');
@@ -317,7 +317,7 @@ const Recursos = {
       </div>
     `;
     document.querySelectorAll('.disp-dia-btn').forEach(b => b.addEventListener('click', () => { this._dispDiaIdx = Number(b.dataset.idx); this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); }));
-    this._wireDispMove(dia);
+    this._wireDispMove(dia, diaNombre);
   },
 
   // Salas libres en (fecha, bloque destino); marca las preferidas del profesional destino y la sala actual.
@@ -335,9 +335,23 @@ const Recursos = {
   },
 
   // Mover una sesión ARRASTRÁNDOLA (eventos de puntero · confiable en tablas). Al soltar, eliges sala.
-  _wireDispMove(dia) {
+  _wireDispMove(dia, diaNombre) {
     const self = this;
     document.getElementById('dispMovCancel')?.addEventListener('click', () => { this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); });
+
+    // Crear sesión al hacer clic en un espacio LIBRE (de un terapeuta o de una sala) — pedido de Trini
+    document.querySelectorAll('.disp-table-bandas .disp-crear').forEach(cell => {
+      cell.addEventListener('click', () => {
+        if (self._movDisp || cell.classList.contains('disp-target')) return; // si está moviendo, no crear
+        const { ter, sala, bloque } = cell.dataset;
+        if (ter) {
+          const t = Data.terapeuta(ter);
+          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre });
+        } else if (sala) {
+          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre });
+        }
+      });
+    });
 
     // Paso final: ya hay destino soltado → elegir sala y aplicar
     if (this._movDisp && this._movDest) {

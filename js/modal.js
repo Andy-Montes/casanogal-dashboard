@@ -234,5 +234,6 @@ const Modal = {
     }
     this.close();
     if (State.module === 'calendario') Calendar.render();
+    else if (State.module === 'disponibilidad') Recursos.renderDisponibilidad();
   },
 };

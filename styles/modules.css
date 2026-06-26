@@ -2479,9 +2479,14 @@
 .disp-table-bandas { width: auto; border-collapse: collapse; table-layout: fixed; }
 .disp-table-bandas thead th { position: sticky; top: 0; z-index: 3; height: 36px; background: var(--bg-soft); }
 .disp-table-bandas .disp-th-rowlabel { width: 150px !important; text-align: left !important; position: sticky; left: 0; z-index: 4; }
-.disp-table-bandas .disp-hora-h { width: 92px !important; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-.disp-table-bandas tbody .disp-cell { width: 92px !important; height: 44px; }
-.disp-table-bandas .disp-ter { width: 150px !important; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+.disp-table-bandas .disp-hora-h { width: 74px !important; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.1; }
+.disp-hora-ini { display: block; font-weight: 700; }
+.disp-hora-fin { display: block; font-size: 8.5px; color: var(--text-3); font-weight: 500; }
+.disp-table-bandas tbody .disp-cell { width: 74px !important; height: 34px; }
+.disp-table-bandas .disp-ter { width: 138px !important; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+/* Libre clickeable para crear sesión */
+.disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover { background: var(--cn-azul-bg) !important; color: var(--cn-azul-deep) !important; cursor: pointer; }
+.disp-table-bandas .disp-crear:not(.disp-target):not(.disp-over):hover::after { content: '＋'; font-size: 14px; font-weight: 700; }
 .disp-table-bandas tbody tr:nth-child(even) .disp-ter { background: var(--bg-soft); }
 .disp-table-bandas .disp-cell { font-size: 11px; }
 .disp-table-bandas .disp-nino { font-size: 11.5px; }
