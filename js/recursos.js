@@ -262,20 +262,23 @@ const Recursos = {
       return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text, n.edad_anios ? n.edad_anios + ' años' : '')}${celdas}</tr>`;
     }).join('');
 
-    // Banda SALAS (lectura): una fila por sala · respeta la capacidad (TO1=4, TO2=2…)
+    // Banda SALAS (lectura): UNA FILA POR CUPO de la sala (TO=4 filas, TO2=2, KIDS=4, resto 1).
     const filasSala = salas.map(sa => {
       const cap = sa.capacidad_personas || 1;
-      const celdas = bloques.map(b => {
-        const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
-        if (lista.length) {
-          const full = lista.length >= cap;
-          const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ') + (cap > 1 ? ` · ${lista.length}/${cap}` : '');
-          const ninosCelda = lista.map(s => `<span class="disp-sala-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>`).join('');
-          return `<td class="disp-cell disp-ocupado disp-sala-cell${full ? '' : ' disp-parcial'}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${ninosCelda}${cap > 1 ? `<span class="disp-sala-cap">${lista.length}/${cap}</span>` : ''}</td>`;
-        }
-        return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
+      return Array.from({ length: cap }, (_, k) => {
+        const celdas = bloques.map(b => {
+          const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
+          const s = lista[k];
+          if (s) {
+            const det = `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`;
+            return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(det)}">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+          }
+          return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
+        }).join('');
+        const sub = cap > 1 ? `cupo ${k + 1}/${cap}` : '';
+        const nom = k === 0 ? sa.nombre : sa.nombre;
+        return `<tr>${rotulo(k === 0 ? (sa.nombre || '').slice(0, 4) : '', nom, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)', sub)}${celdas}</tr>`;
       }).join('');
-      return `<tr>${rotulo((sa.nombre || '').slice(0, 4), sa.nombre, 'var(--cn-azul-bg)', 'var(--cn-azul-deep)', cap > 1 ? 'cap. ' + cap : '')}${celdas}</tr>`;
     }).join('');
 
     // Panel de salas a la DERECHA cuando ya se soltó la sesión en un destino (lo pidió Andy)
@@ -331,7 +334,8 @@ const Recursos = {
 
   // Armar una reunión de equipo: un niño, un bloque y los terapeutas que participan.
   _abrirFormReunion(dia, diaNombre) {
-    const bloques = (State.data.bloques_horarios || []).filter(b => b.periodo !== 'Tarde').sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    // Reuniones de equipo solo en las franjas 08:00–08:35 y 12:30–13:00
+    const bloques = (State.data.bloques_horarios || []).filter(b => b.hora_inicio === '08:00' || b.hora_inicio === '12:30').sort((a, b) => (a.orden || 0) - (b.orden || 0));
     const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const ters = Data.terapeutasEfectivos().filter(t => t.estado === 'Activo').sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     const html = `
@@ -429,11 +433,14 @@ const Recursos = {
       cell.addEventListener('click', () => {
         if (self._movDisp || cell.classList.contains('disp-target')) return; // si está moviendo, no crear
         const { ter, sala, bloque } = cell.dataset;
+        const b = Data.bloque(bloque);
+        // La reunión de equipo solo se permite en las franjas 08:00–08:35 y 12:30–13:00
+        const permitirReunion = !!b && (b.hora_inicio === '08:00' || b.hora_inicio === '12:30');
         if (ter) {
           const t = Data.terapeuta(ter);
-          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre });
+          Modal.openCreate({ id_terapeuta: ter, tipo_terapia: t?.especialidad, id_bloque: bloque, dia: diaNombre, permitirReunion });
         } else if (sala) {
-          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre });
+          Modal.openCreate({ id_sala: sala, id_bloque: bloque, dia: diaNombre, permitirReunion });
         }
       });
     });

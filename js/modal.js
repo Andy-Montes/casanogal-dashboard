@@ -51,7 +51,7 @@ const Modal = {
       <div class="field">
         <label class="field-label">Modalidad</label>
         <select class="field-select" id="f_modalidad">
-          ${MODALIDADES.map(m => `<option value="${m}" ${(pre.tipo_actividad||'Sesión')===m?'selected':''}>${UI.esc(m)}</option>`).join('')}
+          ${MODALIDADES.filter(m => m !== 'Reunión de equipo' || pre.permitirReunion).map(m => `<option value="${m}" ${(pre.tipo_actividad||'Sesión')===m?'selected':''}>${UI.esc(m)}</option>`).join('')}
         </select>
       </div>
       <div class="field-row">
