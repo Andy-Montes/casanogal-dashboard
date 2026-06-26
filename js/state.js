@@ -42,6 +42,10 @@ const ESPECIALIDAD_VAR = {
   'Habilidad Adaptativa': { main: 'var(--kids)', bg: 'var(--kids-bg)', text: 'var(--kids-text)' },
 };
 
+// Modalidades de sesión (pedido de Trini): además de la individual, sesiones de papás,
+// talleres grupales, coaching y la supervisión semanal de neurología.
+const MODALIDADES = ['Sesión', 'Sesión de padres', 'Taller grupal', 'Coaching a padres', 'Supervisión neurología'];
+
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const DIAS_ABBR = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];

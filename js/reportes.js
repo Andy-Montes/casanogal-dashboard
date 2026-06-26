@@ -124,7 +124,70 @@ const Reportes = {
         <h2 class="ficha-section-title">Sesiones por especialidad</h2>
         ${espRows.map(([e, n]) => bar(e, n, totEsp, (ESPECIALIDAD_VAR[e] && ESPECIALIDAD_VAR[e].main) || 'var(--cn-mostaza)')).join('')}
       </div>
+      <div class="ficha-section">
+        <h2 class="ficha-section-title">Registro de atenciones</h2>
+        <div class="ficha-section-hint">Descarga todos los registros juntos en un documento Word — con fecha, hora, terapeuta y registro de cada sesión, sin abrir una por una.</div>
+        <div class="reg-dl-btns">
+          <button class="btn btn-secondary" data-reg="dia">Descargar del día</button>
+          <button class="btn btn-secondary" data-reg="semana">Descargar de la semana</button>
+          <button class="btn btn-primary" data-reg="intensivo">Descargar del intensivo completo</button>
+        </div>
+      </div>
     `;
+    document.querySelectorAll('[data-reg]').forEach(b =>
+      b.addEventListener('click', () => this._descargarRegistros(b.dataset.reg))
+    );
+  },
+
+  // Arma un documento Word con todos los registros de atención del período pedido.
+  _descargarRegistros(scope) {
+    const sesById = {};
+    State.data.sesiones.forEach(s => sesById[s.id_sesion] = s);
+    const fechasScope = scope === 'dia' ? new Set([HOY_ISO])
+                      : scope === 'semana' ? new Set(fechasSemana())
+                      : null; // intensivo = todo el programa
+    const filas = State.data.sesion_notas.map(nota => {
+      const s = sesById[nota.id_sesion];
+      if (!s || !nota.notas_libres) return null;
+      if (scope === 'intensivo') { if (s.id_programa !== 'PROG-INT') return null; }
+      else if (!fechasScope.has(s.fecha)) return null;
+      const t = Data.terapeuta(s.id_terapeuta);
+      return {
+        fecha: s.fecha, hora: s.hora_inicio || '',
+        nino: s.nino_visible || '', terapeuta: t?.nombre_completo || s.terapeuta_abr || '',
+        terapia: s.tipo_terapia || '', registro: nota.notas_libres,
+        objetivos: nota.objetivos_trabajados || [],
+      };
+    }).filter(Boolean).sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+
+    if (!filas.length) { UI.toast('No hay registros en ese período', 'warn'); return; }
+
+    const titulo = scope === 'dia' ? `Registro de atenciones · ${UI.fmtFecha(HOY_ISO)}`
+                 : scope === 'semana' ? 'Registro de atenciones · semana en curso'
+                 : 'Registro de atenciones · Intensivo 40';
+    const cuerpo = filas.map(f => `
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-family:Calibri,Arial,sans-serif">
+        <tr><td style="background:#EAF1FB;padding:6px 10px;border:1px solid #cbd5e1;font-size:13px">
+          <b>${f.fecha} · ${f.hora}</b> &nbsp;—&nbsp; ${f.nino} &nbsp;·&nbsp; ${f.terapia} &nbsp;·&nbsp; ${f.terapeuta}
+        </td></tr>
+        <tr><td style="padding:8px 10px;border:1px solid #cbd5e1;font-size:13px">
+          ${f.registro}${f.objetivos.length ? `<br><br><i>Objetivos trabajados:</i> ${f.objetivos.join(' · ')}` : ''}
+        </td></tr>
+      </table>`).join('');
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"><title>${titulo}</title></head>
+      <body style="font-family:Calibri,Arial,sans-serif">
+        <h1 style="font-size:20px;color:#1B6B8A">Casa Nogal · ${titulo}</h1>
+        <p style="color:#64748b;font-size:12px">${filas.length} registros · generado desde el sistema clínico</p>
+        ${cuerpo}
+      </body></html>`;
+    const blob = new Blob(['﻿', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `registro-atenciones-${scope}.doc`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    UI.toast(`${filas.length} registros descargados`, 'success');
   },
 
   // Módulo Boletas: facturación a familias + pago a profesionales.

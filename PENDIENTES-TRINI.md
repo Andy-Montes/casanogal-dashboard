@@ -9,8 +9,8 @@
 - [x] Edad al lado de la fecha de nacimiento
 - [x] Papá **y** mamá por separado (no solo un apoderado)
 - [x] Estado civil de los padres
-- [ ] Diagnóstico como lista desplegable + opción "Otro" (nombre libre) + permitir **varios** diagnósticos
-- [ ] Filtrar pacientes por diagnóstico
+- [~] Diagnóstico como lista desplegable + opción "Otro" (nombre libre) + permitir **varios** diagnósticos (el filtro ya soporta múltiples; falta el formulario de edición con "Otro")
+- [x] Filtrar pacientes por diagnóstico
 - [ ] Descargar ficha completa de un paciente
 - [ ] Descargar fichas de **todos** los pacientes
 
@@ -27,9 +27,9 @@
 - [ ] Sesión de **neurología semanal** en los intensivos (supervisión de la dra)
 
 ## 🎯 Objetivos terapéuticos
-- [ ] Reestructurar a **Objetivo 1 / 2 / 3 / 4** (no por área)
-- [ ] Dentro de cada objetivo, 5 subcategorías CIF: Funciones Corporales, Estructuras Corporales, Actividades, Participación, Ambiente
-- [ ] Banco de objetivos predefinido para elegir
+- [x] Reestructurar a **Objetivo 1 / 2 / 3 / 4** (no por área)
+- [x] Dentro de cada objetivo, 5 subcategorías CIF: Funciones Corporales, Estructuras Corporales, Actividades, Participación, Ambiente
+- [x] Banco de objetivos predefinido para elegir
 
 ## 🤝 Reuniones
 - [ ] Mostrar cada reunión con el **registro de lo conversado** (queda guardado ahí mismo)

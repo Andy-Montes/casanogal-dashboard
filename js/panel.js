@@ -59,6 +59,11 @@ const Panel = {
         <span class="panel-field-label">Tipo de terapia</span>
         <span class="panel-field-value">${UI.esc(sesion.tipo_terapia)}</span>
       </div>
+      ${sesion.tipo_actividad && sesion.tipo_actividad !== 'Sesión' ? `
+      <div class="panel-field">
+        <span class="panel-field-label">Modalidad</span>
+        <span class="panel-field-value"><span class="badge" style="background:var(--cn-mostaza-bg,#FBF3DD);color:var(--cn-mostaza-deep,#9A6B00)">${UI.esc(sesion.tipo_actividad)}</span></span>
+      </div>` : ''}
 
       <div class="panel-field">
         <span class="panel-field-label">Sala ${esAdmin ? '<button class="panel-reasignar-link" id="panelReasignarSalaBtn" type="button">Cambiar</button>' : ''}</span>

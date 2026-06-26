@@ -1709,6 +1709,8 @@
 .banco-item:hover { border-color: var(--cn-azul); color: var(--cn-azul-deep); }
 .banco-item:active { transform: scale(0.97); }
 
+.reg-dl-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
 .docs-list { display: grid; gap: 8px; }
 .doc-row {
   display: flex;

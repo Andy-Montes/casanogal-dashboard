@@ -23,6 +23,7 @@ const Modal = {
     this._renderBody({
       id_nino: sesion.id_nino,
       tipo_terapia: sesion.tipo_terapia,
+      tipo_actividad: sesion.tipo_actividad,
       id_terapeuta: sesion.id_terapeuta,
       id_sala: sesion.id_sala,
       dia: sesion.dia_semana,
@@ -45,6 +46,12 @@ const Modal = {
         <label class="field-label">Niño</label>
         <select class="field-select" id="f_nino">
           ${ninos.map(n => `<option value="${n.id_nino}" ${pre.id_nino===n.id_nino?'selected':''}>${UI.esc(n.nombre_completo)} · ${UI.esc(n.programa_nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Modalidad</label>
+        <select class="field-select" id="f_modalidad">
+          ${MODALIDADES.map(m => `<option value="${m}" ${(pre.tipo_actividad||'Sesión')===m?'selected':''}>${UI.esc(m)}</option>`).join('')}
         </select>
       </div>
       <div class="field-row">
@@ -112,6 +119,7 @@ const Modal = {
     return {
       id_nino: document.getElementById('f_nino').value,
       tipo_terapia: document.getElementById('f_tipo').value,
+      tipo_actividad: document.getElementById('f_modalidad')?.value || 'Sesión',
       id_terapeuta: document.getElementById('f_ter').value,
       dia_semana: document.getElementById('f_dia').value,
       id_bloque: document.getElementById('f_bloque').value,
@@ -174,6 +182,7 @@ const Modal = {
         id_nino: f.id_nino,
         nino_visible: nino?.nombre_visible,
         tipo_terapia: f.tipo_terapia,
+        tipo_actividad: f.tipo_actividad,
         id_terapeuta: f.id_terapeuta,
         terapeuta_abr: ter?.abreviacion,
         id_sala: f.id_sala,
@@ -212,7 +221,7 @@ const Modal = {
         id_sala: f.id_sala,
         sala_nombre: sala?.nombre,
         tipo_terapia: f.tipo_terapia,
-        tipo_actividad: 'Sesión',
+        tipo_actividad: f.tipo_actividad,
         es_dupla: false,
         estado: 'Agendada',
         id_programa: nino?.id_programa,
