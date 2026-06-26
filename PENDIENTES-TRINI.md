@@ -11,14 +11,14 @@
 - [x] Estado civil de los padres
 - [~] Diagnóstico como lista desplegable + opción "Otro" (nombre libre) + permitir **varios** diagnósticos (el filtro ya soporta múltiples; falta el formulario de edición con "Otro")
 - [x] Filtrar pacientes por diagnóstico
-- [ ] Descargar ficha completa de un paciente
-- [ ] Descargar fichas de **todos** los pacientes
+- [x] Descargar ficha completa de un paciente (botón Exportar → Word)
+- [x] Descargar fichas de **todos** los pacientes (botón "Descargar todas")
 
 ## 🗓️ Ficha del paciente · Horario de la semana
 - [x] Mostrar la **sala** además de la sesión y el terapeuta
 
 ## 📖 Ficha del paciente · Historia de Vida
-- [ ] Definir qué se ve dentro de cada intensivo: horario, terapeutas, objetivos trabajados, registro de atenciones, informes, reuniones y documentos subidos
+- [x] Definir qué se ve dentro de cada intensivo: horario, terapeutas, objetivos trabajados, registro de atenciones, informes, reuniones y documentos subidos
 
 ## 📝 Sesiones
 - [x] Renombrar estado "Cancelada" → "Suspendida"
@@ -32,7 +32,7 @@
 - [x] Banco de objetivos predefinido para elegir
 
 ## 🤝 Reuniones
-- [ ] Mostrar cada reunión con el **registro de lo conversado** (queda guardado ahí mismo)
+- [x] Mostrar cada reunión con el **registro de lo conversado** (queda guardado ahí mismo)
 
 ## ⚙️ Configuración
 - [x] Bug: el modal de "modificar profesional" no cabía en pantalla → ahora con scroll
@@ -53,16 +53,16 @@
 - [x] Registrar asistencia del terapeuta: faltó / llegó tarde / se fue temprano (detalle de terapeuta, por día)
 - [x] % de tiempo en terapias efectivas vs reuniones (con tope, ej. no más de 80%) — columna "Carga semana" + detalle
 
-## 🔔 Notificaciones (roadmap a maquetar)
-- [ ] Sistema de notificaciones a terapeutas (o a quien se elija)
-- [ ] Avisos automáticos: niño no asiste → avisar a su equipo; cambio de horario → avisar al terapeuta
-- [ ] Tipo chat para mensajes al equipo (ej: "viene cansado, durmió mal")
-- [ ] Recordatorio programado (ej: a los 2 meses de terminado el intensivo, reunirse con los papás)
-- [ ] Mails predefinidos con formularios para evaluación, que al completarse queden en la ficha
-- [ ] Formularios predefinidos
+## 🔔 Notificaciones (módulo maquetado)
+- [x] Sistema de notificaciones a terapeutas (o a quien se elija)
+- [x] Avisos automáticos: niño no asiste → avisar a su equipo; cambio de horario → avisar al terapeuta (reglas con toggle)
+- [x] Tipo chat para mensajes al equipo (ej: "viene cansado, durmió mal")
+- [x] Recordatorio programado (ej: a los 2 meses de terminado el intensivo, reunirse con los papás) — como regla
+- [x] Mails predefinidos con formularios para evaluación, que al completarse queden en la ficha
+- [x] Formularios predefinidos
 
 ## 👪 Padres
-- [ ] Links con cápsulas (videos) que tienen que ver
+- [x] Links con cápsulas (videos) que tienen que ver
 
 ---
 
