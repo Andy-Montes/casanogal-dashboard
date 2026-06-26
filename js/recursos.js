@@ -295,7 +295,7 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. Para mover: <b>haz clic</b> en una sesión (no se arrastra) y luego clic en un bloque <b>verde</b> destino; eliges la sala y todo se actualiza solo.</div>
+        <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. Para mover: <b>arrastra</b> una sesión a un bloque <b>verde</b> destino; al soltar eliges la sala y todo se actualiza solo.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
@@ -333,50 +333,75 @@ const Recursos = {
       .map(sa => ({ id: sa.id_sala, nombre: sa.nombre, pref: pref.includes(sa.id_sala), actual: sa.id_sala === movSes.id_sala }));
   },
 
-  // Click-para-mover en 3 pasos: 1) tomar la sesión; 2) elegir bloque/profesional destino; 3) elegir sala libre.
+  // Mover una sesión ARRASTRÁNDOLA (eventos de puntero · confiable en tablas). Al soltar, eliges sala.
   _wireDispMove(dia) {
+    const self = this;
     document.getElementById('dispMovCancel')?.addEventListener('click', () => { this._movDisp = null; this._movDest = null; this.renderDisponibilidad(); });
 
-    document.querySelectorAll('.disp-table .disp-pick').forEach(cell => {
-      cell.addEventListener('click', () => {
-        this._movDisp = (this._movDisp === cell.dataset.id) ? null : cell.dataset.id;
-        this._movDest = null;
-        this.renderDisponibilidad();
-      });
-    });
-
-    if (!this._movDisp) return;
-    const movSes = State.data.sesiones.find(s => s.id_sesion === this._movDisp);
-    if (!movSes) { this._movDisp = null; return; }
-
-    // Paso 2: elegir destino (celda verde)
-    if (!this._movDest) {
-      document.querySelectorAll('.disp-table .disp-target').forEach(cell => {
-        cell.addEventListener('click', () => {
-          this._movDest = { idTer: cell.dataset.ter, idBloque: cell.dataset.bloque };
-          this.renderDisponibilidad();
+    // Paso final: ya hay destino soltado → elegir sala y aplicar
+    if (this._movDisp && this._movDest) {
+      const movSes = State.data.sesiones.find(s => s.id_sesion === this._movDisp);
+      document.querySelectorAll('.disp-sala-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const dest = this._movDest, t = Data.terapeuta(dest.idTer), b = Data.bloque(dest.idBloque);
+          const idSala = chip.dataset.sala || null;
+          if (movSes) {
+            movSes.id_terapeuta = dest.idTer;
+            if (t) movSes.terapeuta_abr = t.abreviacion;
+            movSes.id_bloque = dest.idBloque;
+            if (b) { movSes.hora_inicio = b.hora_inicio; movSes.hora_fin = b.hora_fin; }
+            if (idSala) { const sa = Data.sala(idSala); movSes.id_sala = idSala; if (sa) movSes.sala_nombre = sa.nombre; }
+            movSes.conflicto_detectado = null;
+            UI.toast(`${movSes.nino_visible} → ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}${idSala ? ' · ' + UI.esc(movSes.sala_nombre) : ''}`, 'success');
+          }
+          this._movDisp = null; this._movDest = null; this.renderDisponibilidad();
         });
       });
       return;
     }
 
-    // Paso 3: elegir sala y aplicar todo el movimiento
-    document.querySelectorAll('.disp-sala-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const dest = this._movDest;
-        const t = Data.terapeuta(dest.idTer);
-        const b = Data.bloque(dest.idBloque);
-        const idSala = chip.dataset.sala || null;
-        movSes.id_terapeuta = dest.idTer;
-        if (t) movSes.terapeuta_abr = t.abreviacion;
-        movSes.id_bloque = dest.idBloque;
-        if (b) { movSes.hora_inicio = b.hora_inicio; movSes.hora_fin = b.hora_fin; }
-        if (idSala) { const sa = Data.sala(idSala); movSes.id_sala = idSala; if (sa) movSes.sala_nombre = sa.nombre; }
-        movSes.conflicto_detectado = null;
-        UI.toast(`${movSes.nino_visible} → ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}${idSala ? ' · ' + UI.esc(movSes.sala_nombre) : ''}`, 'success');
-        this._movDisp = null;
-        this._movDest = null;
-        this.renderDisponibilidad();
+    // Arrastre: pointerdown en una sesión → fantasma sigue el cursor → soltar en bloque verde
+    let dragId = null, ghost = null, over = null;
+    const valid = (cell) => !!(cell && cell.classList.contains('disp-libre') && cell.dataset.ter && cell.dataset.bloque);
+    const onMove = (e) => {
+      if (ghost) { ghost.style.left = (e.clientX + 10) + 'px'; ghost.style.top = (e.clientY + 12) + 'px'; }
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = el && el.closest ? el.closest('.disp-cell') : null;
+      if (over && over !== cell) over.classList.remove('disp-over');
+      if (valid(cell)) { cell.classList.add('disp-over'); over = cell; } else over = null;
+    };
+    const onUp = (e) => {
+      window.removeEventListener('pointermove', onMove);
+      if (ghost) { ghost.remove(); ghost = null; }
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = el && el.closest ? el.closest('.disp-cell') : null;
+      const id = dragId; dragId = null;
+      document.querySelectorAll('.disp-cell.disp-target, .disp-cell.disp-over, .disp-cell.disp-dragging')
+        .forEach(c => c.classList.remove('disp-target', 'disp-over', 'disp-dragging'));
+      if (valid(cell)) {
+        self._movDisp = id;
+        self._movDest = { idTer: cell.dataset.ter, idBloque: cell.dataset.bloque };
+        self.renderDisponibilidad();
+      }
+    };
+    document.querySelectorAll('.disp-table-bandas .disp-pick').forEach(cell => {
+      cell.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        e.preventDefault();
+        dragId = cell.dataset.id;
+        cell.classList.add('disp-dragging');
+        const movSes = State.data.sesiones.find(s => s.id_sesion === dragId);
+        // resaltar todos los destinos válidos (bloques libres de cualquier profesional)
+        document.querySelectorAll('.disp-table-bandas .disp-libre[data-ter]').forEach(c => {
+          if (movSes && !(c.dataset.ter === movSes.id_terapeuta && c.dataset.bloque === movSes.id_bloque)) c.classList.add('disp-target');
+        });
+        ghost = document.createElement('div');
+        ghost.className = 'disp-ghost';
+        ghost.textContent = (cell.querySelector('.disp-nino')?.textContent) || cell.textContent || 'sesión';
+        document.body.appendChild(ghost);
+        onMove(e);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp, { once: true });
       });
     });
   },
