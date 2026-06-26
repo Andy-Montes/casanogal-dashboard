@@ -202,32 +202,69 @@ const Recursos = {
       return true;
     };
 
-    // Encabezado: una columna por profesional
-    const headCols = ters.map(t => {
-      const c = ESPECIALIDAD_VAR[t.especialidad] || {};
-      return `<th class="disp-prof-h" title="${UI.esc(t.nombre_completo)} · ${UI.esc(t.especialidad)}"><span class="disp-prof-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span><span class="disp-prof-nom">${UI.esc(this._nombreCorto(t.nombre_completo))}</span></th>`;
-    }).join('');
+    // Mapas de ocupación por niño y por sala (para las columnas de niños y de salas)
+    const ocupNino = {}, ocupSala = {};
+    sesDia.forEach(s => {
+      if (s.id_nino) (ocupNino[s.id_nino + '|' + s.id_bloque] = ocupNino[s.id_nino + '|' + s.id_bloque] || []).push(s);
+      if (s.id_sala) (ocupSala[s.id_sala + '|' + s.id_bloque] = ocupSala[s.id_sala + '|' + s.id_bloque] || []).push(s);
+    });
+    const ninos = (State.data.ninos || [])
+      .filter(n => n.estado === 'Activo' && sesDia.some(s => s.id_nino === n.id_nino))
+      .sort((a, b) => { const ai = UI.esIntensivo(a) ? 0 : 1, bi = UI.esIntensivo(b) ? 0 : 1; return ai - bi || a.nombre_completo.localeCompare(b.nombre_completo); });
+    const salas = (State.data.salas || []);
 
-    // Una fila por bloque horario; columnas = profesionales
+    // Encabezado fila 2: una columna por entidad de cada grupo
+    const headProf = ters.map(t => { const c = ESPECIALIDAD_VAR[t.especialidad] || {}; return `<th class="disp-ent-h" title="${UI.esc(t.nombre_completo)} · ${UI.esc(t.especialidad)}"><span class="disp-ent-abr" style="background:${c.bg || 'var(--cn-azul-bg)'};color:${c.text || 'var(--cn-azul-deep)'}">${UI.esc(t.abreviacion)}</span></th>`; }).join('');
+    const headNino = ninos.map(n => { const cn = UI.colorNino(n.id_nino); return `<th class="disp-ent-h" title="${UI.esc(n.nombre_completo)}"><span class="disp-ent-abr" style="background:${cn.bg};color:${cn.text}">${UI.esc(UI.initials(n.nombre_completo))}</span></th>`; }).join('');
+    const headSala = salas.map(sa => `<th class="disp-ent-h" title="${UI.esc(sa.nombre)} · ${UI.esc(sa.tipo_principal || '')}"><span class="disp-ent-sala">${UI.esc((sa.nombre || '').slice(0, 5))}</span></th>`).join('');
+    const grpRow = `<th class="disp-th-hora" rowspan="2">Hora</th>`
+      + (ters.length ? `<th class="disp-grp disp-grp-prof" colspan="${ters.length}">Profesionales · ${ters.length}</th>` : '')
+      + (ninos.length ? `<th class="disp-grp disp-grp-nino" colspan="${ninos.length}">Niños · ${ninos.length}</th>` : '')
+      + (salas.length ? `<th class="disp-grp disp-grp-sala" colspan="${salas.length}">Salas · ${salas.length}</th>` : '');
+
+    // Una fila por bloque; tres secciones de columnas (Profesionales editable · Niños · Salas)
     const filas = bloques.map(b => {
-      const celdas = ters.map(t => {
+      const celdasProf = ters.map((t, i) => {
         const c = ESPECIALIDAD_VAR[t.especialidad] || {};
-        if (b.es_reunion_equipo) {
-          return `<td class="disp-cell disp-fijo" title="Bloque de reunión de equipo">${ocup[t.id_terapeuta + '|' + b.id_bloque] ? 'reu' : '·'}</td>`;
-        }
+        const start = i === 0 ? ' disp-grp-start' : '';
+        if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo${start}" title="Reunión de equipo">${ocup[t.id_terapeuta + '|' + b.id_bloque] ? 'reu' : '·'}</td>`;
         const disp = t.disponibilidad_bloques;
-        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
+        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp${start}" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
         if (s) {
           const picked = movId === s.id_sesion;
           const sala = Data.sala(s.id_sala);
           const salaTxt = sala?.nombre || s.sala_nombre || '';
-          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
+          return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}${start}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
         }
         const target = movSes && !dest && okDestino(t.id_terapeuta, b);
-        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">${target ? '＋' : ''}</td>`;
+        return `<td class="disp-cell disp-libre${target ? ' disp-target' : ''}${start}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre'}">${target ? '＋' : ''}</td>`;
       }).join('');
-      return `<tr><td class="disp-hora">${b.hora_inicio}</td>${celdas}</tr>`;
+      const celdasNino = ninos.map((n, i) => {
+        const start = i === 0 ? ' disp-grp-start' : '';
+        const lista = ocupNino[n.id_nino + '|' + b.id_bloque] || [];
+        const reu = lista.find(s => s.tipo_actividad === 'Reunión de equipo');
+        if (reu) return `<td class="disp-cell disp-fijo${start}" title="Reunión de equipo">reu</td>`;
+        const clin = lista.filter(s => s.tipo_actividad !== 'Reunión de equipo');
+        if (clin.length) {
+          const cn = UI.colorNino(n.id_nino);
+          const det = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
+          const abr = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
+          return `<td class="disp-cell disp-ocupado${start}" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
+        }
+        return `<td class="disp-cell disp-libre${start}" title="Sin sesión"></td>`;
+      }).join('');
+      const celdasSala = salas.map((sa, i) => {
+        const start = i === 0 ? ' disp-grp-start' : '';
+        const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
+        if (lista.length) {
+          const det = lista.map(s => `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
+          const abr = lista.map(s => UI.esc(s.terapeuta_abr || (s.nino_visible || '').split(' ')[0])).join('+');
+          return `<td class="disp-cell disp-ocupado${start}" style="background:var(--bg-soft)" title="${UI.esc(det)}">${abr}</td>`;
+        }
+        return `<td class="disp-cell disp-libre${start}" title="Sala libre"></td>`;
+      }).join('');
+      return `<tr><td class="disp-hora">${b.hora_inicio}</td>${celdasProf}${celdasNino}${celdasSala}</tr>`;
     }).join('');
 
     // Banner: paso 1 (elegir destino) o paso 2 (elegir sala libre)
@@ -250,15 +287,18 @@ const Recursos = {
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
         <div class="section-title">Disponibilidad</div>
-        <div class="section-sub">Agenda del día · horarios en filas, profesionales en columnas, cada celda con el niño y su sala · ${ters.length} profesionales. Clic en una sesión y luego en un bloque libre para moverla; al reasignar eliges la sala disponible.</div>
+        <div class="section-sub">Horarios en filas · columnas agrupadas en <b>Profesionales · Niños · Salas</b>. Clic en una sesión (sección Profesionales) y luego en un bloque libre verde para moverla; al reasignar eliges la sala disponible y las columnas de Niños y Salas se actualizan solas.</div>
       </div></div>
       <div class="disp-dias">${diasBtns}</div>
       ${esFeriado ? '<div class="disp-feriado">Ese día es feriado · no hay atención.</div>' : ''}
       ${banner}
       <div class="disp-legend"><span class="disp-leg disp-leg-libre">libre</span><span class="disp-leg disp-leg-ocupado">ocupado</span><span class="disp-leg disp-leg-nodisp">no disponible</span></div>
       <div class="table-wrap disp-wrap disp-wrap-agenda">
-        <table class="disp-table disp-table-agenda">
-          <thead><tr><th class="disp-th-hora">Hora</th>${headCols}</tr></thead>
+        <table class="disp-table disp-table-agenda disp-table-3grp">
+          <thead>
+            <tr class="disp-grp-row">${grpRow}</tr>
+            <tr>${headProf}${headNino}${headSala}</tr>
+          </thead>
           <tbody>${filas}</tbody>
         </table>
       </div>

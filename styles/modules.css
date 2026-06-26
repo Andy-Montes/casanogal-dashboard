@@ -2487,6 +2487,27 @@
 .disp-sala-chip.is-pref { border-color: var(--cn-mostaza); color: var(--cn-mostaza-deep, #9A6B00); }
 .disp-sala-chip.is-actual { background: var(--cn-azul); color: #fff; }
 
+/* ===== Tres grupos de columnas: Profesionales · Niños · Salas ===== */
+.disp-table-3grp .disp-cell, .disp-table-3grp .disp-ent-h { width: 54px; }
+.disp-table-3grp .disp-cell { height: 42px; padding: 1px; }
+.disp-table-3grp .disp-nino { font-size: 10px; }
+.disp-table-3grp .disp-sala { font-size: 8.5px; }
+/* Fila 1 del header: rótulos de grupo */
+.disp-grp-row th { position: sticky; top: 0; z-index: 5; height: 24px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--border); }
+.disp-grp-prof { background: var(--cn-azul-bg); color: var(--cn-azul-deep); }
+.disp-grp-nino { background: var(--cn-mostaza-bg, #FBF3DD); color: var(--cn-mostaza-deep, #9A6B00); }
+.disp-grp-sala { background: #E7F0E9; color: #2E6B3A; }
+/* Fila 2 del header: cada entidad */
+.disp-table-3grp thead tr:nth-child(2) th { position: sticky; top: 24px; z-index: 3; height: 30px; padding: 2px; background: var(--bg-soft); border: 1px solid var(--border); }
+.disp-table-3grp .disp-th-hora { position: sticky; left: 0; z-index: 6; width: 50px; background: var(--bg-soft); }
+.disp-ent-h { font-weight: 600; }
+.disp-ent-abr { display: inline-block; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 9px; padding: 1px 4px; border-radius: var(--r-xs); }
+.disp-ent-sala { display: block; font-size: 8.5px; color: var(--text-2); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Línea divisoria al inicio de cada grupo */
+.disp-grp-start { border-left: 3px solid var(--cn-azul-deep, #1A3C6E) !important; }
+.disp-grp.disp-grp-nino, .disp-grp.disp-grp-sala { border-left: 3px solid var(--cn-azul-deep, #1A3C6E); }
+.disp-table-3grp .disp-hora { width: 50px; }
+
 /* ====== Hero compacto (vista terapeuta) ====== */
 .hero-compact { padding: 14px 18px !important; }
 .hero-compact .hero-brain { display: none !important; }
