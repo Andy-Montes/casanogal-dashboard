@@ -222,9 +222,10 @@ const Recursos = {
     const filasProf = ters.map(t => {
       const c = ESPECIALIDAD_VAR[t.especialidad] || {};
       const celdas = bloques.map(b => {
-        if (b.es_reunion_equipo) return `<td class="disp-cell disp-fijo" title="Reunión de equipo">${ocup[t.id_terapeuta + '|' + b.id_bloque] ? 'reu' : '·'}</td>`;
+        const esFranjaReu = b.hora_inicio === '08:00' || b.hora_inicio === '12:30';
         const disp = t.disponibilidad_bloques;
-        if (disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
+        // En las franjas de reunión las celdas vacías quedan libres (para agendar más reuniones), no bloqueadas
+        if (!esFranjaReu && disp && disp[diaNombre] && !disp[diaNombre].includes(b.id_bloque)) return `<td class="disp-cell disp-nodisp" title="No disponible">—</td>`;
         const s = ocup[t.id_terapeuta + '|' + b.id_bloque];
         if (s && s.tipo_actividad === 'Reunión de equipo') return `<td class="disp-cell disp-fijo" title="Reunión de equipo · ${UI.esc(s.nino_visible || '')}">reu</td>`;
         if (s) {
