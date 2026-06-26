@@ -238,7 +238,7 @@ const Recursos = {
           return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:color-mix(in srgb, ${c.bg || 'var(--bg-soft)'} 55%, var(--bg))" title="${UI.esc(s.nino_visible)} · ${UI.esc(s.tipo_terapia)} · ${UI.esc(salaTxt)} · clic para mover"><span class="disp-nino">${UI.esc((s.nino_visible || '').split(' ')[0])}</span>${salaTxt && salaTxt !== '—' ? `<span class="disp-sala">${UI.esc(salaTxt)}</span>` : ''}</td>`;
         }
         const target = movSes && !dest && okDestino(t.id_terapeuta, b);
-        return `<td class="disp-cell disp-libre disp-crear${target ? ' disp-target' : ''}" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre · clic para crear sesión'}">${target ? '＋' : ''}</td>`;
+        return `<td class="disp-cell disp-libre disp-crear${target ? ' disp-target' : ''}" data-band="prof" data-ter="${t.id_terapeuta}" data-bloque="${b.id_bloque}" title="${target ? 'Mover aquí' : 'Libre · clic para crear sesión'}">${target ? '＋' : ''}</td>`;
       }).join('');
       return `<tr>${rotulo(t.abreviacion, this._nombreCorto(t.nombre_completo), c.bg || 'var(--cn-azul-bg)', c.text || 'var(--cn-azul-deep)')}${celdas}</tr>`;
     }).join('');
@@ -261,7 +261,7 @@ const Recursos = {
           const abr = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
           return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
         }
-        return `<td class="disp-cell disp-libre" title="Sin sesión"></td>`;
+        return `<td class="disp-cell disp-libre disp-crear" data-band="nino" data-nino="${n.id_nino}" data-bloque="${b.id_bloque}" title="Sin sesión · clic para crear"></td>`;
       }).join('');
       return `<tr>${rotulo(UI.initials(n.nombre_completo), n.nombre_visible, cn.bg, cn.text, n.edad_anios ? n.edad_anios + ' años' : '')}${celdas}</tr>`;
     }).join('');
@@ -274,10 +274,11 @@ const Recursos = {
           const lista = ocupSala[sa.id_sala + '|' + b.id_bloque] || [];
           const s = lista[k];
           if (s) {
+            const picked = movId === s.id_sesion;
             const det = `${s.nino_visible} · ${s.tipo_terapia} (${s.terapeuta_abr || ''})`;
-            return `<td class="disp-cell disp-ocupado" style="background:var(--bg-soft)" title="${UI.esc(det)}">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
+            return `<td class="disp-cell disp-ocupado disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" style="background:var(--bg-soft)" title="${UI.esc(det)} · clic para mover">${UI.esc((s.nino_visible || '').split(' ')[0])}</td>`;
           }
-          return `<td class="disp-cell disp-libre disp-crear" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Sala libre · clic para crear sesión"></td>`;
+          return `<td class="disp-cell disp-libre disp-crear" data-band="sala" data-sala="${sa.id_sala}" data-bloque="${b.id_bloque}" title="Cupo libre · clic para crear sesión"></td>`;
         }).join('');
         const sub = cap > 1 ? `cupo ${k + 1}/${cap}` : '';
         const nom = k === 0 ? sa.nombre : sa.nombre;
@@ -357,7 +358,7 @@ const Recursos = {
           <div class="pendiente-modal-body" style="display:flex;flex-direction:column;gap:12px">
             <div class="field-row">
               <div class="field"><label class="field-label">Niño</label>
-                <select class="field-select" id="reuNino">${ninos.map(n => `<option value="${n.id_nino}">${UI.esc(n.nombre_completo)}</option>`).join('')}</select>
+                <select class="field-select" id="reuNino">${ninos.map(n => `<option value="${n.id_nino}" ${prefill.id_nino === n.id_nino ? 'selected' : ''}>${UI.esc(n.nombre_completo)}</option>`).join('')}</select>
               </div>
               <div class="field"><label class="field-label">Bloque</label>
                 <select class="field-select" id="reuBloque">${bloques.map(b => `<option value="${b.id_bloque}" ${prefill.id_bloque === b.id_bloque ? 'selected' : ''}>${b.hora_inicio}–${b.hora_fin}</option>`).join('')}</select>
@@ -448,10 +449,10 @@ const Recursos = {
         const k = btn.dataset.k;
         cerrar();
         if (k === 'reunion') {
-          this._abrirFormReunion(dia, diaNombre, { id_bloque: ctx.bloque, id_terapeuta: ctx.ter || null, id_sala: ctx.sala || null });
+          this._abrirFormReunion(dia, diaNombre, { id_bloque: ctx.bloque, id_terapeuta: ctx.ter || null, id_sala: ctx.sala || null, id_nino: ctx.nino || null });
         } else {
           const t = ctx.ter ? Data.terapeuta(ctx.ter) : null;
-          Modal.openCreate({ id_terapeuta: ctx.ter || undefined, tipo_terapia: t?.especialidad, id_sala: ctx.sala || undefined, id_bloque: ctx.bloque, dia: diaNombre, tipo_actividad: k });
+          Modal.openCreate({ id_nino: ctx.nino || undefined, id_terapeuta: ctx.ter || undefined, tipo_terapia: t?.especialidad, id_sala: ctx.sala || undefined, id_bloque: ctx.bloque, dia: diaNombre, tipo_actividad: k });
         }
       });
     });
@@ -535,8 +536,8 @@ const Recursos = {
     document.querySelectorAll('.disp-table-bandas .disp-crear').forEach(cell => {
       cell.addEventListener('click', () => {
         if (self._movDisp || cell.classList.contains('disp-target')) return; // si está moviendo, no crear
-        const { ter, sala, bloque } = cell.dataset;
-        self._abrirChooserActividad(dia, diaNombre, { ter: ter || null, sala: sala || null, bloque });
+        const { ter, sala, nino, bloque } = cell.dataset;
+        self._abrirChooserActividad(dia, diaNombre, { ter: ter || null, sala: sala || null, nino: nino || null, bloque });
       });
     });
 
@@ -562,9 +563,13 @@ const Recursos = {
       return;
     }
 
-    // Arrastre: pointerdown en una sesión → fantasma sigue el cursor → soltar en bloque verde
-    let dragId = null, ghost = null, over = null;
-    const valid = (cell) => !!(cell && cell.classList.contains('disp-libre') && cell.dataset.ter && cell.dataset.bloque);
+    // Arrastre multibanda: soltar en Profesionales (cambia profesional), Niños (cambia horario del mismo niño) o Salas (cambia sala)
+    let dragId = null, dragNino = null, ghost = null, over = null;
+    const valid = (cell) => {
+      if (!cell || !cell.classList.contains('disp-libre') || !cell.dataset.band) return false;
+      if (cell.dataset.band === 'nino' && cell.dataset.nino !== dragNino) return false;
+      return true;
+    };
     const onMove = (e) => {
       if (ghost) { ghost.style.left = (e.clientX + 10) + 'px'; ghost.style.top = (e.clientY + 12) + 'px'; }
       const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -580,9 +585,26 @@ const Recursos = {
       const id = dragId; dragId = null;
       document.querySelectorAll('.disp-cell.disp-target, .disp-cell.disp-over, .disp-cell.disp-dragging')
         .forEach(c => c.classList.remove('disp-target', 'disp-over', 'disp-dragging'));
-      if (valid(cell)) {
+      if (!cell || !cell.dataset.band) return;
+      const sesion = State.data.sesiones.find(s => s.id_sesion === id);
+      if (!sesion) return;
+      const banda = cell.dataset.band;
+      const idBloque = cell.dataset.bloque;
+      let idTer = sesion.id_terapeuta, idSala = sesion.id_sala;
+      if (banda === 'prof') idTer = cell.dataset.ter;
+      else if (banda === 'nino') {
+        if (cell.dataset.nino !== sesion.id_nino) { self._alertaTope('No se puede cambiar el niño', 'Mueve la sesión dentro de la fila del mismo niño. Para reasignar el terapeuta, suéltala en la banda Profesionales.'); return; }
+      } else if (banda === 'sala') idSala = cell.dataset.sala;
+      // Validación de topes (la sala se valida directo solo si el destino fue la banda Salas)
+      const tope = self._topeMovimiento(sesion, idTer, idBloque, idSala, dia, banda === 'sala');
+      if (tope) { self._alertaTope('No se puede mover', tope); return; }
+      if (banda === 'sala') {
+        self._aplicarMov(sesion, idTer, idBloque, idSala);
+        self.renderDisponibilidad();
+      } else {
+        // prof / nino → elegir sala libre a la derecha y aplicar
         self._movDisp = id;
-        self._movDest = { idTer: cell.dataset.ter, idBloque: cell.dataset.bloque };
+        self._movDest = { idTer, idBloque };
         self.renderDisponibilidad();
       }
     };
@@ -591,11 +613,15 @@ const Recursos = {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         e.preventDefault();
         dragId = cell.dataset.id;
-        cell.classList.add('disp-dragging');
         const movSes = State.data.sesiones.find(s => s.id_sesion === dragId);
-        // resaltar todos los destinos válidos (bloques libres de cualquier profesional)
-        document.querySelectorAll('.disp-table-bandas .disp-libre[data-ter]').forEach(c => {
-          if (movSes && !(c.dataset.ter === movSes.id_terapeuta && c.dataset.bloque === movSes.id_bloque)) c.classList.add('disp-target');
+        dragNino = movSes?.id_nino || null;
+        cell.classList.add('disp-dragging');
+        // resaltar destinos válidos en las TRES bandas
+        document.querySelectorAll('.disp-table-bandas .disp-libre[data-band]').forEach(c => {
+          const band = c.dataset.band;
+          if (band === 'nino' && c.dataset.nino !== dragNino) return;
+          if (band === 'prof' && c.dataset.ter === movSes?.id_terapeuta && c.dataset.bloque === movSes?.id_bloque) return;
+          c.classList.add('disp-target');
         });
         ghost = document.createElement('div');
         ghost.className = 'disp-ghost';
@@ -606,6 +632,58 @@ const Recursos = {
         window.addEventListener('pointerup', onUp, { once: true });
       });
     });
+  },
+
+  // Devuelve el primer tope (texto) que impide mover la sesión a (idTer, idBloque, idSala), o null si está libre.
+  _topeMovimiento(sesion, idTer, idBloque, idSala, dia, checkSala) {
+    const b = Data.bloque(idBloque);
+    const hora = b ? b.hora_inicio : '';
+    const otras = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
+    if (otras.some(s => s.id_terapeuta === idTer || s.id_terapeuta_secundario === idTer)) {
+      const t = Data.terapeuta(idTer);
+      return `El profesional ${UI.esc(t?.nombre_completo || idTer)} ya tiene una sesión a las ${hora}.`;
+    }
+    if (sesion.id_nino && otras.some(s => s.id_nino === sesion.id_nino)) {
+      return `${UI.esc(sesion.nino_visible || 'El niño')} ya tiene otra sesión a las ${hora}.`;
+    }
+    if (checkSala && idSala) {
+      const sa = Data.sala(idSala);
+      const usados = otras.filter(s => s.id_sala === idSala).length;
+      if (usados >= (sa?.capacidad_personas || 1)) return `La sala ${UI.esc(sa?.nombre || idSala)} está ocupada/llena a las ${hora}.`;
+    }
+    return null;
+  },
+
+  // Aplica el movimiento directo (usado cuando se suelta en la banda Salas).
+  _aplicarMov(sesion, idTer, idBloque, idSala) {
+    const t = Data.terapeuta(idTer), b = Data.bloque(idBloque), sa = idSala ? Data.sala(idSala) : null;
+    sesion.id_terapeuta = idTer;
+    if (t) sesion.terapeuta_abr = t.abreviacion;
+    sesion.id_bloque = idBloque;
+    if (b) { sesion.hora_inicio = b.hora_inicio; sesion.hora_fin = b.hora_fin; }
+    sesion.id_sala = idSala || null;
+    sesion.sala_nombre = sa?.nombre || '—';
+    sesion.conflicto_detectado = null;
+    UI.toast(`${sesion.nino_visible} movido${sa ? ' a ' + UI.esc(sa.nombre) : ''} · ${b ? b.hora_inicio : ''}`, 'success');
+  },
+
+  // Modal de alerta de tope (profesional/sala/niño ocupado).
+  _alertaTope(titulo, mensaje) {
+    const html = `
+      <div class="pendiente-modal-overlay" id="topeOverlay">
+        <div class="pendiente-modal" style="width:min(420px,94vw)">
+          <div class="pendiente-modal-head">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--alert)"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div><div class="pendiente-modal-title">${UI.esc(titulo)}</div></div>
+          </div>
+          <div class="pendiente-modal-body"><p>${mensaje}</p></div>
+          <div class="pendiente-modal-foot"><button class="btn btn-primary" id="topeOk">Entendido</button></div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('topeOverlay')?.remove();
+    document.getElementById('topeOk').addEventListener('click', cerrar);
+    document.getElementById('topeOverlay').addEventListener('click', e => { if (e.target.id === 'topeOverlay') cerrar(); });
   },
 
   renderSalas() {
