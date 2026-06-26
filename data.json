@@ -1183,7 +1183,7 @@
       "id_sala": "SALA-03",
       "nombre": "MAR",
       "tipo_principal": "Multifunción",
-      "capacidad_personas": 5,
+      "capacidad_personas": 1,
       "equipamiento": "Equipamiento básico",
       "disponible": true,
       "notas": ""
@@ -1192,7 +1192,7 @@
       "id_sala": "SALA-04",
       "nombre": "TIE",
       "tipo_principal": "Multifunción",
-      "capacidad_personas": 5,
+      "capacidad_personas": 1,
       "equipamiento": "Equipamiento básico",
       "disponible": true,
       "notas": ""
@@ -1201,7 +1201,7 @@
       "id_sala": "SALA-05",
       "nombre": "AIRE",
       "tipo_principal": "Multifunción",
-      "capacidad_personas": 5,
+      "capacidad_personas": 1,
       "equipamiento": "Equipamiento básico",
       "disponible": true,
       "notas": ""
@@ -1210,7 +1210,7 @@
       "id_sala": "SALA-06",
       "nombre": "COG",
       "tipo_principal": "Cognitivo",
-      "capacidad_personas": 3,
+      "capacidad_personas": 1,
       "equipamiento": "Mesa, sillas, juegos pedagógicos",
       "disponible": true,
       "notas": ""
@@ -1219,7 +1219,7 @@
       "id_sala": "SALA-07",
       "nombre": "COG 2",
       "tipo_principal": "Cognitivo",
-      "capacidad_personas": 3,
+      "capacidad_personas": 1,
       "equipamiento": "Mesa, sillas, juegos pedagógicos",
       "disponible": true,
       "notas": ""
@@ -1228,7 +1228,7 @@
       "id_sala": "SALA-08",
       "nombre": "ESPEJO",
       "tipo_principal": "Psicología/RDI",
-      "capacidad_personas": 3,
+      "capacidad_personas": 1,
       "equipamiento": "Equipamiento básico",
       "disponible": true,
       "notas": ""
@@ -1237,7 +1237,7 @@
       "id_sala": "SALA-09",
       "nombre": "ESPEJO 2",
       "tipo_principal": "Psicología/RDI",
-      "capacidad_personas": 3,
+      "capacidad_personas": 1,
       "equipamiento": "Equipamiento básico",
       "disponible": true,
       "notas": ""

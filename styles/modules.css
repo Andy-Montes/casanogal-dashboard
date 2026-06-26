@@ -2492,8 +2492,8 @@
 .disp-hora-ini { display: block; font-weight: 700; }
 .disp-hora-fin { display: block; font-size: 8.5px; color: var(--text-3); font-weight: 500; }
 /* Filas bajas */
-.disp-table-bandas tbody .disp-cell { width: 74px !important; height: 27px; }
-.disp-table-bandas .disp-ter { width: 146px !important; height: 27px; padding: 1px 8px; position: sticky; left: 0; z-index: 1; background: var(--bg); }
+.disp-table-bandas tbody .disp-cell { width: 74px !important; height: 32px; }
+.disp-table-bandas .disp-ter { width: 146px !important; height: 32px; padding: 2px 8px; position: sticky; left: 0; z-index: 1; background: var(--bg); }
 .disp-table-bandas .disp-ter-nom { line-height: 1.0; font-size: 11px; }
 .disp-table-bandas .disp-ter-nom small { font-size: 8.5px; }
 .disp-table-bandas .disp-nino { line-height: 1.0; }
