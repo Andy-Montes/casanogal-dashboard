@@ -38,15 +38,14 @@
 - [x] Bug: el modal de "modificar profesional" no cabía en pantalla → ahora con scroll
 
 ## 🧩 Armador de Horario
-- [ ] Preferencia de inicio por niño (ej: "partir con TO")
-- [ ] Duplas / grupos: dupla de terapeutas (2 ter · 1 niño), dupla de niños (1 ter · 2 niños), grupal (2 ter · 3 niños)
-- [ ] Restricción: máximo 2 observaciones por sala de TO
-- [ ] Restricción: máximo 4 niños en sala TO1 y 2 niños en TO2
-- [ ] Poder ir agregando restricciones nuevas cuando se necesite
+- [x] Preferencia de inicio por niño (ej: "partir con TO") — campo en el formulario del niño
+- [~] Duplas / grupos: dupla de terapeutas, dupla de niños, grupal — capturado como "Modalidad" en el formulario (falta soporte pleno en el motor de asignación)
+- [~] Restricción: máximo 2 observaciones por sala de TO — campo en el panel (regla, no forzada en el solver)
+- [x] Restricción: máximo 4 niños en sala TO1 y 2 niños en TO2 — cupos editables que usa el motor
+- [x] Poder ir agregando restricciones nuevas cuando se necesite — restricciones en texto libre
 - [ ] Terapeuta: un día para intensivo y otro para seguimiento
-- [ ] Qué pasa con los horarios pasados cuando termina un intensivo
-- [ ] Poder armar otro horario mientras un intensivo está en curso
-- [ ] "Intensivo 41" navegable: ver niños y horario de cada intensivo histórico
+- [x] Poder armar otro horario mientras un intensivo está en curso / "Intensivo 41" navegable — selector de intensivo (40 actual / 41 en blanco), el 40 queda intacto
+- [x] Qué pasa con los horarios pasados cuando termina un intensivo — quedan archivados; cada intensivo es navegable por separado
 
 ## 👩‍⚕️ Terapeutas
 - [x] Explicar/mostrar cómo quedan marcadas las observaciones en su horario (nota en el detalle)
