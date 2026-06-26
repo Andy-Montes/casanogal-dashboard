@@ -300,6 +300,14 @@ const Fichas = {
         this._renderDetalle(n.id_nino);
       });
     });
+    document.querySelectorAll('.reu-acta-save').forEach(b => {
+      b.addEventListener('click', () => {
+        const ta = document.querySelector(`.reu-acta-input[data-rid="${b.dataset.rid}"]`);
+        this._guardarActaReunion(n.id_nino, b.dataset.rid, ta ? ta.value.trim() : '');
+        UI.toast('Registro de la reunión guardado', 'success');
+        this._renderDetalle(n.id_nino);
+      });
+    });
     document.querySelectorAll('.boleta-pagar-inline').forEach(b => {
       b.addEventListener('click', () => {
         Reportes.marcarPagada(b.dataset.bid);
@@ -790,6 +798,11 @@ const Fichas = {
         <div class="reu-title">${UI.esc(r.tipo)} <span style="color:var(--text-3);font-weight:400;margin-left:6px;font-size:12px">${UI.esc(r.hora)}</span></div>
         <div class="reu-meta">Con ${UI.esc(r.con)}${r.modo ? ' · ' + UI.esc(r.modo) : ''}</div>
         ${r.nota ? `<div class="reu-nota">${UI.esc(r.nota)}</div>` : ''}
+        <details class="reu-acta"${r.acta ? ' open' : ''}>
+          <summary>${r.acta ? 'Registro de la reunión' : 'Agregar registro de lo conversado'}</summary>
+          <textarea class="reu-acta-input" data-rid="${r.id}" rows="3" placeholder="¿Qué se conversó? Acuerdos, próximos pasos, responsables…">${UI.esc(r.acta || '')}</textarea>
+          <button class="btn btn-primary reu-acta-save" data-rid="${r.id}" style="height:30px;padding:0 12px;font-size:12px">Guardar registro</button>
+        </details>
       </div>
       <button class="btn-icon reu-delete" data-rid="${r.id}" title="Eliminar">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -812,6 +825,12 @@ const Fichas = {
     const list = this._leerReuniones(idNino).filter(r => r.id !== rid);
     this._guardarReuniones(idNino, list);
     UI.toast('Reunión eliminada', 'success');
+  },
+
+  _guardarActaReunion(idNino, rid, acta) {
+    const list = this._leerReuniones(idNino);
+    const r = list.find(x => x.id === rid);
+    if (r) { r.acta = acta; this._guardarReuniones(idNino, list); }
   },
 
   _abrirModalReunion(idNino) {
