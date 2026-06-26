@@ -22,9 +22,9 @@
 
 ## 📝 Sesiones
 - [x] Renombrar estado "Cancelada" → "Suspendida"
-- [ ] Descargar **todos** los registros de atención juntos (día / semana / intensivo) tipo Word: fecha, hora, terapeuta y registro
-- [ ] Nuevos tipos de sesión: **papás solos** (psicología), **talleres grupales**, **coaching**
-- [ ] Sesión de **neurología semanal** en los intensivos (supervisión de la dra)
+- [x] Descargar **todos** los registros de atención juntos (día / semana / intensivo) tipo Word: fecha, hora, terapeuta y registro
+- [x] Nuevos tipos de sesión: **papás solos** (psicología), **talleres grupales**, **coaching** (selector Modalidad en Nueva sesión + se ve en el panel)
+- [x] Sesión de **neurología semanal** en los intensivos (supervisión de la dra) — disponible como modalidad
 
 ## 🎯 Objetivos terapéuticos
 - [x] Reestructurar a **Objetivo 1 / 2 / 3 / 4** (no por área)

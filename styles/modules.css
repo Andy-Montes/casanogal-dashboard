@@ -1711,6 +1711,25 @@
 
 .reg-dl-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
+/* Carga semanal del terapeuta */
+.carga-bar { width: 120px; height: 8px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
+.carga-bar-lg { width: 100%; height: 12px; margin: 8px 0 4px; }
+.carga-fill { height: 100%; background: var(--cn-azul); border-radius: 999px; transition: width .3s var(--ease, ease); }
+.carga-fill.is-alto { background: var(--alert); }
+.equipo-row:hover { background: var(--bg-soft); }
+.ter-metrica-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 4px; }
+.ter-metrica-row { font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+.ter-split { display: flex; gap: 8px; flex-wrap: wrap; }
+.ter-chip { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--r-md); padding: 7px 11px; font-size: 12.5px; color: var(--text-2); }
+.ter-chip b { color: var(--text); font-size: 14px; }
+.asist-grid { display: grid; gap: 6px; }
+.asist-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center; }
+.asist-dia { font-size: 13px; font-weight: 600; color: var(--text); }
+.asist-dia small { color: var(--text-3); font-weight: 400; font-family: 'JetBrains Mono', monospace; }
+.asist-sel { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); font-size: 13px; color: var(--text); cursor: pointer; }
+.asist-sel:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
+.ter-nota { margin-top: 16px; font-size: 12.5px; color: var(--text-2); background: var(--cn-azul-bg); border-radius: var(--r-md); padding: 10px 12px; line-height: 1.5; }
+
 .docs-list { display: grid; gap: 8px; }
 .doc-row {
   display: flex;

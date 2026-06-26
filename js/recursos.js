@@ -21,18 +21,25 @@ const Recursos = {
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr>
-            <th></th><th>Nombre</th><th>Especialidad</th><th>Contrato</th><th class="num">Horas</th><th>Email</th><th>Estado</th>
+            <th></th><th>Nombre</th><th>Especialidad</th><th>Contrato</th><th class="num">Horas</th><th>Carga semana</th><th>Estado</th>
           </tr></thead>
           <tbody>
             ${filtered.map(t => {
               const c = ESPECIALIDAD_VAR[t.especialidad] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
-              return `<tr>
+              const m = this._terapeutaMetricas(t);
+              const alto = m.pctUsado > 80;
+              return `<tr class="equipo-row" data-ter="${t.id_terapeuta}" style="cursor:pointer">
                 <td><span class="equipo-avatar" style="background:${c.bg};color:${c.text};width:30px;height:30px;font-size:10px">${UI.esc(t.abreviacion)}</span></td>
                 <td><div style="font-weight:600;color:var(--text)">${UI.esc(t.nombre_completo)}</div><div style="font-size:11px;color:var(--text-3)">${UI.esc(t.nombre_visible)}</div></td>
                 <td><span class="badge" style="background:${c.bg};color:${c.text}">${UI.esc(t.especialidad)}</span></td>
                 <td>${UI.esc(t.tipo_contrato)}</td>
                 <td class="num">${t.horas_contrato}</td>
-                <td class="mono" style="font-size:12px">${UI.esc(t.email)}</td>
+                <td>
+                  <div class="carga-bar" title="${m.usados} de ${m.capacidad} bloques usados">
+                    <div class="carga-fill ${alto?'is-alto':''}" style="width:${Math.min(100,m.pctUsado)}%"></div>
+                  </div>
+                  <div style="font-size:11px;margin-top:3px;color:${alto?'var(--alert)':'var(--text-3)'};font-weight:${alto?700:500}">${m.pctUsado}% usado${alto?' · sobre 80%':''}</div>
+                </td>
                 <td>
                   <span class="estado-prof estado-${Config._estadoSlug(t.estado)}">${UI.esc(t.estado || 'Activo')}</span>
                   ${t.estado_nota ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px">${UI.esc(t.estado_nota)}</div>` : ''}
@@ -42,8 +49,110 @@ const Recursos = {
           </tbody>
         </table>
       </div>
+      <div id="terModalMount"></div>
     `;
     document.getElementById('recSearch').addEventListener('input', e => { State.searchQuery = e.target.value; this.renderEquipo(); });
+    document.querySelectorAll('.equipo-row').forEach(r =>
+      r.addEventListener('click', () => this._abrirTerapeuta(r.dataset.ter))
+    );
+  },
+
+  // Carga semanal del terapeuta: bloques usados vs capacidad, y desglose terapias / reuniones.
+  _terapeutaMetricas(t) {
+    const fechas = fechasSemana();
+    const ses = State.data.sesiones.filter(s =>
+      (s.id_terapeuta === t.id_terapeuta || s.id_terapeuta_secundario === t.id_terapeuta) && fechas.includes(s.fecha));
+    const reuniones = ses.filter(s => s.tipo_actividad === 'Reunión de equipo').length;
+    const terapias = ses.length - reuniones;
+    const bloques = (State.data.bloques_horarios || []).filter(b => !b.es_reunion_equipo);
+    let capacidad = 0;
+    const disp = t.disponibilidad_bloques;
+    if (disp) DIAS.forEach(d => { capacidad += (disp[d] || []).filter(id => bloques.some(b => b.id_bloque === id)).length; });
+    else capacidad = bloques.length * DIAS.length;
+    const usados = ses.length;
+    return {
+      reuniones, terapias, usados, capacidad,
+      pctUsado: capacidad ? Math.round(usados / capacidad * 100) : 0,
+      pctEfectivo: usados ? Math.round(terapias / usados * 100) : 0,
+    };
+  },
+
+  // Asistencia del terapeuta (registro manual, persiste en localStorage)
+  _asistenciaKey() { return 'casanogal_asistencia_ter'; },
+  _leerAsistencia() { try { return JSON.parse(localStorage.getItem(this._asistenciaKey()) || '{}'); } catch { return {}; } },
+  _setAsistencia(idTer, fecha, valor) {
+    const a = this._leerAsistencia();
+    a[idTer + '|' + fecha] = valor;
+    localStorage.setItem(this._asistenciaKey(), JSON.stringify(a));
+  },
+
+  _abrirTerapeuta(idTer) {
+    const t = Data.terapeuta(idTer);
+    if (!t) return;
+    const c = ESPECIALIDAD_VAR[t.especialidad] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
+    const m = this._terapeutaMetricas(t);
+    const alto = m.pctUsado > 80;
+    const asist = this._leerAsistencia();
+    const fechas = fechasSemana();
+    const OPC = ['Presente', 'Atrasado', 'Se fue antes', 'Faltó'];
+    const filasAsist = fechas.map((f, i) => {
+      const val = asist[idTer + '|' + f] || 'Presente';
+      return `<div class="asist-row">
+        <span class="asist-dia">${DIAS_LABEL[i]} <small>${Number(f.split('-')[2])}</small></span>
+        <select class="asist-sel" data-fecha="${f}">
+          ${OPC.map(o => `<option ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
+      </div>`;
+    }).join('');
+
+    const html = `
+      <div class="pendiente-modal-overlay" id="terOverlay">
+        <div class="pendiente-modal" style="width:min(560px,94vw)">
+          <div class="pendiente-modal-head">
+            <span class="equipo-avatar" style="background:${c.bg};color:${c.text};width:34px;height:34px;font-size:12px">${UI.esc(t.abreviacion)}</span>
+            <div>
+              <div class="pendiente-modal-title">${UI.esc(t.nombre_completo)}</div>
+              <div class="pendiente-modal-eyebrow">${UI.esc(t.especialidad)} · ${UI.esc(t.tipo_contrato || '')}</div>
+            </div>
+            <button class="panel-close" id="terClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="padding:16px 22px">
+            <div class="ter-metrica-h">Carga de la semana</div>
+            <div class="carga-bar carga-bar-lg" title="${m.usados} de ${m.capacidad} bloques">
+              <div class="carga-fill ${alto?'is-alto':''}" style="width:${Math.min(100,m.pctUsado)}%"></div>
+            </div>
+            <div class="ter-metrica-row">
+              <span><b style="color:${alto?'var(--alert)':'var(--text)'}">${m.pctUsado}%</b> del tiempo usado${alto?' · <span style="color:var(--alert)">supera el 80% recomendado</span>':''}</span>
+            </div>
+            <div class="ter-split">
+              <div class="ter-chip"><b>${m.terapias}</b> terapias efectivas</div>
+              <div class="ter-chip"><b>${m.reuniones}</b> reuniones</div>
+              <div class="ter-chip"><b>${m.pctEfectivo}%</b> es terapia efectiva</div>
+            </div>
+
+            <div class="ter-metrica-h" style="margin-top:18px">Asistencia de la semana</div>
+            <div class="asist-grid">${filasAsist}</div>
+
+            <div class="ter-nota">
+              <b>Observaciones en su horario:</b> en el calendario las sesiones de observación y las de papás se marcan con un color distinto y su etiqueta de modalidad, para diferenciarlas de las terapias individuales.
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-primary" id="terCloseFoot">Listo</button>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('terModalMount').innerHTML = html;
+    const cerrar = () => { document.getElementById('terModalMount').innerHTML = ''; };
+    document.getElementById('terClose').addEventListener('click', cerrar);
+    document.getElementById('terCloseFoot').addEventListener('click', cerrar);
+    document.getElementById('terOverlay').addEventListener('click', e => { if (e.target.id === 'terOverlay') cerrar(); });
+    document.querySelectorAll('.asist-sel').forEach(sel =>
+      sel.addEventListener('change', () => {
+        this._setAsistencia(idTer, sel.dataset.fecha, sel.value);
+        UI.toast('Asistencia registrada', 'success');
+      })
+    );
   },
 
   renderNinos() {
