@@ -393,6 +393,12 @@ const Recursos = {
       const idSala = document.getElementById('reuSala').value || null;
       const seleccion = [...document.querySelectorAll('.reu-ters input:checked')].map(i => i.value);
       if (!seleccion.length) { UI.toast('Marca al menos un integrante del equipo', 'error'); return; }
+      const b0 = Data.bloque(idBloque);
+      const ocupados = this._terapeutasOcupados(dia, idBloque, seleccion);
+      if (ocupados.length) {
+        this._alertaTope('Hay profesionales ocupados', `${ocupados.map(o => `<b>${UI.esc(o.nombre)}</b>`).join(', ')} ya ${ocupados.length === 1 ? 'tiene una sesión' : 'tienen sesión'} a las ${b0?.hora_inicio || ''}. Libera ese horario o quítalos de la reunión.`);
+        return;
+      }
       const nino = Data.nino(idNino);
       const b = Data.bloque(idBloque);
       const sa = idSala ? Data.sala(idSala) : null;
@@ -482,6 +488,12 @@ const Recursos = {
       const externos = [...document.querySelectorAll('.reu-ext-in')].map(i => i.value.trim()).filter(Boolean);
       if (externos.length > 3) { UI.toast('Máximo 3 personas externas', 'error'); return; }
       if (!terSel.length) { UI.toast('Elige al menos un profesional (ancla la reunión en el horario)', 'error'); return; }
+      const bSel = Data.bloque(idBloque);
+      const ocupadosGen = this._terapeutasOcupados(dia, idBloque, terSel);
+      if (ocupadosGen.length) {
+        this._alertaTope('Hay profesionales ocupados', `${ocupadosGen.map(o => `<b>${UI.esc(o.nombre)}</b>`).join(', ')} ya ${ocupadosGen.length === 1 ? 'tiene una sesión' : 'tienen sesión'} a las ${bSel?.hora_inicio || ''}. Libera ese horario o quítalos de la reunión.`);
+        return;
+      }
       const extra = [
         ...adminSel.map(p => `${p.nombre}${p.cargo ? ' (' + p.cargo + ')' : ''}`),
         ...externos.map(n => `${n} (externo)`),
@@ -739,17 +751,31 @@ const Recursos = {
     });
   },
 
+  // Profesionales (de una lista) que YA tienen una sesión en (dia, idBloque). Devuelve [{idTer, nombre}].
+  _terapeutasOcupados(dia, idBloque, idsTer) {
+    const enBloque = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque);
+    return idsTer
+      .filter(idTer => enBloque.some(s => s.id_terapeuta === idTer || s.id_terapeuta_secundario === idTer))
+      .map(idTer => ({ idTer, nombre: Data.terapeuta(idTer)?.nombre_completo || idTer }));
+  },
+
   // Devuelve el primer tope (texto) que impide mover la sesión a (idTer, idBloque, idSala, idNino), o null si está libre.
   _topeMovimiento(sesion, idTer, idBloque, idSala, dia, checkSala, idNino) {
     const b = Data.bloque(idBloque);
     const hora = b ? b.hora_inicio : '';
     const nino = idNino || sesion.id_nino;
     const otras = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
-    if (otras.some(s => s.id_terapeuta === idTer || s.id_terapeuta_secundario === idTer)) {
+    // Solo validamos la dimensión que realmente cambia de "casillero" (profesional+hora / niño+hora).
+    // Si la hora no cambia y solo se mueve el profesional o la sala, el niño no se está reubicando
+    // en el tiempo → no debe dispararse "el niño ya tiene una sesión" por sus otras terapias del bloque.
+    const mismoBloque = idBloque === sesion.id_bloque;
+    const profCambia = !(idTer === sesion.id_terapeuta && mismoBloque);
+    const ninoCambia = !(nino === sesion.id_nino && mismoBloque);
+    if (profCambia && otras.some(s => s.id_terapeuta === idTer || s.id_terapeuta_secundario === idTer)) {
       const t = Data.terapeuta(idTer);
       return `El profesional ${UI.esc(t?.nombre_completo || idTer)} ya tiene una sesión a las ${hora}.`;
     }
-    if (nino && otras.some(s => s.id_nino === nino)) {
+    if (nino && ninoCambia && otras.some(s => s.id_nino === nino)) {
       const n = Data.nino(nino);
       return `${UI.esc(n?.nombre_visible || 'El niño')} ya tiene otra sesión a las ${hora}.`;
     }
