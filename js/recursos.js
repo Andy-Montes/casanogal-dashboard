@@ -659,6 +659,12 @@ const Recursos = {
             movSes.id_bloque = dest.idBloque;
             if (b) { movSes.hora_inicio = b.hora_inicio; movSes.hora_fin = b.hora_fin; }
             if (idSala) { const sa = Data.sala(idSala); movSes.id_sala = idSala; if (sa) movSes.sala_nombre = sa.nombre; }
+            // Reasignar la terapia a otro niño (si se soltó en la fila de otro niño)
+            if (dest.idNino && dest.idNino !== movSes.id_nino) {
+              const n = Data.nino(dest.idNino);
+              movSes.id_nino = dest.idNino;
+              if (n) { movSes.nino_visible = n.nombre_visible; movSes.id_programa = n.id_programa; }
+            }
             movSes.conflicto_detectado = null;
             UI.toast(`${movSes.nino_visible} → ${t ? UI.esc(t.nombre_visible) : ''} · ${b ? b.hora_inicio : ''}${idSala ? ' · ' + UI.esc(movSes.sala_nombre) : ''}`, 'success');
           }
@@ -670,11 +676,7 @@ const Recursos = {
 
     // Arrastre multibanda: soltar en Profesionales (cambia profesional), Niños (cambia horario del mismo niño) o Salas (cambia sala)
     let dragId = null, dragNino = null, ghost = null, over = null;
-    const valid = (cell) => {
-      if (!cell || !cell.classList.contains('disp-libre') || !cell.dataset.band) return false;
-      if (cell.dataset.band === 'nino' && cell.dataset.nino !== dragNino) return false;
-      return true;
-    };
+    const valid = (cell) => !!(cell && cell.classList.contains('disp-libre') && cell.dataset.band);
     const onMove = (e) => {
       if (ghost) { ghost.style.left = (e.clientX + 10) + 'px'; ghost.style.top = (e.clientY + 12) + 'px'; }
       const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -695,21 +697,20 @@ const Recursos = {
       if (!sesion) return;
       const banda = cell.dataset.band;
       const idBloque = cell.dataset.bloque;
-      let idTer = sesion.id_terapeuta, idSala = sesion.id_sala;
+      let idTer = sesion.id_terapeuta, idSala = sesion.id_sala, idNino = sesion.id_nino;
       if (banda === 'prof') idTer = cell.dataset.ter;
-      else if (banda === 'nino') {
-        if (cell.dataset.nino !== sesion.id_nino) { self._alertaTope('No se puede cambiar el niño', 'Mueve la sesión dentro de la fila del mismo niño. Para reasignar el terapeuta, suéltala en la banda Profesionales.'); return; }
-      } else if (banda === 'sala') idSala = cell.dataset.sala;
+      else if (banda === 'nino') idNino = cell.dataset.nino; // puede reasignar la terapia a OTRO niño
+      else if (banda === 'sala') idSala = cell.dataset.sala;
       // Validación de topes (la sala se valida directo solo si el destino fue la banda Salas)
-      const tope = self._topeMovimiento(sesion, idTer, idBloque, idSala, dia, banda === 'sala');
+      const tope = self._topeMovimiento(sesion, idTer, idBloque, idSala, dia, banda === 'sala', idNino);
       if (tope) { self._alertaTope('No se puede mover', tope); return; }
       if (banda === 'sala') {
         self._aplicarMov(sesion, idTer, idBloque, idSala);
         self.renderDisponibilidad();
       } else {
-        // prof / nino → elegir sala libre a la derecha y aplicar
+        // prof / nino → elegir sala libre a la derecha y aplicar (idNino reasigna el niño si cambió)
         self._movDisp = id;
-        self._movDest = { idTer, idBloque };
+        self._movDest = { idTer, idBloque, idNino };
         self.renderDisponibilidad();
       }
     };
@@ -724,7 +725,6 @@ const Recursos = {
         // resaltar destinos válidos en las TRES bandas
         document.querySelectorAll('.disp-table-bandas .disp-libre[data-band]').forEach(c => {
           const band = c.dataset.band;
-          if (band === 'nino' && c.dataset.nino !== dragNino) return;
           if (band === 'prof' && c.dataset.ter === movSes?.id_terapeuta && c.dataset.bloque === movSes?.id_bloque) return;
           c.classList.add('disp-target');
         });
@@ -739,17 +739,19 @@ const Recursos = {
     });
   },
 
-  // Devuelve el primer tope (texto) que impide mover la sesión a (idTer, idBloque, idSala), o null si está libre.
-  _topeMovimiento(sesion, idTer, idBloque, idSala, dia, checkSala) {
+  // Devuelve el primer tope (texto) que impide mover la sesión a (idTer, idBloque, idSala, idNino), o null si está libre.
+  _topeMovimiento(sesion, idTer, idBloque, idSala, dia, checkSala, idNino) {
     const b = Data.bloque(idBloque);
     const hora = b ? b.hora_inicio : '';
+    const nino = idNino || sesion.id_nino;
     const otras = State.data.sesiones.filter(s => s.fecha === dia && s.id_bloque === idBloque && s.id_sesion !== sesion.id_sesion);
     if (otras.some(s => s.id_terapeuta === idTer || s.id_terapeuta_secundario === idTer)) {
       const t = Data.terapeuta(idTer);
       return `El profesional ${UI.esc(t?.nombre_completo || idTer)} ya tiene una sesión a las ${hora}.`;
     }
-    if (sesion.id_nino && otras.some(s => s.id_nino === sesion.id_nino)) {
-      return `${UI.esc(sesion.nino_visible || 'El niño')} ya tiene otra sesión a las ${hora}.`;
+    if (nino && otras.some(s => s.id_nino === nino)) {
+      const n = Data.nino(nino);
+      return `${UI.esc(n?.nombre_visible || 'El niño')} ya tiene otra sesión a las ${hora}.`;
     }
     if (checkSala && idSala) {
       const sa = Data.sala(idSala);
