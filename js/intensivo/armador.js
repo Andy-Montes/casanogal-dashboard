@@ -18,6 +18,7 @@ const Armador = {
   KEY_NINOS_EXTRA: 'casanogal_armador_ninos_extra',
   KEY_SALAS_CAP: 'casanogal_armador_salas_cap',     // overrides de cupo de sala
   KEY_RESTRICC: 'casanogal_armador_restricc',       // restricciones custom (texto)
+  KEY_GRUPOS: 'casanogal_armador_grupos',           // grupos / duplas creados
 
   // Cupo de sala: base del JSON + lo que ajuste coordinación (persistido).
   _salasCapOverrides() {
@@ -37,6 +38,11 @@ const Armador = {
     catch { return []; }
   },
   _setRestriccCustom(arr) { localStorage.setItem(this.KEY_RESTRICC, JSON.stringify(arr)); },
+  // Grupos / duplas
+  _gruposGuardados() { try { const a = JSON.parse(localStorage.getItem(this.KEY_GRUPOS) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } },
+  _persistirGrupos(arr) { localStorage.setItem(this.KEY_GRUPOS, JSON.stringify(arr)); },
+  _aplicarGrupoNuevo(g) { const arr = this._gruposGuardados(); arr.push(g); this._persistirGrupos(arr); this._generar(); this.render(); },
+  _borrarGrupo(id) { this._persistirGrupos(this._gruposGuardados().filter(g => g.id !== id)); this._generar(); this.render(); },
 
   async _cargar() {
     if (this._cache) return this._cache;
@@ -130,7 +136,43 @@ const Armador = {
       disponibilidad,
       salasCapacidad: this._salasCapEfectiva(),
     });
+    this._colocarGrupos(this._resultado, this._gruposGuardados());
     this._kidsSlotsPorSemana = this._computarKidsSlots(this._resultado);
+  },
+
+  // Coloca los grupos/duplas como post-proceso del resultado (igual que reuniones/papás), sin tocar el motor.
+  _colocarGrupos(res, grupos) {
+    const { intensivo, catalogo } = this._cache;
+    const F = (catalogo.franjas || []).length || 8;
+    const modulos = (intensivo.reglas?.kids_modulos) || [2, 3, 4];
+    const idxDe = (nombre) => intensivo.niños.findIndex(n => n.nombre === nombre);
+    (res.semanas || []).forEach(sem => {
+      sem.grupos = [];
+      if (!grupos.length) return;
+      const slots = sem.grid[0]?.length || 0;
+      const terOcupado = (sigla, slot) => !!sigla && sem.grid.some(row => row[slot] === sigla);
+      const usado = new Set(); // ni|slot ya tomado por un grupo
+      grupos.forEach(g => {
+        const nis = (g.ninos || []).map(idxDe).filter(i => i >= 0);
+        if (!nis.length) return;
+        const sigla = (g.terapeutas || [])[0];
+        const need = g.sesiones || 1;
+        let puestos = 0; const dias = new Set();
+        const candidatos = [];
+        for (let slot = 0; slot < slots; slot++) { if (modulos.includes(slot % F)) candidatos.push(slot); }
+        if (g.hora_entrada != null) candidatos.sort((a, b) => ((a % F === g.hora_entrada) ? 0 : 1) - ((b % F === g.hora_entrada) ? 0 : 1));
+        for (const slot of candidatos) {
+          if (puestos >= need) break;
+          const dia = Math.floor(slot / F);
+          if (dias.has(dia)) continue;
+          if (nis.some(ni => sem.grid[ni]?.[slot] || usado.has(ni + '|' + slot))) continue; // niños libres
+          if (terOcupado(sigla, slot)) continue; // terapeuta libre
+          sem.grupos.push({ id: g.id, tipo: g.tipo, nis: nis.slice(), slot, terapeutas: g.terapeutas || [], sala: g.sala || '', nombres: g.ninos || [] });
+          nis.forEach(ni => usado.add(ni + '|' + slot));
+          dias.add(dia); puestos++;
+        }
+      });
+    });
   },
 
   _computarKidsSlots(res) {
@@ -208,6 +250,7 @@ const Armador = {
         </div>
         <aside class="armador-side">
           ${this._reglasHtml(intensivo)}
+          ${this._fuente !== 'real' ? this._gruposHtml(catalogo) : ''}
           ${this._fuente !== 'real' ? this._restriccionesHtml() : ''}
           ${this._equipoHtml(catalogo)}
           ${this._cumplimientoHtml(intensivo, agg)}
@@ -280,6 +323,9 @@ const Armador = {
           ${!esReal ? `
             <button class="btn btn-secondary" id="armadorAddBtn" title="Agregar un niño a la cohorte y regenerar el horario">
               ${this._icons.plus}Agregar niño
+            </button>
+            <button class="btn btn-secondary" id="armadorAddGrupoBtn" title="Crear una dupla o grupo (sesión compartida)">
+              ${this._icons.plus}Crear grupo
             </button>
           ` : ''}
           <button class="btn btn-ghost btn-help" id="armadorTourBtn" title="Ver el recorrido guiado del armador">
@@ -441,6 +487,13 @@ const Armador = {
       if (sp.slot !== slotIdx || !enFiltro(sp.ni)) return;
       sesiones.push({ tipo: 'sesion-papas', niño: intensivo.niños[sp.ni].nombre, niInicial: inicialNino(intensivo.niños[sp.ni].nombre), sig: sp.sigla, terapeutaNombre: catalogo.terapeutas[sp.sigla]?.nombre || sp.sigla });
     });
+    // Grupos / duplas (colocados aparte, como las reuniones)
+    (sem.grupos || []).forEach((gr) => {
+      if (gr.slot !== slotIdx) return;
+      if (this._filtroNino !== -1 && !gr.nis.includes(this._filtroNino)) return;
+      const labels = { kids: 'KIDS', dupla_nino: 'Dupla', dupla_ter: 'Dupla T', grupal: 'Grupo' };
+      sesiones.push({ tipo: 'grupo', niño: (gr.nombres || [])[0] || '', label: labels[gr.tipo] || 'Grupo', ninos: gr.nombres || [], terapeutas: gr.terapeutas || [], sala: gr.sala || '' });
+    });
     return sesiones.sort((a, b) => a.niño.localeCompare(b.niño));
   },
 
@@ -470,6 +523,10 @@ const Armador = {
     if (s.tipo === 'sesion-papas') {
       const titulo = `Sesión psicólogo–papás · ${s.niño} · ${s.terapeutaNombre}`;
       return `<div class="cal-item cal-item-psipapas" title="${UI.esc(titulo)}">${ini}<span class="cal-item-sigla">Psi·Papás</span></div>`;
+    }
+    if (s.tipo === 'grupo') {
+      const titulo = `${s.label} · ${(s.ninos || []).join(', ')} · ${(s.terapeutas || []).join('+')}${s.sala ? ' · sala ' + s.sala : ''}`;
+      return `<div class="cal-item cal-item-grupo" title="${UI.esc(titulo)}"><span class="cal-item-sigla">${UI.esc(s.label)}</span></div>`;
     }
     const token = this._disciplinaToken(s.disc);
     const resaltado = this._terapeutaResaltado === s.sig ? ' is-resaltado' : '';
@@ -574,6 +631,101 @@ const Armador = {
         </div>
       </div>
     `;
+  },
+
+  // Tarjeta lateral con los grupos / duplas creados (aquí se ve "con qué niño le toca a cada uno").
+  _gruposHtml(catalogo) {
+    const grupos = this._gruposGuardados();
+    const TLABEL = { kids: 'Grupal KIDS', dupla_nino: 'Dupla de niños', dupla_ter: 'Dupla de terapeutas', grupal: 'Grupal' };
+    return `
+      <div class="armador-card">
+        <div class="armador-card-head">${this._icons.plus}Grupos y duplas</div>
+        <div class="armador-card-body">
+          ${grupos.length ? `<ul class="armador-grupos">
+            ${grupos.map(g => {
+              const ters = (g.terapeutas || []).map(s => catalogo.terapeutas[s]?.nombre || s).join(' + ');
+              return `<li class="armador-grupo">
+                <div class="armador-grupo-top"><b>${UI.esc(TLABEL[g.tipo] || 'Grupo')}</b><button class="armador-grupo-del" data-gid="${g.id}" title="Eliminar">×</button></div>
+                <div class="armador-grupo-nin">${UI.esc((g.ninos || []).join(' · '))}</div>
+                <div class="armador-grupo-meta">${UI.esc(ters)}${g.sala ? ' · ' + UI.esc(g.sala) : ''} · ${g.sesiones || 1}/sem</div>
+              </li>`;
+            }).join('')}
+          </ul>` : '<div class="armador-grupos-empty">Sin grupos aún. Usa "Crear grupo" para armar una dupla o grupal.</div>'}
+        </div>
+      </div>
+    `;
+  },
+
+  _abrirFormGrupo() {
+    const { intensivo, catalogo } = this._cache;
+    const ninos = intensivo.niños;
+    const ters = Object.entries(catalogo.terapeutas).map(([sigla, t]) => ({ sigla, nombre: t.nombre, disc: t.disciplina, sala: t.sala }));
+    const salas = [...new Set(ters.map(t => t.sala).filter(Boolean))];
+    const franjas = catalogo.franjas || [];
+    const html = `
+      <div class="pendiente-modal-overlay" id="grupoOverlay">
+        <div class="pendiente-modal armador-form-modal">
+          <div class="pendiente-modal-head">
+            ${this._icons.plus}
+            <div><div class="pendiente-modal-title">Crear grupo / dupla</div><div class="pendiente-modal-eyebrow">Define quiénes comparten la sesión</div></div>
+            <button class="panel-close" id="grupoClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:flex;flex-direction:column;gap:12px;padding:14px">
+            <div class="armador-form-field">
+              <span>Tipo</span>
+              <select id="grupoTipo">
+                <option value="grupal">Grupal (varios niños · 1-2 terapeutas)</option>
+                <option value="dupla_nino">Dupla de niños (2 niños · 1 terapeuta)</option>
+                <option value="dupla_ter">Dupla de terapeutas (2 terapeutas · 1 niño)</option>
+                <option value="kids">Grupal KIDS</option>
+              </select>
+            </div>
+            <div class="armador-form-field">
+              <span>Niños del grupo</span>
+              <div class="grupo-chklist">${ninos.map(n => `<label class="reu-ter-chk"><input type="checkbox" data-nino value="${UI.esc(n.nombre)}"><span>${UI.esc(n.nombre)}</span></label>`).join('')}</div>
+            </div>
+            <div class="armador-form-field">
+              <span>Terapeuta(s)</span>
+              <div class="grupo-chklist">${ters.map(t => `<label class="reu-ter-chk"><input type="checkbox" data-ter value="${UI.esc(t.sigla)}"><span>${UI.esc(t.sigla)} <small>${UI.esc(t.nombre)} · ${UI.esc(t.disc)}</small></span></label>`).join('')}</div>
+            </div>
+            <div class="armador-form-grid">
+              <div class="armador-form-field"><span>Sala</span><select id="grupoSala"><option value="">— automática —</option>${salas.map(s => `<option value="${UI.esc(s)}">${UI.esc(s)}</option>`).join('')}</select></div>
+              <div class="armador-form-field"><span>Sesiones / semana</span><input type="number" id="grupoSes" min="1" max="10" value="3"></div>
+              <div class="armador-form-field"><span>Hora (opcional)</span><select id="grupoHora"><option value="">— sin fijar —</option>${franjas.map((fr, i) => (i !== 0 && i !== franjas.length - 1) ? `<option value="${i}">${UI.esc(fr)}</option>` : '').join('')}</select></div>
+            </div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="grupoCancel">Cancelar</button>
+            <button class="btn btn-primary" id="grupoSave">Crear y regenerar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const cerrar = () => document.getElementById('grupoOverlay')?.remove();
+    document.getElementById('grupoClose').addEventListener('click', cerrar);
+    document.getElementById('grupoCancel').addEventListener('click', cerrar);
+    document.getElementById('grupoOverlay').addEventListener('click', e => { if (e.target.id === 'grupoOverlay') cerrar(); });
+    document.getElementById('grupoSave').addEventListener('click', () => {
+      const tipo = document.getElementById('grupoTipo').value;
+      const ninosSel = [...document.querySelectorAll('#grupoOverlay input[data-nino]:checked')].map(i => i.value);
+      const tersSel = [...document.querySelectorAll('#grupoOverlay input[data-ter]:checked')].map(i => i.value);
+      const sala = document.getElementById('grupoSala').value || (tersSel[0] ? catalogo.terapeutas[tersSel[0]]?.sala : '') || '';
+      const ses = parseInt(document.getElementById('grupoSes').value, 10) || 1;
+      const heRaw = document.getElementById('grupoHora').value;
+      // Validación según tipo
+      const reqN = tipo === 'dupla_nino' ? 2 : tipo === 'dupla_ter' ? 1 : 2;
+      const reqT = tipo === 'dupla_ter' ? 2 : 1;
+      if (ninosSel.length < reqN) { UI.toast(`Elige al menos ${reqN} niño${reqN > 1 ? 's' : ''}`, 'error'); return; }
+      if (tersSel.length < reqT) { UI.toast(`Elige ${reqT} terapeuta${reqT > 1 ? 's' : ''}`, 'error'); return; }
+      const grupo = {
+        id: 'GRP-' + (this._gruposGuardados().reduce((m, g) => Math.max(m, parseInt(String(g.id).replace(/\D/g, ''), 10) || 0), 0) + 1),
+        tipo, ninos: ninosSel, terapeutas: tersSel, sala, sesiones: ses,
+        hora_entrada: heRaw === '' ? null : Number(heRaw),
+      };
+      cerrar();
+      this._aplicarGrupoNuevo(grupo);
+      UI.toast('Grupo creado · horario regenerado', 'success');
+    });
   },
 
   // Panel de restricciones editables (pedido de Trini). Los cupos de sala los usa el motor de verdad.
@@ -755,6 +907,8 @@ const Armador = {
 
     document.getElementById('armadorExportBtn')?.addEventListener('click', () => this._exportPDF());
     document.getElementById('armadorAddBtn')?.addEventListener('click', () => this._abrirFormNino());
+    document.getElementById('armadorAddGrupoBtn')?.addEventListener('click', () => this._abrirFormGrupo());
+    document.querySelectorAll('.armador-grupo-del').forEach(b => b.addEventListener('click', () => this._borrarGrupo(b.dataset.gid)));
     document.getElementById('armadorTourBtn')?.addEventListener('click', () => this._abrirTour());
 
     // Restricciones de sala
@@ -938,17 +1092,8 @@ const Armador = {
                 <option value="KINE">Partir con Kinesiología</option>
               </select>
             </label>
-            <label class="armador-form-field">
-              <span>Modalidad</span>
-              <select id="armadorFormModalidad">
-                <option value="individual">Individual</option>
-                <option value="dupla_ter">Dupla de terapeutas (2 ter · 1 niño)</option>
-                <option value="dupla_nino">Dupla de niños (1 ter · 2 niños)</option>
-                <option value="grupal">Grupal (2 ter · 3 niños)</option>
-              </select>
-            </label>
           </div>
-          <div class="armador-form-hint armador-form-hint-soft">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora.</div>
+          <div class="armador-form-hint armador-form-hint-soft">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora. Las duplas y grupos se arman con el botón "Crear grupo".</div>
           <div class="armador-form-disc-grid">
             ${SECCIONES.map(seccionHtml).join('')}
           </div>
@@ -982,7 +1127,6 @@ const Armador = {
       const heRaw = document.getElementById('armadorFormHoraEntrada').value;
       const horaEntrada = heRaw === '' ? null : Number(heRaw);
       const preferenciaInicio = document.getElementById('armadorFormInicio').value || null;
-      const modalidad = document.getElementById('armadorFormModalidad').value || 'individual';
       const asignaciones = [];
       SECCIONES.forEach(s => {
         const roles = s.key === 'PSI' ? ['TUTOR', 'COT', 'PAPAS'] : ['TUTOR', 'COT'];
@@ -1007,7 +1151,6 @@ const Armador = {
         kids_semanal: kids,
         hora_entrada: horaEntrada,  // franja índice o null; agrupa la sesión grupal a esa hora
         preferencia_inicio: preferenciaInicio,  // disciplina con la que prefiere partir el día
-        modalidad,                               // individual | dupla_ter | dupla_nino | grupal
         total_ses_semanal: asignaciones.reduce((s, a) => s + a.sesiones, 0) + kids,
         asignaciones,
         _extra: true,  // marcador para distinguir niños agregados a mano

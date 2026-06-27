@@ -333,7 +333,8 @@
 /* Reuniones y sesión psicólogo-papás (salidas del motor, no del grid de atención) */
 .cal-item-reunion,
 .cal-item-papas,
-.cal-item-psipapas {
+.cal-item-psipapas,
+.cal-item-grupo {
   justify-content: center;
   font-size: 9.5px;
   font-weight: 700;
@@ -344,6 +345,18 @@
 .cal-item-reunion  { background: #E4E7EC !important; color: #2B3445 !important; border-color: #9AA3B2 !important; }
 .cal-item-papas    { background: #FDE9C8 !important; color: #5E480C !important; border-color: #E8A317 !important; }
 .cal-item-psipapas { background: #F2D98A !important; color: #523600 !important; border-color: #D4AE3A !important; }
+.cal-item-grupo    { background: #E5DBF5 !important; color: #4B2E83 !important; border-color: #8B5CC7 !important; }
+/* Tarjeta lateral de grupos / duplas */
+.armador-grupos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.armador-grupo { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; background: var(--bg); }
+.armador-grupo-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text); }
+.armador-grupo-del { border: none; background: none; color: var(--text-3); cursor: pointer; font-size: 16px; line-height: 1; }
+.armador-grupo-del:hover { color: var(--alert); }
+.armador-grupo-nin { font-size: 12.5px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.armador-grupo-meta { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.armador-grupos-empty { font-size: 12px; color: var(--text-3); line-height: 1.4; }
+.grupo-chklist { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; }
+@media (max-width: 600px) { .grupo-chklist { grid-template-columns: 1fr; } }
 
 /* Panel de reglas del armador (sidebar) */
 .armador-reglas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
