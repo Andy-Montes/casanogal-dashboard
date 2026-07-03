@@ -206,10 +206,40 @@ const Fichas = {
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => this._descargarFicha(n));
-    document.getElementById('editFicha').addEventListener('click', () => UI.toast('Próximamente', ''));
-    // Banco de objetivos: elegir uno predefinido
+    document.getElementById('editFicha').addEventListener('click', () => this._abrirEditarDatos(n));
+    // Banco de objetivos: agregar uno predefinido a la ficha del niño (persiste)
+    const agregarObjetivo = (descripcion, cif) => {
+      if (!descripcion) return;
+      Data.agregarObjetivo({
+        id_objetivo: 'OBJ-EXT-' + Date.now(),
+        id_nino: n.id_nino,
+        nino_visible: n.nombre_visible,
+        area: null, cif,
+        descripcion,
+        categoria: null,
+        fecha_planteamiento: HOY_ISO,
+        fecha_estimada_logro: null,
+        estado: 'En curso',
+        id_terapeuta_responsable: null,
+        notas: null,
+        _extra: true,
+      });
+      this.render();
+      UI.toast(`Objetivo agregado en ${cif}`, 'success');
+    };
     document.querySelectorAll('.banco-item').forEach(b =>
-      b.addEventListener('click', () => UI.toast(`Objetivo agregado: "${b.dataset.obj}"`, 'success'))
+      b.addEventListener('click', () => agregarObjetivo(b.dataset.obj, b.dataset.cif))
+    );
+    document.querySelectorAll('.banco-propio-btn').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const inp = document.querySelector(`.banco-propio-in[data-cif="${CSS.escape(btn.dataset.cif)}"]`);
+        const v = (inp?.value || '').trim();
+        if (!v) { UI.toast('Escribe el objetivo primero', 'error'); return; }
+        agregarObjetivo(v, btn.dataset.cif);
+      })
+    );
+    document.querySelectorAll('.obj-del').forEach(b =>
+      b.addEventListener('click', (e) => { e.stopPropagation(); Data.eliminarObjetivo(b.dataset.id); this.render(); UI.toast('Objetivo eliminado', ''); })
     );
     // Click en el body de la fila abre el panel; el caret expande/colapsa la nota inline
     document.querySelectorAll('.timeline-item').forEach(item => {
@@ -479,26 +509,134 @@ const Fichas = {
     </section>`;
   },
 
+  // Teléfono clicable → WhatsApp web; email clicable → correo
+  _telLink(tel) {
+    if (!tel) return '<span class="panel-field-value mono">—</span>';
+    const num = String(tel).replace(/[^\d]/g, '');
+    return `<a class="panel-field-value mono ficha-contacto" href="https://wa.me/${num}" target="_blank" rel="noopener" title="Abrir WhatsApp">${UI.esc(tel)}</a>`;
+  },
+  _mailLink(mail) {
+    if (!mail) return '<span class="panel-field-value">—</span>';
+    return `<a class="panel-field-value ficha-contacto" href="mailto:${UI.esc(mail)}" title="Enviar correo">${UI.esc(mail)}</a>`;
+  },
+
   _seccionDatos(n) {
+    const edad = this._edadEn(n.fecha_nacimiento, HOY_ISO) || (n.edad_anios ? `${n.edad_anios} años` : '');
+    // La madre/apoderada usa telefono_apoderado/email_apoderado por compatibilidad con la data actual
+    const madre = n.madre || n.apoderado_principal;
+    const telMadre = n.telefono_madre || n.telefono_apoderado;
+    const emailMadre = n.email_madre || n.email_apoderado;
     return `<section class="ficha-section">
       <h2 class="ficha-section-title">Datos generales</h2>
       <div class="info-grid">
-        <div class="panel-field"><span class="panel-field-label">Fecha de nacimiento</span><span class="panel-field-value mono">${UI.fmtFechaCorta(n.fecha_nacimiento)}${n.edad_anios ? ` · <span style="font-family:var(--font)">${n.edad_anios} años</span>` : ''}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Fecha de nacimiento</span><span class="panel-field-value mono">${UI.fmtFechaCorta(n.fecha_nacimiento)}${edad ? ` · <span style="font-family:var(--font)">${UI.esc(edad)}</span>` : ''}</span></div>
         <div class="panel-field"><span class="panel-field-label">Estado civil de los padres</span><span class="panel-field-value">${UI.esc(n.estado_civil_padres) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
-        <div class="panel-field"><span class="panel-field-label">Madre / apoderada</span><span class="panel-field-value">${UI.esc(n.madre || n.apoderado_principal) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Madre / apoderada</span><span class="panel-field-value">${UI.esc(madre) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Teléfono madre</span>${this._telLink(telMadre)}</div>
+        <div class="panel-field"><span class="panel-field-label">Email madre</span>${this._mailLink(emailMadre)}</div>
         <div class="panel-field"><span class="panel-field-label">Padre / apoderado</span><span class="panel-field-value">${UI.esc(n.padre) || '<span style="color:var(--text-3)">Por agregar</span>'}</span></div>
-        <div class="panel-field"><span class="panel-field-label">Teléfono</span><span class="panel-field-value mono">${UI.esc(n.telefono_apoderado || '—')}</span></div>
-        <div class="panel-field"><span class="panel-field-label">Email</span><span class="panel-field-value">${UI.esc(n.email_apoderado || '—')}</span></div>
+        <div class="panel-field"><span class="panel-field-label">Teléfono padre</span>${this._telLink(n.telefono_padre)}</div>
+        <div class="panel-field"><span class="panel-field-label">Email padre</span>${this._mailLink(n.email_padre)}</div>
         <div class="panel-field"><span class="panel-field-label">Colegio</span><span class="panel-field-value">${UI.esc(n.colegio || '—')}</span></div>
         <div class="panel-field"><span class="panel-field-label">Médico externo</span><span class="panel-field-value">${UI.esc(n.medico_externo || '—')}</span></div>
         <div class="panel-field"><span class="panel-field-label">Alergias</span><span class="panel-field-value">${UI.esc(n.alergias || 'Sin alergias reportadas')}</span></div>
         <div class="panel-field"><span class="panel-field-label">Consideraciones</span><span class="panel-field-value">${UI.esc(n.consideraciones || '—')}</span></div>
         <div class="panel-field" style="grid-column:1/-1">
           <span class="panel-field-label">Diagnósticos</span>
-          <div>${(n.diagnosticos||[]).map(d=>`<span class="badge" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep);margin-right:4px">${UI.esc(d)}</span>`).join('')}</div>
+          <div>${(n.diagnosticos||[]).map(d=>`<span class="badge" style="background:var(--cn-azul-bg);color:var(--cn-azul-deep);margin-right:4px">${UI.esc(d)}</span>`).join('') || '<span style="color:var(--text-3)">Por agregar</span>'}</div>
         </div>
       </div>
     </section>`;
+  },
+
+  // Modal de edición de datos generales del niño (persiste vía Data.guardarNino)
+  _DIAG_COMUNES: ['TEA Nivel 1', 'TEA Nivel 2', 'TEA Nivel 3', 'TDAH', 'TEL (Trastorno específico del lenguaje)', 'Discapacidad intelectual', 'Síndrome de Down', 'Trastorno del procesamiento sensorial'],
+  _ESTADOS_CIVILES: ['Casados', 'Convivientes', 'Separados', 'Divorciados', 'Soltero/a', 'Viudo/a'],
+  _abrirEditarDatos(n) {
+    const madre = n.madre || n.apoderado_principal || '';
+    const telMadre = n.telefono_madre || n.telefono_apoderado || '';
+    const emailMadre = n.email_madre || n.email_apoderado || '';
+    const diagsActuales = new Set(n.diagnosticos || []);
+    const listaDiag = [...new Set([...this._DIAG_COMUNES, ...diagsActuales])];
+    const f = (label, id, val, ph) => `<div class="cfg-field"><label>${label}</label><input id="${id}" value="${UI.esc(val || '')}" placeholder="${ph || ''}"></div>`;
+    const html = `
+      <div class="pendiente-modal-overlay" id="edDatosOverlay">
+        <div class="pendiente-modal" style="width:min(560px,94vw)">
+          <div class="pendiente-modal-head">
+            <div><div class="pendiente-modal-title">Editar datos generales</div><div class="pendiente-modal-eyebrow">${UI.esc(n.nombre_completo)}</div></div>
+            <button class="panel-close" id="edDatosClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px">
+            <div class="cfg-field" style="grid-column:1/-1"><label>Estado civil de los padres</label>
+              <select id="ed-estciv">
+                <option value="">— sin especificar —</option>
+                ${this._ESTADOS_CIVILES.map(e => `<option ${n.estado_civil_padres === e ? 'selected' : ''}>${e}</option>`).join('')}
+              </select>
+            </div>
+            <div class="cfg-field" style="grid-column:1/-1"><div class="cfg-card-sub" style="font-weight:700;color:var(--text-2);letter-spacing:.04em;text-transform:uppercase;font-size:11px">Madre / apoderada</div></div>
+            ${f('Nombre', 'ed-madre', madre, 'Nombre de la madre')}
+            ${f('Teléfono', 'ed-tel-madre', telMadre, '+569…')}
+            <div class="cfg-field" style="grid-column:1/-1"><label>Email madre</label><input id="ed-email-madre" value="${UI.esc(emailMadre)}" placeholder="correo@…"></div>
+            <div class="cfg-field" style="grid-column:1/-1"><div class="cfg-card-sub" style="font-weight:700;color:var(--text-2);letter-spacing:.04em;text-transform:uppercase;font-size:11px">Padre / apoderado</div></div>
+            ${f('Nombre', 'ed-padre', n.padre, 'Nombre del padre')}
+            ${f('Teléfono', 'ed-tel-padre', n.telefono_padre, '+569…')}
+            <div class="cfg-field" style="grid-column:1/-1"><label>Email padre</label><input id="ed-email-padre" value="${UI.esc(n.email_padre)}" placeholder="correo@…"></div>
+            <div class="cfg-field" style="grid-column:1/-1"><label>Diagnósticos <small style="font-weight:400;color:var(--text-3)">· marca todos los que apliquen</small></label>
+              <div class="ed-diag-list" id="ed-diag-list">
+                ${listaDiag.map(d => `<label class="ed-diag-chk"><input type="checkbox" data-diag value="${UI.esc(d)}" ${diagsActuales.has(d) ? 'checked' : ''}><span>${UI.esc(d)}</span></label>`).join('')}
+              </div>
+              <div class="ed-diag-add"><input id="ed-diag-otro" placeholder="Otro diagnóstico…"><button class="btn btn-ghost btn-sm" id="ed-diag-add-btn" type="button">Agregar</button></div>
+            </div>
+            ${f('Colegio', 'ed-colegio', n.colegio, '')}
+            ${f('Médico externo', 'ed-medico', n.medico_externo, '')}
+            <div class="cfg-field" style="grid-column:1/-1"><label>Alergias</label><input id="ed-alergias" value="${UI.esc(n.alergias || '')}" placeholder="Sin alergias reportadas"></div>
+            <div class="cfg-field" style="grid-column:1/-1"><label>Consideraciones</label><input id="ed-consid" value="${UI.esc(n.consideraciones || '')}"></div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="edDatosCancel">Cancelar</button>
+            <button class="btn btn-primary" id="edDatosSave">Guardar cambios</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const overlay = document.getElementById('edDatosOverlay');
+    const close = () => overlay?.remove();
+    document.getElementById('edDatosClose').addEventListener('click', close);
+    document.getElementById('edDatosCancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    // "Otro" diagnóstico → agrega un checkbox marcado a la lista
+    document.getElementById('ed-diag-add-btn').addEventListener('click', () => {
+      const inp = document.getElementById('ed-diag-otro');
+      const v = inp.value.trim();
+      if (!v) return;
+      const yaEsta = [...overlay.querySelectorAll('input[data-diag]')].some(c => c.value.toLowerCase() === v.toLowerCase());
+      if (!yaEsta) {
+        document.getElementById('ed-diag-list').insertAdjacentHTML('beforeend',
+          `<label class="ed-diag-chk"><input type="checkbox" data-diag value="${UI.esc(v)}" checked><span>${UI.esc(v)}</span></label>`);
+      }
+      inp.value = '';
+    });
+    document.getElementById('edDatosSave').addEventListener('click', () => {
+      const val = id => (document.getElementById(id)?.value || '').trim();
+      const diagnosticos = [...overlay.querySelectorAll('input[data-diag]:checked')].map(c => c.value);
+      Data.guardarNino(n.id_nino, {
+        estado_civil_padres: val('ed-estciv') || null,
+        madre: val('ed-madre') || null,
+        telefono_madre: val('ed-tel-madre') || null,
+        email_madre: val('ed-email-madre') || null,
+        padre: val('ed-padre') || null,
+        telefono_padre: val('ed-tel-padre') || null,
+        email_padre: val('ed-email-padre') || null,
+        diagnosticos,
+        colegio: val('ed-colegio') || null,
+        medico_externo: val('ed-medico') || null,
+        alergias: val('ed-alergias') || null,
+        consideraciones: val('ed-consid') || null,
+      });
+      close();
+      this.render();
+      UI.toast('Datos actualizados', 'success');
+    });
   },
 
   _seccionEquipo(equipo) {
@@ -736,7 +874,7 @@ const Fichas = {
     // Reparte los objetivos por dominio CIF y los agrupa en Objetivo 1..4 (uno por dominio en cada nivel).
     const porCif = {};
     this.CIF_SUBCATS.forEach(c => porCif[c] = []);
-    objetivos.forEach(o => { const cif = this.AREA_CIF[o.area] || 'Actividades'; porCif[cif].push(o); });
+    objetivos.forEach(o => { const cif = o.cif || this.AREA_CIF[o.area] || 'Actividades'; porCif[cif].push(o); });
     const nObjetivos = Math.min(4, Math.max(1, ...this.CIF_SUBCATS.map(c => porCif[c].length)));
 
     const bloques = Array.from({ length: nObjetivos }, (_, k) => {
@@ -745,7 +883,7 @@ const Fichas = {
         return `<div class="cif-row${o ? '' : ' is-empty'}">
           <span class="cif-label">${UI.esc(cif)}</span>
           ${o
-            ? `<span class="cif-desc">${UI.esc(o.descripcion)}<small>${UI.esc(o.area)}</small></span>${pillEstado(o.estado)}`
+            ? `<span class="cif-desc">${UI.esc(o.descripcion)}<small>${UI.esc(o.area || 'objetivo propio')}</small></span><span class="cif-end">${pillEstado(o.estado)}${o._extra ? `<button class="obj-del" data-id="${UI.esc(o.id_objetivo)}" title="Quitar objetivo">×</button>` : ''}</span>`
             : `<span class="cif-desc cif-vacio">— sin objetivo en esta área —</span>`}
         </div>`;
       }).join('');
@@ -756,11 +894,15 @@ const Fichas = {
     }).join('');
 
     const banco = `<details class="banco-obj">
-      <summary>Banco de objetivos · elegir uno predefinido</summary>
+      <summary>Banco de objetivos · elegir uno predefinido o escribir el propio</summary>
       ${this.CIF_SUBCATS.map(cif => `
         <div class="banco-cif">
           <div class="banco-cif-h">${UI.esc(cif)}</div>
-          ${(this.BANCO_OBJETIVOS[cif] || []).map(t => `<button class="banco-item" type="button" data-obj="${UI.esc(t)}">${UI.esc(t)}</button>`).join('')}
+          ${(this.BANCO_OBJETIVOS[cif] || []).map(t => `<button class="banco-item" type="button" data-obj="${UI.esc(t)}" data-cif="${UI.esc(cif)}">${UI.esc(t)}</button>`).join('')}
+          <div class="banco-propio">
+            <input type="text" class="banco-propio-in" data-cif="${UI.esc(cif)}" placeholder="Escribir objetivo propio en ${UI.esc(cif)}…">
+            <button class="btn btn-ghost btn-sm banco-propio-btn" type="button" data-cif="${UI.esc(cif)}">Agregar</button>
+          </div>
         </div>`).join('')}
     </details>`;
 

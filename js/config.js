@@ -318,6 +318,35 @@ const Config = {
       </div>`;
   },
 
+  // Preferencia de atención por día: qué programa atiende el profesional cada día.
+  // Queda como regla; el Armador la respeta (un día de evaluación/continua no recibe intensivo).
+  _PROGRAMAS: [
+    { v: 'todos', l: 'Cualquiera' },
+    { v: 'intensivo', l: 'Intensivo' },
+    { v: 'evaluacion', l: 'Evaluación' },
+    { v: 'continua', l: 'Atención continua' },
+    { v: 'libre', l: 'No atiende' },
+  ],
+  _programaGridHtml(t) {
+    const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const diasLbl = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+    const pd = (t && t.programa_por_dia) || {};
+    return `
+      <div class="cfg-field" style="grid-column:1/-1">
+        <label>Preferencia de atención por día <small style="font-weight:400;color:var(--text-3)">· ej: lunes solo evaluación, martes a viernes intensivo</small></label>
+        <div class="cfg-card-sub" style="margin:-2px 0 6px">El Armador respeta esto: un día reservado a evaluación o continua no recibe niños de intensivo.</div>
+        <div class="cfg-prog-grid">
+          ${dias.map((dia, i) => `
+            <div class="cfg-prog-col">
+              <span class="cfg-prog-dia">${diasLbl[i]}</span>
+              <select class="cfg-prog-sel" data-dia="${dia}">
+                ${this._PROGRAMAS.map(p => `<option value="${p.v}" ${(pd[dia] || 'todos') === p.v ? 'selected' : ''}>${p.l}</option>`).join('')}
+              </select>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  },
+
   _abrirModalTer(id) {
     const editing = !!id;
     const ters = this.terapeutasEfectivos();
@@ -359,6 +388,7 @@ const Config = {
               <div class="cfg-field"><label>Sala opción 3</label><select id="ter-sala3">${opts(t?.sala_opcion_3, true)}</select></div>`;
             })()}
             ${this._dispGridHtml(t || { disponibilidad_bloques: {} })}
+            ${this._programaGridHtml(t)}
           </div>
           <div class="pendiente-modal-foot">
             <button class="btn btn-ghost" id="cfgTerCancel">Cancelar</button>
@@ -397,6 +427,13 @@ const Config = {
         sala_opcion_3: document.getElementById('ter-sala3').value || null,
         disponibilidad_bloques: dispLocal,
         dias_disponibles: Object.keys(dispLocal).filter(d => (dispLocal[d] || []).length),
+        programa_por_dia: (() => {
+          const pd = {};
+          document.querySelectorAll('#cfgTerOverlay .cfg-prog-sel').forEach(sel => {
+            if (sel.value && sel.value !== 'todos') pd[sel.dataset.dia] = sel.value; // 'todos' = sin restricción, no se guarda
+          });
+          return pd;
+        })(),
       };
       if (!data.nombre_completo) { UI.toast('El nombre es obligatorio', 'error'); return; }
       // Reflejar la disponibilidad en memoria para que la vista Disponibilidad (Recursos) la use sin recargar

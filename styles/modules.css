@@ -1745,6 +1745,12 @@
 .banco-item { display: inline-block; margin: 0 6px 6px 0; padding: 5px 10px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-pill, 999px); color: var(--text-2); cursor: pointer; transition: transform 120ms var(--ease, ease), border-color 120ms; }
 .banco-item:hover { border-color: var(--cn-azul); color: var(--cn-azul-deep); }
 .banco-item:active { transform: scale(0.97); }
+.banco-propio { display: flex; gap: 6px; margin-top: 6px; }
+.banco-propio-in { flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--r-md); font-family: inherit; }
+.banco-propio-in:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
+.cif-end { display: inline-flex; align-items: center; gap: 6px; }
+.obj-del { border: none; background: none; color: var(--text-3); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; border-radius: 4px; }
+.obj-del:hover { color: var(--alert); background: var(--alert-bg); }
 
 .reg-dl-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
@@ -2422,6 +2428,26 @@
 .cfg-disp-h { font-size: 11px; color: var(--text-2); text-align: right !important; padding-right: 8px !important; }
 .cfg-disp-chk { width: 15px; height: 15px; accent-color: var(--cn-azul); cursor: pointer; }
 .cfg-disp-exc { font-size: 11.5px; color: #8A5A12; background: #FEF6D8; border-radius: var(--r-sm); padding: 6px 9px; margin-top: 8px; }
+
+/* Contactos clicables en la ficha (tel→WhatsApp, mail→correo) */
+.ficha-contacto { color: var(--cn-azul-deep); text-decoration: none; border-bottom: 1px dashed var(--cn-azul-bright); cursor: pointer; }
+.ficha-contacto:hover { border-bottom-style: solid; }
+
+/* Editor de diagnósticos (ficha) */
+.ed-diag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.ed-diag-chk { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none; }
+.ed-diag-chk:hover { border-color: var(--cn-azul-bright); }
+.ed-diag-chk input { accent-color: var(--cn-azul); cursor: pointer; }
+.ed-diag-add { display: flex; gap: 6px; }
+.ed-diag-add input { flex: 1; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-md); font-family: inherit; font-size: 12.5px; }
+.ed-diag-add input:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
+
+/* Preferencia de atención por día (regla del profesional) */
+.cfg-prog-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 4px; }
+.cfg-prog-col { display: flex; flex-direction: column; gap: 3px; }
+.cfg-prog-dia { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.03em; text-align: center; }
+.cfg-prog-sel { padding: 6px 4px !important; font-size: 11.5px !important; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: inherit; background: var(--bg); color: var(--text); cursor: pointer; }
+.cfg-prog-sel:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
 
 /* Sesión con observación de papás → verde (vista terapeuta/coordinación) */
 .session.s-observacion { outline: 2px solid #3BA776; outline-offset: -2px; }

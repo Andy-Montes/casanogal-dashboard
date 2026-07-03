@@ -4,7 +4,50 @@ const Data = {
     const res = await fetch('data.json');
     if (!res.ok) throw new Error('No se pudo cargar data.json');
     State.data = await res.json();
+    this._aplicarOverridesNinos();
     return State.data;
+  },
+
+  // Ediciones de datos generales de un niño hechas desde la ficha (persisten en localStorage)
+  KEY_NINOS: 'casanogal_ninos_overrides',
+  _overridesNinos() {
+    try { const o = JSON.parse(localStorage.getItem(this.KEY_NINOS) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch { return {}; }
+  },
+  _aplicarOverridesNinos() {
+    const ov = this._overridesNinos();
+    (State.data.ninos || []).forEach(n => { if (ov[n.id_nino]) Object.assign(n, ov[n.id_nino]); });
+    // Objetivos agregados desde la ficha (banco o propios)
+    const extra = this._objetivosExtra();
+    if (extra.length) State.data.objetivos_terapeuticos.push(...extra);
+  },
+
+  // Objetivos terapéuticos agregados desde la ficha (persisten en localStorage)
+  KEY_OBJ: 'casanogal_objetivos_extra',
+  _objetivosExtra() {
+    try { const a = JSON.parse(localStorage.getItem(this.KEY_OBJ) || '[]'); return Array.isArray(a) ? a : []; }
+    catch { return []; }
+  },
+  agregarObjetivo(obj) {
+    const arr = this._objetivosExtra();
+    arr.push(obj);
+    localStorage.setItem(this.KEY_OBJ, JSON.stringify(arr));
+    if (State.data?.objetivos_terapeuticos) State.data.objetivos_terapeuticos.push(obj); // en memoria
+  },
+  eliminarObjetivo(id) {
+    const arr = this._objetivosExtra().filter(o => o.id_objetivo !== id);
+    localStorage.setItem(this.KEY_OBJ, JSON.stringify(arr));
+    if (State.data?.objetivos_terapeuticos) {
+      const i = State.data.objetivos_terapeuticos.findIndex(o => o.id_objetivo === id);
+      if (i >= 0) State.data.objetivos_terapeuticos.splice(i, 1);
+    }
+  },
+  guardarNino(id, campos) {
+    const ov = this._overridesNinos();
+    ov[id] = { ...(ov[id] || {}), ...campos };
+    localStorage.setItem(this.KEY_NINOS, JSON.stringify(ov));
+    const n = this.nino(id);
+    if (n) Object.assign(n, campos); // reflejar en memoria sin recargar
   },
 
   terapeuta(id) {

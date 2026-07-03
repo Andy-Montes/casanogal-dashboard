@@ -77,3 +77,87 @@
 - [x] SES-3601/3602: sala "Espejo" → "ESPEJO 2"
 - [x] SES-0819: `tipo_actividad` coherente
 - [ ] 5 niños con alta vencida pero estado Activo (decisión de Andy: dejar como ejemplo o marcar Egresado)
+
+---
+
+# 🆕 LOTE REUNIÓN TRINI · 2026-07-02 (1h41)
+
+> Reunión de revisión de la demo completa. Andy prometió tener cambios "para mañana" (3-jul).
+> Andy marcó estos como **los últimos cambios de la demo** antes de instalar en los sistemas de Casa Nogal.
+> Fuente: `Downloads/why-oifr-mfa (2026-07-02 11_14 GMT-4) - Transcript.md`.
+
+## 🩺 Ficha del paciente · Datos generales
+- [x] Edad con **meses** (ej "5a 3m") — usa `_edadEn` contra HOY_ISO
+- [x] Contacto separado: **mamá** (mail + teléfono) y **papá** (mail + teléfono), agrupados — modal Editar datos
+- [x] Estado civil como **dropdown** — en modal Editar datos
+- [x] Diagnóstico: **selección múltiple** + opción **"Otro"** (texto libre) — modal Editar datos (el filtro por diagnóstico ya existía)
+- [x] Teléfono/email **clicables**: mail → correo; teléfono → WhatsApp (`_telLink`/`_mailLink`)
+- [ ] En listado de niños mostrar nombre/mamá/teléfono (no inicio-término); agregar **"encargado"** (terapeuta del intensivo) + apoderado con tel/email
+- Persistencia: ediciones de niño en localStorage `casanogal_ninos_overrides` (Data.guardarNino), aplicadas en Data.load
+
+## 📖 Ficha · Historia de Vida / por evento
+- [ ] Dentro de cada **intensivo / evaluación / seguimiento**: horario que tuvo, terapeutas, objetivos trabajados, registro de atenciones, informes, reuniones, documentos
+- [ ] Botón **EXPORTAR por evento** (adjuntable como documento)
+
+## 📝 Sesiones · Registro de atenciones
+- [ ] Botón **DESCARGAR** registro de atenciones (para imprimir) + **FILTRO** por especialidad — Trini manda el formato/campos
+- [ ] Agregar tipos: **sesiones de papás** (psicología, solo ellos), **talleres grupales**, **coaching**
+- [ ] **Neurología semanal** en el intensivo (supervisión de la doctora)
+- [ ] Estado de sesión: agendada / **realizado** / asistido / **suspendida**
+
+## 🎯 Objetivos terapéuticos
+- [~] Poder **escribir/editar** el objetivo en cada Objetivo 1-4 (lapicito) — se puede escribir objetivo propio por área en el banco; falta editar el enunciado del Objetivo N (rediseño sección)
+- [x] **Banco de objetivos** ahora AGREGA de verdad (predefinido o propio) por área, persiste (`Data.agregarObjetivo`, localStorage `casanogal_objetivos_extra`), se elimina con ×
+
+## 🗓️ Coordinación / Calendario
+- [ ] Botón **ELIMINAR sesión** (hoy solo se puede mover)
+- [ ] Ordenar niños **alfabéticamente** en selectores/listas
+- [ ] Alertas **descriptivas y propositivas**: no "terapeuta duplicado" seco → decir con quién/qué sesión, ofrecer horarios/salas libres, permitir forzar
+- [ ] **BUG**: el primer bloque / primera persona (Baltazar R) no se deja arrastrar
+- [ ] Sesión de papás (psicología) que coincide con la del niño: sin horario paralelo (aparece en niño y/o papás)
+
+## 🔗 Fuente de la verdad / propagación
+- [ ] Coordinación = fuente de la verdad → cambios se reflejan **automáticos** en terapeuta/día/general; a **PADRES** preguntar "¿agregar este cambio al calendario de padres?" (Trini decide). A terapeutas sí o sí.
+
+## 🏫 Salas / Disponibilidad
+- [ ] Indicador claro de **"qué semana estás viendo"** (como en inicio), retrospectiva ±2-3 semanas
+- [ ] Poder agregar **OBSERVACIÓN** a un niño agendado; que se refleje en horario del niño y del terapeuta (color/marca) — desde disponibilidad
+- [ ] Colores de terapeutas **por área/especialidad** (no por niño) — Trini manda los colores (TO verde, FONO naranja, gris, etc.)
+
+## 👩‍⚕️ Terapeuta (vista)
+- [ ] Vista terapeuta ve: calendario, **notificaciones**, **chat**, ficha, observaciones. Puede **mandar chat** y **ver** notificaciones (no crearlas)
+
+## 🔔 Notificaciones
+- [ ] Campanita/**banner rojo** visible cuando hay notificación + botón **"ya la leí"**
+- [ ] Automáticas: niño no asiste → avisar equipo; cambio de horario → avisar terapeuta afectado; mensaje a los que faltaron/atrasaron
+- [ ] Chat de equipo: **login con Google/Gmail** (probar con cuentas distintas; hoy es demo)
+
+## 👪 Padres (vista)
+- [ ] Solo: calendario, cápsulas, órdenes médicas, informes. **Ocultar ficha clínica** (aún se ve)
+- [ ] En calendario de papás salen: observaciones, talleres, coaching, psicología (con hijo / solo ellos) — coherencia con lo generado
+- [ ] Botón **"Agregar a calendario"** (Google/iPhone) para sus sesiones
+
+## 📊 Reporte / Asistencia terapeutas
+- [ ] **BUG**: tabla de equipo (planta 40) quedó angosta/corrida
+- [ ] Estados: presente (default), atrasado, se fue antes, faltó + **vacaciones, día administrativo, cumpleaños, permiso**
+- [ ] **% terapia efectiva por HORAS del terapeuta** (sesión no realizada no cuenta); mostrar terapias efectivas + reuniones aparte. Quitar el % viejo (basado en el niño)
+- [ ] Reporte **por terapeuta** (además de por especialidad) para ver carga
+
+## 🧩 Armador de Horario (lo más grande)
+- [ ] Armador para **TODO**: "Agregar niño" con selector de instancia **intensivo / atención continua / evaluación** (cada una su modal y etiqueta)
+- [ ] Crear niño nuevo también desde **fichas** (nombre, fecha nac, papás…) → diagnosticar → entra al armador
+- [ ] **Selector de fecha de inicio (y término)** para armar el próximo intensivo sin pisar el actual; continua con término (ej fin de año)
+- [ ] Crear intensivo con **TODOS los niños de una** (hasta ~9) y recién generar (el motor los piensa juntos, no uno por uno)
+- [ ] Intensivos correlativos archivados/consultables (40/41) + **RESUMEN del intensivo** (quiénes participaron, cumplimiento) + fecha
+- [ ] Duplas/grupos **unificados dentro del armador** (ya hay creador; integrarlo mejor)
+- [~] **Regla por día por terapeuta**: cada día → programa (evaluación/intensivo/continuo). ✅ UI hecha en **Config → Editar profesional** (`programa_por_dia`, selector Lun-Vie). Falta que el motor del Armador la aplique (necesita puente sigla↔terapeuta, va en el rediseño del Armador)
+- [ ] Restricción **máx 2 observaciones por sala TO** (regla); poder agregar restricciones nuevas; regla break 10:00 (opcional)
+- [ ] **Evaluación**: 2 sesiones/sem (lun+mié cambiables). Estructura: reunión ingreso (Lorena), evaluación presencial (Lorena+psicóloga+cognitivo+fono), devolución (Lorena). Todo se agenda en el horario y en la agenda de Lorena
+- [ ] Al crear evaluación/niño: mandar **formularios predefinidos + horario por mail**; formularios se llenan en línea y quedan **linkeados en la ficha** (Trini manda formularios vacíos; Andy prueba con su Drive)
+- [ ] Vaciar el armador de data simulada para probarlo limpio
+
+## 🌐 Infra / cierre (fuera de demo)
+- [ ] Login con Google (ley de protección de datos, registro de accesos)
+- [ ] Comprar dominio (ej panel.casanogal.com)
+- [ ] Responsive / PWA (icono en celular, papás y terapeutas; terapeuta registra desde el celular)
+- [ ] Carga masiva de fichas al concretar
