@@ -112,7 +112,7 @@
 ## 🗓️ Coordinación / Calendario
 - [~] Botón **ELIMINAR sesión**: ya existe/funciona en el panel del calendario (admin). Falta el caso puntual en la vista Disponibilidad (misma zona del bug de arrastre)
 - [x] Ordenar niños **alfabéticamente** en selectores (modal Nueva sesión + form Reunión; la banda de disponibilidad ordena intensivo-primero por diseño)
-- [ ] Alertas **descriptivas y propositivas**: no "terapeuta duplicado" seco → decir con quién/qué sesión, ofrecer horarios/salas libres, permitir forzar
+- [x] Alertas **descriptivas y propositivas** en Nueva sesión: dicen con quién choca el terapeuta / qué niño ocupa la sala + ofrecen los bloques libres del día (modal.js `_validate`). Las de reuniones en Disponibilidad ya nombraban a los ocupados
 - [ ] **BUG**: el primer bloque / primera persona (Baltazar R) no se deja arrastrar
 - [ ] Sesión de papás (psicología) que coincide con la del niño: sin horario paralelo (aparece en niño y/o papás)
 
@@ -136,7 +136,7 @@
 - [x] **Ocultar ficha clínica** a padres (sacada del sidebar + redirect a comunicación si intenta entrar)
 - [ ] Solo: calendario, cápsulas, órdenes médicas, informes (lo demás ya estaba)
 - [ ] En calendario de papás salen: observaciones, talleres, coaching, psicología (con hijo / solo ellos) — coherencia con lo generado
-- [ ] Botón **"Agregar a calendario"** (Google/iPhone) para sus sesiones
+- [x] Botón **"Agregar a calendario"**: link a Google Calendar por sesión + descarga `.ics` de toda la semana (sirve iPhone/Google) en la vista padres
 
 ## 📊 Reporte / Asistencia terapeutas
 - [ ] **BUG**: tabla de equipo (planta 40) quedó angosta/corrida

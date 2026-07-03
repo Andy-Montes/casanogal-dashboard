@@ -113,6 +113,7 @@ const Comunicacion = {
             <button class="pa-week-btn" data-pa-week="7" aria-label="Semana siguiente">›</button>
           </div>
         </div>
+        ${sesNino.length ? `<div class="pa-cal-week"><a class="pa-cal-week-btn" href="${this._icsHref(sesNino)}" download="casa-nogal-semana.ics">${this._svgCal} Agregar toda la semana a mi calendario</a></div>` : ''}
         <div class="pa-week">${cols}</div>
       </section>`;
   },
@@ -147,6 +148,34 @@ const Comunicacion = {
       </section>`;
   },
 
+  // --- Agregar a calendario (Google / iPhone) ---
+  _dtCal(fecha, hora) { return (fecha || '').replace(/-/g, '') + 'T' + (hora || '09:00').replace(':', '') + '00'; },
+  _finCal(fecha, hi, hf) {
+    if (hf) return this._dtCal(fecha, hf);
+    const [h, m] = (hi || '09:00').split(':').map(Number);
+    const tot = h * 60 + m + 45, H = Math.floor(tot / 60) % 24, M = tot % 60;
+    return this._dtCal(fecha, `${String(H).padStart(2, '0')}:${String(M).padStart(2, '0')}`);
+  },
+  _tituloSes(s) { return s.tipo_terapia || s.tipo_actividad || 'Sesión Casa Nogal'; },
+  _gcalLink(s) {
+    const p = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: this._tituloSes(s),
+      dates: `${this._dtCal(s.fecha, s.hora_inicio)}/${this._finCal(s.fecha, s.hora_inicio, s.hora_fin)}`,
+      details: 'Sesión en Casa Nogal',
+      location: s.sala_nombre || Data.sala(s.id_sala)?.nombre || 'Casa Nogal',
+    });
+    return 'https://calendar.google.com/calendar/render?' + p.toString();
+  },
+  _icsHref(sesiones) {
+    const ev = sesiones.map((s, i) =>
+      `BEGIN:VEVENT\nUID:cn-${s.id_sesion || i}@casanogal\nDTSTART:${this._dtCal(s.fecha, s.hora_inicio)}\nDTEND:${this._finCal(s.fecha, s.hora_inicio, s.hora_fin)}\nSUMMARY:${this._tituloSes(s)}\nLOCATION:${s.sala_nombre || Data.sala(s.id_sala)?.nombre || 'Casa Nogal'}\nEND:VEVENT`
+    ).join('\n');
+    const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Casa Nogal//ES\n${ev}\nEND:VCALENDAR`;
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  },
+  _svgCal: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+
   _paSesionCard(s) {
     const sala = Data.sala(s.id_sala);
     const estado = s.estado || '';
@@ -166,6 +195,7 @@ const Comunicacion = {
         <div class="pa-ses-time mono">${UI.esc(rango)}</div>
         <div class="pa-ses-esp">${UI.esc(s.tipo_terapia || '')}</div>
         ${badge ? `<div class="pa-ses-badge">${badge}</div>` : `<div class="pa-ses-sala">${UI.esc(sala?.nombre || s.sala_nombre || '')}</div>`}
+        <a class="pa-cal-link" href="${this._gcalLink(s)}" target="_blank" rel="noopener" title="Agregar esta sesión a mi calendario">${this._svgCal} agenda</a>
       </div>`;
   },
 

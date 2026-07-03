@@ -133,13 +133,24 @@ const Modal = {
     const warns = [];
     const fecha = fechaDeDia(f.dia_semana);
     const editingId = this._editing?.id_sesion;
-    // Conflicto: mismo terapeuta o sala en mismo fecha+bloque
+    // Conflicto: mismo terapeuta o sala en mismo fecha+bloque. Mensaje propositivo:
+    // dice CON QUIÉN choca y ofrece los bloques del día donde sí está libre.
     const otras = State.data.sesiones.filter(s => s.fecha === fecha && s.id_bloque === f.id_bloque && s.id_sesion !== editingId);
-    if (otras.some(s => s.id_terapeuta === f.id_terapeuta)) {
-      warns.push({ t: 'alert', msg: 'El terapeuta ya tiene otra sesión en ese bloque.' });
+    const bloquesDia = (State.data.bloques_horarios || []).filter(b => !b.es_reunion_equipo).sort((a, b) => a.orden - b.orden);
+    const librePara = (pred) => bloquesDia
+      .filter(b => b.id_bloque !== f.id_bloque && !State.data.sesiones.some(s => s.fecha === fecha && s.id_bloque === b.id_bloque && pred(s)))
+      .slice(0, 3).map(b => b.hora_inicio).join(', ');
+    const choqueTer = otras.find(s => s.id_terapeuta === f.id_terapeuta);
+    if (choqueTer) {
+      const ter = Data.terapeuta(f.id_terapeuta);
+      const libres = librePara(s => s.id_terapeuta === f.id_terapeuta);
+      warns.push({ t: 'alert', msg: `${ter?.nombre_visible || 'El terapeuta'} ya atiende a ${UI.esc(choqueTer.nino_visible || 'otro niño')} en ese bloque.${libres ? ` Bloques libres hoy: ${libres}.` : ''}` });
     }
-    if (otras.some(s => s.id_sala === f.id_sala)) {
-      warns.push({ t: 'alert', msg: 'La sala ya está ocupada en ese bloque.' });
+    const choqueSala = otras.find(s => s.id_sala === f.id_sala);
+    if (choqueSala) {
+      const sala = Data.sala(f.id_sala);
+      const libres = librePara(s => s.id_sala === f.id_sala);
+      warns.push({ t: 'alert', msg: `La sala ${sala?.nombre || ''} está ocupada por ${UI.esc(choqueSala.nino_visible || 'otra sesión')}.${libres ? ` Libre hoy en: ${libres}.` : ''}` });
     }
     // Compatibilidad sala
     const sala = Data.sala(f.id_sala);
