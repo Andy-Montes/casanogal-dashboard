@@ -34,7 +34,7 @@ const Modal = {
   },
 
   _renderBody(pre) {
-    const ninos = Data.ninosVisibles();
+    const ninos = Data.ninosVisibles().slice().sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo, 'es'));
     const tipos = Object.keys(ESPECIALIDAD_VAR);
     const salas = State.data.salas;
     const bloques = State.data.bloques_horarios.sort((a, b) => a.orden - b.orden);

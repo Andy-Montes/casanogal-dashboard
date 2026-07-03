@@ -219,6 +219,11 @@ const Main = {
     if (State.role === 'padres' && State.module === 'calendario') {
       // se permite ver el calendario filtrado del niño, no se fuerza
     }
+    // Padres NO acceden a la ficha clínica del niño (solo su consola/horario)
+    if (State.role === 'padres' && State.module === 'fichas') {
+      State.module = 'comunicacion';
+      this.activateNav('comunicacion');
+    }
     switch (State.module) {
       case 'comunicacion': Comunicacion.render(); break;
       case 'calendario': Calendar.render(); break;
@@ -243,7 +248,7 @@ const Main = {
     // Módulos ocultos según rol. El terapeuta no ve nada del área Sistema
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
-      padres:    ['reportes','boletas','armador','notificaciones','equipo','ninos','salas','disponibilidad','config','permisos'],
+      padres:    ['fichas','reportes','boletas','armador','notificaciones','equipo','ninos','salas','disponibilidad','config','permisos'],
       terapeuta: ['config','permisos','reportes','boletas','armador','notificaciones','disponibilidad','equipo'],
     };
     // Boletas se manejan fuera del sistema (Temite) → ocultas en todos los roles

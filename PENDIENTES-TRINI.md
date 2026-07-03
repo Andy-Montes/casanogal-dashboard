@@ -110,8 +110,8 @@
 - [x] **Banco de objetivos** ahora AGREGA de verdad (predefinido o propio) por área, persiste (`Data.agregarObjetivo`, localStorage `casanogal_objetivos_extra`), se elimina con ×
 
 ## 🗓️ Coordinación / Calendario
-- [ ] Botón **ELIMINAR sesión** (hoy solo se puede mover)
-- [ ] Ordenar niños **alfabéticamente** en selectores/listas
+- [~] Botón **ELIMINAR sesión**: ya existe/funciona en el panel del calendario (admin). Falta el caso puntual en la vista Disponibilidad (misma zona del bug de arrastre)
+- [x] Ordenar niños **alfabéticamente** en selectores (modal Nueva sesión + form Reunión; la banda de disponibilidad ordena intensivo-primero por diseño)
 - [ ] Alertas **descriptivas y propositivas**: no "terapeuta duplicado" seco → decir con quién/qué sesión, ofrecer horarios/salas libres, permitir forzar
 - [ ] **BUG**: el primer bloque / primera persona (Baltazar R) no se deja arrastrar
 - [ ] Sesión de papás (psicología) que coincide con la del niño: sin horario paralelo (aparece en niño y/o papás)
@@ -133,7 +133,8 @@
 - [ ] Chat de equipo: **login con Google/Gmail** (probar con cuentas distintas; hoy es demo)
 
 ## 👪 Padres (vista)
-- [ ] Solo: calendario, cápsulas, órdenes médicas, informes. **Ocultar ficha clínica** (aún se ve)
+- [x] **Ocultar ficha clínica** a padres (sacada del sidebar + redirect a comunicación si intenta entrar)
+- [ ] Solo: calendario, cápsulas, órdenes médicas, informes (lo demás ya estaba)
 - [ ] En calendario de papás salen: observaciones, talleres, coaching, psicología (con hijo / solo ellos) — coherencia con lo generado
 - [ ] Botón **"Agregar a calendario"** (Google/iPhone) para sus sesiones
 
