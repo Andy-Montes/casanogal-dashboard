@@ -63,16 +63,19 @@ const Recursos = {
     const ses = State.data.sesiones.filter(s =>
       (s.id_terapeuta === t.id_terapeuta || s.id_terapeuta_secundario === t.id_terapeuta) && fechas.includes(s.fecha));
     const reuniones = ses.filter(s => s.tipo_actividad === 'Reunión de equipo').length;
-    const terapias = ses.length - reuniones;
+    const terapias = ses.length - reuniones;                  // terapias agendadas (todas)
+    // Efectivas = solo las realizadas (si el niño faltó o se suspendió, NO cuenta como hora efectiva)
+    const efectivas = ses.filter(s => s.tipo_actividad !== 'Reunión de equipo' && s.estado === 'Realizada').length;
     // Capacidad = jornada de atención 08:00–13:00, lunes a viernes (no las reuniones de las 8).
     const bloquesJornada = (State.data.bloques_horarios || [])
       .filter(b => !b.es_reunion_equipo && b.hora_inicio >= '08:00' && b.hora_inicio < '13:00');
     const capacidad = bloquesJornada.length * DIAS.length; // DIAS = lunes..viernes
     const usados = ses.length;
     return {
-      reuniones, terapias, usados, capacidad,
+      reuniones, terapias, efectivas, usados, capacidad,
       pctUsado: capacidad ? Math.round(usados / capacidad * 100) : 0,
-      pctEfectivo: usados ? Math.round(terapias / usados * 100) : 0,
+      // % del tiempo del terapeuta que fue terapia efectivamente realizada (horas reales)
+      pctEfectivo: capacidad ? Math.round(efectivas / capacidad * 100) : 0,
     };
   },
 
@@ -124,9 +127,9 @@ const Recursos = {
               <span><b style="color:${alto?'var(--alert)':'var(--text)'}">${m.pctUsado}%</b> del tiempo usado${alto?' · <span style="color:var(--alert)">supera el 80% recomendado</span>':''}</span>
             </div>
             <div class="ter-split">
-              <div class="ter-chip"><b>${m.terapias}</b> terapias efectivas</div>
+              <div class="ter-chip"><b>${m.efectivas}</b> terapias efectivas${m.terapias > m.efectivas ? ` <small style="color:var(--text-3)">de ${m.terapias} agendadas</small>` : ''}</div>
               <div class="ter-chip"><b>${m.reuniones}</b> reuniones</div>
-              <div class="ter-chip"><b>${m.pctEfectivo}%</b> es terapia efectiva</div>
+              <div class="ter-chip"><b>${m.pctEfectivo}%</b> horas efectivas</div>
             </div>
 
             <div class="ter-metrica-h" style="margin-top:18px">Asistencia de la semana</div>

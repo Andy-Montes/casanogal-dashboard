@@ -1772,6 +1772,16 @@
 .pa-cal-week-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 12px; font-weight: 600; color: var(--cn-azul-deep); background: var(--cn-azul-bg); border: 1px solid var(--cn-azul-bright); border-radius: var(--r-md); text-decoration: none; }
 .pa-cal-week-btn:hover { background: var(--cn-azul); color: #fff; border-color: var(--cn-azul); }
 
+/* Carga por terapeuta (reportes) */
+.rep-ter-row { display: grid; grid-template-columns: 190px 1fr 170px; gap: 12px; align-items: center; margin-bottom: 10px; }
+.rep-ter-name { font-size: 13px; color: var(--text); font-weight: 600; display: flex; flex-direction: column; line-height: 1.25; }
+.rep-ter-name small { font-size: 10.5px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+.rep-ter-bar { height: 10px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
+.rep-ter-fill { height: 100%; border-radius: 999px; transition: width .3s var(--ease); }
+.rep-ter-nums { font-size: 12px; color: var(--text-2); text-align: right; }
+.rep-ter-nums b { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+@media (max-width: 720px) { .rep-ter-row { grid-template-columns: 1fr; gap: 3px; } .rep-ter-nums { text-align: left; } }
+
 .reg-dl-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
 /* Notificaciones */

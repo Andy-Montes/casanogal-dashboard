@@ -141,8 +141,8 @@
 ## 📊 Reporte / Asistencia terapeutas
 - [ ] **BUG**: tabla de equipo (planta 40) quedó angosta/corrida
 - [x] Estados: presente (default), atrasado, se fue antes, faltó + **permiso, día administrativo, vacaciones, cumpleaños** (detalle de terapeuta)
-- [ ] **% terapia efectiva por HORAS del terapeuta** (sesión no realizada no cuenta); mostrar terapias efectivas + reuniones aparte. Quitar el % viejo (basado en el niño)
-- [ ] Reporte **por terapeuta** (además de por especialidad) para ver carga
+- [x] **% terapia efectiva por HORAS del terapeuta**: solo las **realizadas** cuentan (faltó/suspendida no); chip muestra "efectivas de N agendadas" + reuniones aparte + "% horas efectivas" sobre capacidad (recursos.js `_terapeutaMetricas`)
+- [x] Reporte **por terapeuta** (Carga por terapeuta en Reportes): terapias efectivas + reuniones, ordenado de más a menos cargado
 
 ## 🧩 Armador de Horario (lo más grande)
 - [ ] Armador para **TODO**: "Agregar niño" con selector de instancia **intensivo / atención continua / evaluación** (cada una su modal y etiqueta)

@@ -77,6 +77,30 @@ const Reportes = {
     const espRows = Object.entries(esp).sort((a, b) => b[1] - a[1]);
     const totEsp = espRows.reduce((a, r) => a + r[1], 0) || 1;
 
+    // Carga por terapeuta: terapias efectivas (realizadas) vs reuniones, para ver quién está más cargado.
+    const esReunion = (s) => /reuni/i.test(s.tipo_actividad || '') || /reuni/i.test(s.tipo_terapia || '');
+    const porTer = {};
+    ses.forEach(s => {
+      if (!s.id_terapeuta) return;
+      const o = porTer[s.id_terapeuta] = porTer[s.id_terapeuta] || { ef: 0, reu: 0 };
+      if (esReunion(s)) o.reu++;
+      else if (s.estado === 'Realizada') o.ef++; // solo cuentan las horas efectivamente realizadas
+    });
+    const terRows = Object.entries(porTer)
+      .map(([id, o]) => ({ t: Data.terapeuta(id), ef: o.ef, reu: o.reu }))
+      .filter(r => r.t)
+      .sort((a, b) => (b.ef + b.reu) - (a.ef + a.reu));
+    const maxCarga = Math.max(1, ...terRows.map(r => r.ef + r.reu));
+    const filaTer = (r) => {
+      const c = ESPECIALIDAD_VAR[r.t.especialidad] || {};
+      const pct = Math.round((r.ef + r.reu) / maxCarga * 100);
+      return `<div class="rep-ter-row">
+        <div class="rep-ter-name">${UI.esc(r.t.nombre_completo)}<small>${UI.esc(r.t.especialidad)}</small></div>
+        <div class="rep-ter-bar"><div class="rep-ter-fill" style="width:${pct}%;background:${c.main || 'var(--cn-azul)'}"></div></div>
+        <div class="rep-ter-nums"><b>${r.ef}</b> terapias · ${r.reu} reuniones</div>
+      </div>`;
+    };
+
     const bar = (label, n, total, color) => {
       const pct = total ? Math.round(n / total * 100) : 0;
       return `<div style="display:grid;grid-template-columns:150px 1fr 52px;gap:12px;align-items:center;margin-bottom:9px">
@@ -123,6 +147,11 @@ const Reportes = {
       <div class="ficha-section">
         <h2 class="ficha-section-title">Sesiones por especialidad</h2>
         ${espRows.map(([e, n]) => bar(e, n, totEsp, (ESPECIALIDAD_VAR[e] && ESPECIALIDAD_VAR[e].main) || 'var(--cn-mostaza)')).join('')}
+      </div>
+      <div class="ficha-section">
+        <h2 class="ficha-section-title">Carga por terapeuta</h2>
+        <div class="ficha-section-hint">Terapias efectivamente realizadas y reuniones, por profesional. Ordenado de más a menos cargado.</div>
+        ${terRows.map(filaTer).join('') || '<div class="empty-state"><div class="empty-state-title">Sin datos</div></div>'}
       </div>
       <div class="ficha-section">
         <h2 class="ficha-section-title">Registro de atenciones</h2>
