@@ -102,7 +102,7 @@
 ## 📝 Sesiones · Registro de atenciones
 - [ ] Botón **DESCARGAR** registro de atenciones (para imprimir) + **FILTRO** por especialidad — Trini manda el formato/campos
 - [ ] Agregar tipos: **sesiones de papás** (psicología, solo ellos), **talleres grupales**, **coaching**
-- [ ] **Neurología semanal** en el intensivo (supervisión de la doctora)
+- [x] **Neurología semanal** (supervisión doctora): ya existe en `MODALIDADES` (state.js) y en el chooser del armador
 - [ ] Estado de sesión: agendada / **realizado** / asistido / **suspendida**
 
 ## 🎯 Objetivos terapéuticos
@@ -128,7 +128,7 @@
 - [ ] Vista terapeuta ve: calendario, **notificaciones**, **chat**, ficha, observaciones. Puede **mandar chat** y **ver** notificaciones (no crearlas)
 
 ## 🔔 Notificaciones
-- [ ] Campanita/**banner rojo** visible cuando hay notificación + botón **"ya la leí"**
+- [x] **Bandeja de avisos recibidos** con no-leídos destacados (banner rojo) + botón **"Ya la leí"** + badge de conteo (`casanogal_notif_inbox`); enviar aviso lo agrega a la bandeja
 - [ ] Automáticas: niño no asiste → avisar equipo; cambio de horario → avisar terapeuta afectado; mensaje a los que faltaron/atrasaron
 - [ ] Chat de equipo: **login con Google/Gmail** (probar con cuentas distintas; hoy es demo)
 

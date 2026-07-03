@@ -1752,6 +1752,18 @@
 .obj-del { border: none; background: none; color: var(--text-3); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; border-radius: 4px; }
 .obj-del:hover { color: var(--alert); background: var(--alert-bg); }
 
+/* Bandeja de notificaciones (avisos recibidos) */
+.notif-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--alert); color: #fff; font-size: 11px; font-weight: 700; vertical-align: middle; }
+.notif-inbox { margin-bottom: 16px; }
+.notif-inbox-list { display: flex; flex-direction: column; gap: 8px; }
+.notif-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--alert); border-left-width: 3px; border-radius: var(--r-md); background: var(--alert-bg); }
+.notif-item.leida { border-color: var(--border); border-left-width: 1px; background: var(--bg-soft); }
+.notif-item-body { flex: 1; }
+.notif-item-txt { font-size: 13px; color: var(--text); font-weight: 500; }
+.notif-item.leida .notif-item-txt { color: var(--text-2); font-weight: 400; }
+.notif-item-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.notif-item-ok { font-size: 11px; color: var(--text-3); font-weight: 600; }
+
 .reg-dl-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
 /* Notificaciones */

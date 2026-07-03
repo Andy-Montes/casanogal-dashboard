@@ -3,6 +3,7 @@
 const Notificaciones = {
   _chatKey: 'casanogal_chat',
   _reglasKey: 'casanogal_reglas_notif',
+  _inboxKey: 'casanogal_notif_inbox',
 
   PLANTILLAS_MSG: [
     { t: 'Inasistencia', m: 'El niño no asistirá hoy. Avisado al equipo que lo atiende.' },
@@ -35,6 +36,21 @@ const Notificaciones = {
   },
   _guardarChat(list) { localStorage.setItem(this._chatKey, JSON.stringify(list)); },
 
+  // Bandeja de avisos recibidos (con estado leída/no leída)
+  _leerInbox() {
+    try { const a = JSON.parse(localStorage.getItem(this._inboxKey) || 'null'); if (Array.isArray(a)) return a; } catch {}
+    return this._inboxSeed();
+  },
+  _inboxSeed() {
+    return [
+      { id: 'N1', para: 'Isa (TO)', txt: 'León viene atrasado hoy, llega 10:15.', hora: '09:30', leida: false },
+      { id: 'N2', para: 'Todo el equipo', txt: 'Viernes reunión de equipo a las 8:00.', hora: 'ayer', leida: false },
+      { id: 'N3', para: 'Marce (Fono)', txt: 'La mamá de Mati confirmó la sesión de papás.', hora: 'ayer', leida: true },
+    ];
+  },
+  _guardarInbox(list) { localStorage.setItem(this._inboxKey, JSON.stringify(list)); },
+  noLeidas() { return this._leerInbox().filter(n => !n.leida).length; },
+
   _leerReglas() {
     try { const r = JSON.parse(localStorage.getItem(this._reglasKey) || 'null'); if (r) return r; } catch {}
     const base = {}; this.REGLAS.forEach(x => base[x.id] = x.on); return base;
@@ -46,12 +62,29 @@ const Notificaciones = {
     const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo');
     const reglas = this._leerReglas();
     const chat = this._leerChat();
+    const inbox = this._leerInbox();
+    const noLeidas = inbox.filter(n => !n.leida).length;
 
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
-        <div class="section-title">Notificaciones</div>
+        <div class="section-title">Notificaciones ${noLeidas ? `<span class="notif-badge">${noLeidas}</span>` : ''}</div>
         <div class="section-sub">Avisa al equipo, define reglas automáticas y administra plantillas. Coordinación decide a quién le llega cada mensaje.</div>
       </div></div>
+
+      <section class="ficha-section notif-inbox">
+        <h2 class="ficha-section-title">Avisos recibidos ${noLeidas ? `<span class="ficha-section-count" style="background:var(--alert);color:#fff">${noLeidas} sin leer</span>` : ''}</h2>
+        <div class="ficha-section-hint">Los avisos sin leer quedan destacados hasta que marcas "ya la leí".</div>
+        <div class="notif-inbox-list">
+          ${inbox.length ? inbox.map(n => `
+            <div class="notif-item${n.leida ? ' leida' : ''}">
+              <div class="notif-item-body">
+                <div class="notif-item-txt">${UI.esc(n.txt)}</div>
+                <div class="notif-item-meta">Para: ${UI.esc(n.para)} · <span class="mono">${UI.esc(n.hora)}</span></div>
+              </div>
+              ${n.leida ? '<span class="notif-item-ok">Leído</span>' : `<button class="btn btn-ghost btn-sm notif-leer" data-id="${UI.esc(n.id)}" type="button">Ya la leí</button>`}
+            </div>`).join('') : '<div class="empty-state"><div class="empty-state-title">Sin avisos</div></div>'}
+        </div>
+      </section>
 
       <div class="notif-grid">
         <section class="ficha-section">
@@ -132,9 +165,20 @@ const Notificaciones = {
       if (!msg) { UI.toast('Escribe un mensaje primero', 'warn'); return; }
       const sel = document.getElementById('notifDest');
       const dest = sel.options[sel.selectedIndex].text;
+      const inbox = this._leerInbox();
+      inbox.unshift({ id: 'N' + Date.now(), para: dest, txt: msg, hora: this._horaAhora(), leida: false });
+      this._guardarInbox(inbox);
       UI.toast(`Aviso enviado a ${dest}`, 'success');
-      document.getElementById('notifMsg').value = '';
+      this.render();
     });
+    // Marcar un aviso como leído
+    document.querySelectorAll('.notif-leer').forEach(b =>
+      b.addEventListener('click', () => {
+        const inbox = this._leerInbox().map(n => n.id === b.dataset.id ? { ...n, leida: true } : n);
+        this._guardarInbox(inbox);
+        this.render();
+      })
+    );
     // Reglas
     document.querySelectorAll('[data-regla]').forEach(c =>
       c.addEventListener('change', () => {
