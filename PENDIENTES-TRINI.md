@@ -140,7 +140,7 @@
 
 ## 📊 Reporte / Asistencia terapeutas
 - [ ] **BUG**: tabla de equipo (planta 40) quedó angosta/corrida
-- [ ] Estados: presente (default), atrasado, se fue antes, faltó + **vacaciones, día administrativo, cumpleaños, permiso**
+- [x] Estados: presente (default), atrasado, se fue antes, faltó + **permiso, día administrativo, vacaciones, cumpleaños** (detalle de terapeuta)
 - [ ] **% terapia efectiva por HORAS del terapeuta** (sesión no realizada no cuenta); mostrar terapias efectivas + reuniones aparte. Quitar el % viejo (basado en el niño)
 - [ ] Reporte **por terapeuta** (además de por especialidad) para ver carga
 

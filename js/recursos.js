@@ -93,7 +93,7 @@ const Recursos = {
     const alto = m.pctUsado > 80;
     const asist = this._leerAsistencia();
     const fechas = fechasSemana();
-    const OPC = ['Presente', 'Atrasado', 'Se fue antes', 'Faltó'];
+    const OPC = ['Presente', 'Atrasado', 'Se fue antes', 'Faltó', 'Permiso', 'Día administrativo', 'Vacaciones', 'Cumpleaños'];
     const filasAsist = fechas.map((f, i) => {
       const val = asist[idTer + '|' + f] || 'Presente';
       return `<div class="asist-row">
