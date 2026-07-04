@@ -141,7 +141,7 @@
 - [x] Botón **"Agregar a calendario"**: link a Google Calendar por sesión + descarga `.ics` de toda la semana (sirve iPhone/Google) en la vista padres
 
 ## 📊 Reporte / Asistencia terapeutas
-- [ ] **BUG**: tabla de equipo (planta 40) quedó angosta/corrida
+- [~] **BUG** tabla planta 40 angosta/corrida: `.table-wrap` ahora hace scroll horizontal (antes `overflow:hidden` la cortaba) + `min-width` para que no se aplaste. Confirmar con Trini que se ve bien
 - [x] Estados: presente (default), atrasado, se fue antes, faltó + **permiso, día administrativo, vacaciones, cumpleaños** (detalle de terapeuta)
 - [x] **% terapia efectiva por HORAS del terapeuta**: solo las **realizadas** cuentan (faltó/suspendida no); chip muestra "efectivas de N agendadas" + reuniones aparte + "% horas efectivas" sobre capacidad (recursos.js `_terapeutaMetricas`)
 - [x] Reporte **por terapeuta** (Carga por terapeuta en Reportes): terapias efectivas + reuniones, ordenado de más a menos cargado

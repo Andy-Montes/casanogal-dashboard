@@ -1851,8 +1851,10 @@
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  overflow: hidden;
+  overflow-x: auto;   /* si la tabla no cabe, hace scroll horizontal en vez de comprimirse/cortarse */
+  overflow-y: hidden;
 }
+.data-table { min-width: 640px; } /* evita que las columnas se aplasten en anchos chicos */
 .data-table {
   width: 100%;
   border-collapse: collapse;
