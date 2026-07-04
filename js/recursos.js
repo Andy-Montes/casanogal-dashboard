@@ -305,9 +305,13 @@ const Recursos = {
       </aside>`;
     }
 
+    const MES_AB = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const fSemana = (iso) => { const [, m, d] = iso.split('-'); return `${Number(d)} ${MES_AB[Number(m) - 1]}`; };
+    const semanaLbl = fechas.length ? `Semana del ${fSemana(fechas[0])} al ${fSemana(fechas[fechas.length - 1])}` : '';
+
     document.getElementById('main').innerHTML = `
       <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div>
-        <div class="section-title">Disponibilidad</div>
+        <div class="section-title">Disponibilidad ${semanaLbl ? `<span class="disp-semana">${semanaLbl}</span>` : ''}</div>
         <div class="section-sub">Horarios arriba · filas en <b>Profesionales · Niños · Salas</b>. <b>Arrastra</b> una sesión a un bloque <b>verde</b>; al soltar eliges la sala (a la derecha). Clic en un espacio libre para crear una sesión.</div>
       </div>
         <button class="btn btn-secondary" id="dispAddReuBtn" style="flex-shrink:0">

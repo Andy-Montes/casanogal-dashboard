@@ -2477,6 +2477,9 @@
 .reu-link:hover { background: var(--cn-azul-deep); }
 .reu-link svg { flex-shrink: 0; }
 
+/* Indicador de semana en Disponibilidad */
+.disp-semana { display: inline-block; margin-left: 8px; padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--cn-azul-deep); background: var(--cn-azul-bg); border-radius: 999px; vertical-align: middle; }
+
 /* Preferencia de atención por día (regla del profesional) */
 .cfg-prog-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 4px; }
 .cfg-prog-col { display: flex; flex-direction: column; gap: 3px; }

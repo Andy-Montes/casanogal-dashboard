@@ -122,7 +122,7 @@
 - [ ] Coordinación = fuente de la verdad → cambios se reflejan **automáticos** en terapeuta/día/general; a **PADRES** preguntar "¿agregar este cambio al calendario de padres?" (Trini decide). A terapeutas sí o sí.
 
 ## 🏫 Salas / Disponibilidad
-- [ ] Indicador claro de **"qué semana estás viendo"** (como en inicio), retrospectiva ±2-3 semanas
+- [x] Indicador claro de **"qué semana estás viendo"** (badge "Semana del X al Y" en el título de Disponibilidad)
 - [ ] Poder agregar **OBSERVACIÓN** a un niño agendado; que se refleje en horario del niño y del terapeuta (color/marca) — desde disponibilidad
 - [ ] Colores de terapeutas **por área/especialidad** (no por niño) — Trini manda los colores (TO verde, FONO naranja, gris, etc.)
 
