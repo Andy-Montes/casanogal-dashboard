@@ -840,7 +840,7 @@ const Armador = {
               ${btnDel}
             </span>
           </div>
-          <div class="armador-cumpl-meta">${cumplido}/${esperado} individuales · ${kids} en KIDS</div>
+          <div class="armador-cumpl-meta">${cumplido}/${esperado} individuales · ${kids} en KIDS${n.instancia && n.instancia !== 'intensivo' ? ` · <b style="text-transform:capitalize">${UI.esc(n.instancia === 'continua' ? 'atención continua' : n.instancia)}</b>` : ''}${n.fecha_inicio ? ` · desde ${UI.esc(n.fecha_inicio)}` : ''}</div>
           <div class="armador-cumpl-bar"><div class="armador-cumpl-fill ${cls}" style="width:${pct}%"></div></div>
           ${badgeRev}
         </button>
@@ -1063,6 +1063,18 @@ const Armador = {
         <div class="pendiente-modal-body armador-form-body">
           <div class="armador-form-grid">
             <label class="armador-form-field">
+              <span>Instancia</span>
+              <select id="armadorFormInstancia">
+                <option value="intensivo">Intensivo</option>
+                <option value="continua">Atención continua</option>
+                <option value="evaluacion">Evaluación</option>
+              </select>
+            </label>
+            <label class="armador-form-field">
+              <span>Fecha de inicio</span>
+              <input type="date" id="armadorFormFechaInicio" value="${HOY_ISO}" />
+            </label>
+            <label class="armador-form-field">
               <span>Nombre del niño *</span>
               <input type="text" id="armadorFormNombre" maxlength="40" placeholder="Ej: TOMÁS" required />
             </label>
@@ -1127,6 +1139,8 @@ const Armador = {
       const heRaw = document.getElementById('armadorFormHoraEntrada').value;
       const horaEntrada = heRaw === '' ? null : Number(heRaw);
       const preferenciaInicio = document.getElementById('armadorFormInicio').value || null;
+      const instancia = document.getElementById('armadorFormInstancia')?.value || 'intensivo';
+      const fechaInicio = document.getElementById('armadorFormFechaInicio')?.value || HOY_ISO;
       const asignaciones = [];
       SECCIONES.forEach(s => {
         const roles = s.key === 'PSI' ? ['TUTOR', 'COT', 'PAPAS'] : ['TUTOR', 'COT'];
@@ -1148,6 +1162,8 @@ const Armador = {
       const ninoNuevo = {
         nombre,
         encargado,
+        instancia,        // intensivo | continua | evaluacion
+        fecha_inicio: fechaInicio,
         kids_semanal: kids,
         hora_entrada: horaEntrada,  // franja índice o null; agrupa la sesión grupal a esa hora
         preferencia_inicio: preferenciaInicio,  // disciplina con la que prefiere partir el día

@@ -127,7 +127,7 @@
 - [ ] Colores de terapeutas **por área/especialidad** (no por niño) — Trini manda los colores (TO verde, FONO naranja, gris, etc.)
 
 ## 👩‍⚕️ Terapeuta (vista)
-- [ ] Vista terapeuta ve: calendario, **notificaciones**, **chat**, ficha, observaciones. Puede **mandar chat** y **ver** notificaciones (no crearlas)
+- [x] Vista terapeuta ve **notificaciones** (bandeja) + **chat** (puede mandar); NO ve enviar-aviso/reglas/mails (solo coordinación). Calendario y ficha ya los tenía
 
 ## 🔔 Notificaciones
 - [x] **Bandeja de avisos recibidos** con no-leídos destacados (banner rojo) + botón **"Ya la leí"** + badge de conteo (`casanogal_notif_inbox`); enviar aviso lo agrega a la bandeja
@@ -147,7 +147,8 @@
 - [x] Reporte **por terapeuta** (Carga por terapeuta en Reportes): terapias efectivas + reuniones, ordenado de más a menos cargado
 
 ## 🧩 Armador de Horario (lo más grande)
-- [ ] Armador para **TODO**: "Agregar niño" con selector de instancia **intensivo / atención continua / evaluación** (cada una su modal y etiqueta)
+- [~] Armador para **TODO**: "Agregar niño" ahora tiene selector de instancia **intensivo / atención continua / evaluación** + se guarda y se muestra en la tarjeta. FALTA que el motor arme distinto por instancia (evaluación con estructura Dra Lorena) — rediseño profundo del scheduler
+- [x] **Selector de fecha de inicio** en el form de agregar niño (para el próximo intensivo sin pisar el actual)
 - [ ] Crear niño nuevo también desde **fichas** (nombre, fecha nac, papás…) → diagnosticar → entra al armador
 - [ ] **Selector de fecha de inicio (y término)** para armar el próximo intensivo sin pisar el actual; continua con término (ej fin de año)
 - [ ] Crear intensivo con **TODOS los niños de una** (hasta ~9) y recién generar (el motor los piensa juntos, no uno por uno)

@@ -64,6 +64,7 @@ const Notificaciones = {
     const chat = this._leerChat();
     const inbox = this._leerInbox();
     const noLeidas = inbox.filter(n => !n.leida).length;
+    const esCoord = State.role === 'coordinacion'; // el terapeuta solo ve avisos y usa el chat; no crea notificaciones ni reglas
 
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
@@ -87,6 +88,7 @@ const Notificaciones = {
       </section>
 
       <div class="notif-grid">
+        ${esCoord ? `
         <section class="ficha-section">
           <h2 class="ficha-section-title">Enviar un aviso</h2>
           <div class="field">
@@ -125,6 +127,7 @@ const Notificaciones = {
               </label>`).join('')}
           </div>
         </section>
+        ` : ''}
 
         <section class="ficha-section">
           <h2 class="ficha-section-title">Chat del equipo</h2>
@@ -138,6 +141,7 @@ const Notificaciones = {
           </div>
         </section>
 
+        ${esCoord ? `
         <section class="ficha-section">
           <h2 class="ficha-section-title">Mails y formularios predefinidos</h2>
           <div class="ficha-section-hint">Al enviarse un formulario y completarse, queda automáticamente archivado en la ficha del niño.</div>
@@ -152,6 +156,7 @@ const Notificaciones = {
               </div>`).join('')}
           </div>
         </section>
+        ` : ''}
       </div>
     `;
 
@@ -159,8 +164,8 @@ const Notificaciones = {
     document.querySelectorAll('.notif-tpl').forEach(b =>
       b.addEventListener('click', () => { document.getElementById('notifMsg').value = this.PLANTILLAS_MSG[b.dataset.tpl].m; })
     );
-    // Enviar aviso
-    document.getElementById('notifSend').addEventListener('click', () => {
+    // Enviar aviso (solo coordinación)
+    document.getElementById('notifSend')?.addEventListener('click', () => {
       const msg = document.getElementById('notifMsg').value.trim();
       if (!msg) { UI.toast('Escribe un mensaje primero', 'warn'); return; }
       const sel = document.getElementById('notifDest');

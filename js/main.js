@@ -249,7 +249,7 @@ const Main = {
     // (configuración ni permisos); padres solo ve calendario y fichas.
     const ocultosPorRol = {
       padres:    ['fichas','reportes','boletas','armador','notificaciones','equipo','ninos','salas','disponibilidad','config','permisos'],
-      terapeuta: ['config','permisos','reportes','boletas','armador','notificaciones','disponibilidad','equipo'],
+      terapeuta: ['config','permisos','reportes','boletas','armador','disponibilidad','equipo'],
     };
     // Boletas se manejan fuera del sistema (Temite) → ocultas en todos los roles
     const ocultar = [...(ocultosPorRol[State.role] || []), 'boletas'];
