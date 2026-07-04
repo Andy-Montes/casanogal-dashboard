@@ -15,11 +15,36 @@ const Data = {
     catch { return {}; }
   },
   _aplicarOverridesNinos() {
+    // Niños creados desde la ficha (nuevos ingresos) — se agregan primero
+    const creados = this._ninosCreados();
+    if (creados.length) {
+      creados.forEach(nc => { if (!State.data.ninos.some(n => n.id_nino === nc.id_nino)) State.data.ninos.push(nc); });
+    }
     const ov = this._overridesNinos();
     (State.data.ninos || []).forEach(n => { if (ov[n.id_nino]) Object.assign(n, ov[n.id_nino]); });
     // Objetivos agregados desde la ficha (banco o propios)
     const extra = this._objetivosExtra();
     if (extra.length) State.data.objetivos_terapeuticos.push(...extra);
+  },
+
+  // Niños creados a mano desde la ficha (nuevos ingresos)
+  KEY_NINOS_NEW: 'casanogal_ninos_creados',
+  _ninosCreados() {
+    try { const a = JSON.parse(localStorage.getItem(this.KEY_NINOS_NEW) || '[]'); return Array.isArray(a) ? a : []; }
+    catch { return []; }
+  },
+  crearNino(campos) {
+    const id = 'NINO-NEW-' + Date.now();
+    const nino = {
+      id_nino: id, estado: 'Activo', diagnosticos: [], id_programa: 'PROG-EVAL', programa_nombre: 'Evaluación',
+      nombre_visible: (campos.nombre_completo || '').split(' ').slice(0, 2).join(' '),
+      fecha_creacion: HOY_ISO, _nuevo: true,
+      ...campos,
+    };
+    const arr = this._ninosCreados(); arr.push(nino);
+    localStorage.setItem(this.KEY_NINOS_NEW, JSON.stringify(arr));
+    if (State.data?.ninos) State.data.ninos.push(nino);
+    return nino;
   },
 
   // Objetivos terapéuticos agregados desde la ficha (persisten en localStorage)

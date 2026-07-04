@@ -149,7 +149,7 @@
 ## 🧩 Armador de Horario (lo más grande)
 - [~] Armador para **TODO**: "Agregar niño" ahora tiene selector de instancia **intensivo / atención continua / evaluación** + se guarda y se muestra en la tarjeta. FALTA que el motor arme distinto por instancia (evaluación con estructura Dra Lorena) — rediseño profundo del scheduler
 - [x] **Selector de fecha de inicio** en el form de agregar niño (para el próximo intensivo sin pisar el actual)
-- [ ] Crear niño nuevo también desde **fichas** (nombre, fecha nac, papás…) → diagnosticar → entra al armador
+- [x] Crear niño nuevo desde **fichas** (botón "Crear niño": nombre, fecha nac, papás, instancia de ingreso) → abre su ficha para diagnosticar. Persiste en `casanogal_ninos_creados` (Data.crearNino)
 - [ ] **Selector de fecha de inicio (y término)** para armar el próximo intensivo sin pisar el actual; continua con término (ej fin de año)
 - [ ] Crear intensivo con **TODOS los niños de una** (hasta ~9) y recién generar (el motor los piensa juntos, no uno por uno)
 - [ ] Intensivos correlativos archivados/consultables (40/41) + **RESUMEN del intensivo** (quiénes participaron, cumplimiento) + fecha

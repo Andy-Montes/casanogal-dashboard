@@ -72,6 +72,7 @@ const Fichas = {
           </select>
         </div>
         <button class="btn btn-secondary" id="dlTodasFichas" style="height:38px">Descargar todas</button>
+        <button class="btn btn-primary" id="crearNinoBtn" style="height:38px">＋ Crear niño</button>
       </div>
 
       ${filtered.length === 0 ? `
@@ -101,6 +102,7 @@ const Fichas = {
       State.filterDiagnostico = e.target.value; this._renderLista();
     });
     document.getElementById('dlTodasFichas')?.addEventListener('click', () => this._descargarTodasFichas());
+    document.getElementById('crearNinoBtn')?.addEventListener('click', () => this._abrirCrearNino());
     document.querySelectorAll('.ficha-card').forEach(c => {
       c.addEventListener('click', () => { State.fichaActiva = c.dataset.id; this.render(); });
     });
@@ -885,6 +887,67 @@ const Fichas = {
     }
     this._descargarDoc(titulo, cuerpo, `${(titulo || 'evento').replace(/[^\wáéíóúñ]+/gi, '-').toLowerCase()}.doc`);
     UI.toast('Evento exportado', 'success');
+  },
+
+  // Crear un niño nuevo (ingreso) desde la ficha, antes de diagnosticar. Entra como Evaluación.
+  _abrirCrearNino() {
+    const PROGS = [
+      { v: 'PROG-EVAL', l: 'Evaluación' },
+      { v: 'PROG-INT', l: 'Intensivo' },
+      { v: 'PROG-CONT', l: 'Atención continua' },
+    ];
+    const html = `
+      <div class="pendiente-modal-overlay" id="crearNinoOverlay">
+        <div class="pendiente-modal" style="width:min(560px,94vw)">
+          <div class="pendiente-modal-head">
+            <div><div class="pendiente-modal-title">Crear niño nuevo</div><div class="pendiente-modal-eyebrow">Nuevo ingreso · luego se completa el diagnóstico</div></div>
+            <button class="panel-close" id="crearNinoClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="pendiente-modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px">
+            <div class="cfg-field" style="grid-column:1/-1"><label>Nombre completo *</label><input id="cn-nom" placeholder="Ej: Tomás Rivera Soto"></div>
+            <div class="cfg-field"><label>Fecha de nacimiento</label><input id="cn-fnac" type="date"></div>
+            <div class="cfg-field"><label>Instancia de ingreso</label><select id="cn-prog">${PROGS.map(p => `<option value="${p.v}">${p.l}</option>`).join('')}</select></div>
+            <div class="cfg-field"><label>Madre / apoderada</label><input id="cn-madre" placeholder="Nombre"></div>
+            <div class="cfg-field"><label>Teléfono madre</label><input id="cn-tmadre" placeholder="+569…"></div>
+            <div class="cfg-field"><label>Padre / apoderado</label><input id="cn-padre" placeholder="Nombre"></div>
+            <div class="cfg-field"><label>Teléfono padre</label><input id="cn-tpadre" placeholder="+569…"></div>
+            <div class="cfg-field" style="grid-column:1/-1"><label>Email de contacto</label><input id="cn-email" placeholder="correo@…"></div>
+          </div>
+          <div class="pendiente-modal-foot">
+            <button class="btn btn-ghost" id="crearNinoCancel">Cancelar</button>
+            <button class="btn btn-primary" id="crearNinoSave">Crear y abrir ficha</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    const overlay = document.getElementById('crearNinoOverlay');
+    const close = () => overlay?.remove();
+    document.getElementById('crearNinoClose').addEventListener('click', close);
+    document.getElementById('crearNinoCancel').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    setTimeout(() => document.getElementById('cn-nom')?.focus(), 60);
+    document.getElementById('crearNinoSave').addEventListener('click', () => {
+      const v = id => (document.getElementById(id)?.value || '').trim();
+      const nombre = v('cn-nom');
+      if (!nombre) { UI.toast('El nombre es obligatorio', 'error'); return; }
+      const prog = document.getElementById('cn-prog').value;
+      const nino = Data.crearNino({
+        nombre_completo: nombre,
+        fecha_nacimiento: v('cn-fnac') || null,
+        id_programa: prog,
+        programa_nombre: { 'PROG-EVAL': 'Evaluación', 'PROG-INT': 'Intensivo', 'PROG-CONT': 'Atención continua' }[prog],
+        madre: v('cn-madre') || null,
+        telefono_madre: v('cn-tmadre') || null,
+        padre: v('cn-padre') || null,
+        telefono_padre: v('cn-tpadre') || null,
+        email_apoderado: v('cn-email') || null,
+        apoderado_principal: v('cn-madre') || v('cn-padre') || null,
+      });
+      close();
+      UI.toast(`${nombre.split(' ')[0]} creado`, 'success');
+      State.fichaActiva = nino.id_nino;
+      this.render();
+    });
   },
 
   _descargarTodasFichas() {
