@@ -98,8 +98,8 @@
 - Persistencia: ediciones de niño en localStorage `casanogal_ninos_overrides` (Data.guardarNino), aplicadas en Data.load
 
 ## 📖 Ficha · Historia de Vida / por evento
-- [ ] Dentro de cada **intensivo / evaluación / seguimiento**: horario que tuvo, terapeutas, objetivos trabajados, registro de atenciones, informes, reuniones, documentos
-- [ ] Botón **EXPORTAR por evento** (adjuntable como documento)
+- [x] Dentro de cada **intensivo / evaluación / seguimiento**: horario, terapeutas, objetivos, registro de atenciones, informes, reuniones, documentos (ya existía en `_seccionCiclos`)
+- [x] Botón **EXPORTAR por evento** (a Word, adjuntable): en el evento en curso y en cada evento pasado del historial (`_exportarEvento`)
 
 ## 📝 Sesiones · Registro de atenciones
 - [ ] Botón **DESCARGAR** registro de atenciones (para imprimir) + **FILTRO** por especialidad — Trini manda el formato/campos

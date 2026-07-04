@@ -206,6 +206,9 @@ const Fichas = {
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => this._descargarFicha(n));
+    document.querySelectorAll('.fhist-export').forEach(b =>
+      b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const hi = b.dataset.hidx; this._exportarEvento(n, hi === 'curso' ? 'curso' : Number(hi)); })
+    );
     document.getElementById('editFicha').addEventListener('click', () => this._abrirEditarDatos(n));
     // Banco de objetivos: agregar uno predefinido a la ficha del niño (persiste)
     const agregarObjetivo = (descripcion, cif) => {
@@ -470,10 +473,11 @@ const Fichas = {
           <div class="fhist-row"><span class="fhist-row-label">Objetivos trabajados</span><span>${objCurso.length} objetivos en seguimiento</span></div>
           <div class="fhist-row"><span class="fhist-row-label">Reuniones</span><span>${reuCurso} registrada${reuCurso===1?'':'s'}</span></div>
           <div class="fhist-row"><span class="fhist-row-label">Documentos</span><span>${docsCurso} en la ficha</span></div>
+          <button class="btn btn-secondary btn-sm fhist-export" data-hidx="curso" style="margin-top:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar este intensivo</button>
         </div>
       </details>`;
 
-    const items = hist.map(h => {
+    const items = hist.map((h, hi) => {
       const rango = h.fecha_termino ? `${fmtMes(h.fecha_inicio)} – ${fmtMes(h.fecha_termino)}` : fmtMes(h.fecha_inicio);
       const edad = this._edadEn(n.fecha_nacimiento, h.fecha_inicio);
       const sub = [rango, h.semanas ? `${h.semanas} semanas` : '', edad].filter(Boolean).join(' · ');
@@ -484,6 +488,7 @@ const Fichas = {
           ${h.sesiones_realizadas != null ? `<div class="fhist-row"><span class="fhist-row-label">Registros</span><span>${h.sesiones_realizadas} de ${h.sesiones_totales} sesiones realizadas</span></div>` : ''}
           ${h.objetivos ? `<div class="fhist-row"><span class="fhist-row-label">Objetivos</span><ul class="fhist-obj">${h.objetivos.map(o => `<li>${UI.esc(o)}</li>`).join('')}</ul></div>` : ''}
           ${h.informe ? `<button class="btn btn-secondary btn-sm doc-download fhist-doc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ${UI.esc(h.informe.tipo)}</button>` : ''}
+          <button class="btn btn-secondary btn-sm fhist-export" data-hidx="${hi}" style="margin-top:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar este ${UI.esc((h.tipo || 'evento').toLowerCase())}</button>
         </div>`;
       return `
         <details class="fhist-item">
@@ -841,6 +846,45 @@ const Fichas = {
   _descargarFicha(n) {
     this._descargarDoc(`Ficha clínica · ${n.nombre_completo}`, this._fichaDocHtml(n), `ficha-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
     UI.toast(`Ficha de ${n.nombre_completo.split(' ')[0]} descargada`, 'success');
+  },
+
+  // Exporta a Word el detalle de UN evento (intensivo/evaluación/seguimiento) de la Historia de vida.
+  _exportarEvento(n, hidx) {
+    const esc = UI.esc;
+    let titulo, cuerpo;
+    if (hidx === 'curso') {
+      const prog = Data.programa(n.id_programa);
+      const equipo = Data.equipoDeNino(n.id_nino).map(e => Data.terapeuta(e.id_terapeuta)).filter(Boolean);
+      const obj = Data.objetivosDeNino(n.id_nino);
+      const ses = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo');
+      const real = ses.filter(s => s.estado === 'Realizada').length;
+      const reus = this._leerReuniones(n.id_nino);
+      titulo = `${prog?.nombre || n.programa_nombre || 'Programa'} en curso · ${n.nombre_completo}`;
+      cuerpo = `
+        <h1>${esc(titulo)}</h1>
+        <p><b>Paciente:</b> ${esc(n.nombre_completo)} · ${esc(this._edadEn(n.fecha_nacimiento, HOY_ISO))}</p>
+        <p><b>Inicio:</b> ${esc(n.fecha_inicio_programa || '—')} · <b>Semana:</b> ${esc(String(n.semana_actual || '—'))}</p>
+        <h2>Equipo tratante</h2><ul>${equipo.map(t => `<li>${esc(t.nombre_completo)} · ${esc(t.especialidad)}</li>`).join('') || '<li>—</li>'}</ul>
+        <h2>Registro de atenciones</h2><p>${real} de ${ses.length} sesiones realizadas.</p>
+        <h2>Objetivos trabajados</h2><ul>${obj.map(o => `<li>${esc(o.descripcion)}${o.estado ? ` (${esc(o.estado)})` : ''}</li>`).join('') || '<li>—</li>'}</ul>
+        <h2>Reuniones</h2><ul>${reus.map(r => `<li>${esc(r.fecha)} · ${esc(r.tipo)} · con ${esc(r.con)}${r.acta ? `<br><i>${esc(r.acta)}</i>` : ''}</li>`).join('') || '<li>—</li>'}</ul>`;
+    } else {
+      const h = Data.historialDeNino(n.id_nino)[hidx];
+      if (!h) { UI.toast('No se encontró el evento', 'error'); return; }
+      const rango = h.fecha_termino ? `${h.fecha_inicio} – ${h.fecha_termino}` : h.fecha_inicio;
+      titulo = `${h.tipo}${h.nombre ? ` · ${h.nombre}` : ''} · ${n.nombre_completo}`;
+      cuerpo = `
+        <h1>${esc(titulo)}</h1>
+        <p><b>Paciente:</b> ${esc(n.nombre_completo)}</p>
+        <p><b>Período:</b> ${esc(rango)}${h.semanas ? ` · ${esc(String(h.semanas))} semanas` : ''}</p>
+        ${h.resumen ? `<h2>Resumen</h2><p>${esc(h.resumen)}</p>` : ''}
+        ${h.horario_resumen ? `<h2>Horario</h2><ul>${h.horario_resumen.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+        ${h.sesiones_realizadas != null ? `<h2>Registro de atenciones</h2><p>${h.sesiones_realizadas} de ${h.sesiones_totales} sesiones realizadas.</p>` : ''}
+        ${h.objetivos ? `<h2>Objetivos</h2><ul>${h.objetivos.map(o => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+        ${h.informe ? `<p><b>Informe:</b> ${esc(h.informe.tipo)}</p>` : ''}`;
+    }
+    this._descargarDoc(titulo, cuerpo, `${(titulo || 'evento').replace(/[^\wáéíóúñ]+/gi, '-').toLowerCase()}.doc`);
+    UI.toast('Evento exportado', 'success');
   },
 
   _descargarTodasFichas() {
