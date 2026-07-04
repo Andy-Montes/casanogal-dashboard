@@ -958,19 +958,20 @@ const Recursos = {
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr>
-            <th></th><th>Nombre</th><th>Edad</th><th>Programa</th><th>Apoderado</th><th>Inicio</th><th>Término</th>
+            <th></th><th>Nombre</th><th>Edad</th><th>Programa</th><th>Madre / apoderada</th><th>Teléfono</th><th>Encargado</th>
           </tr></thead>
           <tbody>
             ${filtered.map(n => {
               const c = UI.colorNino(n.id_nino);
+              const tel = n.telefono_madre || n.telefono_apoderado;
               return `<tr style="cursor:pointer" data-id="${n.id_nino}">
                 <td><span class="ficha-avatar" style="width:32px;height:32px;font-size:11px;background:${c.bg};color:${c.text};${UI.ringIntensivo(n)}">${UI.esc(UI.initials(n.nombre_completo))}</span></td>
                 <td><div style="font-weight:600;color:var(--text)">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div><div style="font-size:11px;color:var(--text-3)" class="mono">${UI.esc(n.rut)}</div></td>
                 <td class="num">${n.edad_anios}</td>
                 <td>${UI.esc(n.programa_nombre)}</td>
-                <td>${UI.esc(n.apoderado_principal)}</td>
-                <td class="mono">${UI.fmtFechaCorta(n.fecha_inicio_programa)}</td>
-                <td class="mono">${UI.fmtFechaCorta(n.fecha_termino_programa)}</td>
+                <td>${UI.esc(n.madre || n.apoderado_principal)}</td>
+                <td class="mono">${tel ? `<a href="https://wa.me/${String(tel).replace(/[^\d]/g,'')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--cn-azul-deep)">${UI.esc(tel)}</a>` : '—'}</td>
+                <td>${UI.esc(n.encargado || '—')}</td>
               </tr>`;
             }).join('')}
           </tbody>

@@ -94,7 +94,7 @@
 - [x] Estado civil como **dropdown** — en modal Editar datos
 - [x] Diagnóstico: **selección múltiple** + opción **"Otro"** (texto libre) — modal Editar datos (el filtro por diagnóstico ya existía)
 - [x] Teléfono/email **clicables**: mail → correo; teléfono → WhatsApp (`_telLink`/`_mailLink`)
-- [ ] En listado de niños mostrar nombre/mamá/teléfono (no inicio-término); agregar **"encargado"** (terapeuta del intensivo) + apoderado con tel/email
+- [x] En listado de niños: columnas Madre/apoderada · Teléfono (clicable a WhatsApp) · Encargado (en vez de Inicio/Término)
 - Persistencia: ediciones de niño en localStorage `casanogal_ninos_overrides` (Data.guardarNino), aplicadas en Data.load
 
 ## 📖 Ficha · Historia de Vida / por evento
