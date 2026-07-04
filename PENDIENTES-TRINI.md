@@ -103,9 +103,9 @@
 
 ## 📝 Sesiones · Registro de atenciones
 - [ ] Botón **DESCARGAR** registro de atenciones (para imprimir) + **FILTRO** por especialidad — Trini manda el formato/campos
-- [ ] Agregar tipos: **sesiones de papás** (psicología, solo ellos), **talleres grupales**, **coaching**
+- [x] Agregar tipos: **sesiones de papás** / **talleres grupales** / **coaching**: ya en `MODALIDADES` (state.js)
 - [x] **Neurología semanal** (supervisión doctora): ya existe en `MODALIDADES` (state.js) y en el chooser del armador
-- [ ] Estado de sesión: agendada / **realizado** / asistido / **suspendida**
+- [~] Estado de sesión: agendada / realizada / no asistió / **suspendida** ya existen (panel.js); "asistido" vs "realizado" a confirmar con Trini si son distintos
 
 ## 🎯 Objetivos terapéuticos
 - [~] Poder **escribir/editar** el objetivo en cada Objetivo 1-4 (lapicito) — se puede escribir objetivo propio por área en el banco; falta editar el enunciado del Objetivo N (rediseño sección)
@@ -150,7 +150,7 @@
 - [~] Armador para **TODO**: "Agregar niño" ahora tiene selector de instancia **intensivo / atención continua / evaluación** + se guarda y se muestra en la tarjeta. FALTA que el motor arme distinto por instancia (evaluación con estructura Dra Lorena) — rediseño profundo del scheduler
 - [x] **Selector de fecha de inicio** en el form de agregar niño (para el próximo intensivo sin pisar el actual)
 - [x] Crear niño nuevo desde **fichas** (botón "Crear niño": nombre, fecha nac, papás, instancia de ingreso) → abre su ficha para diagnosticar. Persiste en `casanogal_ninos_creados` (Data.crearNino)
-- [ ] **Selector de fecha de inicio (y término)** para armar el próximo intensivo sin pisar el actual; continua con término (ej fin de año)
+- [x] **Selector de fecha de inicio** en el form de agregar niño (ver arriba); término por instancia queda para el motor
 - [ ] Crear intensivo con **TODOS los niños de una** (hasta ~9) y recién generar (el motor los piensa juntos, no uno por uno)
 - [ ] Intensivos correlativos archivados/consultables (40/41) + **RESUMEN del intensivo** (quiénes participaron, cumplimiento) + fecha
 - [ ] Duplas/grupos **unificados dentro del armador** (ya hay creador; integrarlo mejor)
