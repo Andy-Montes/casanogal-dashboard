@@ -32,7 +32,9 @@
 - [x] Banco de objetivos predefinido para elegir
 
 ## 🤝 Reuniones
-- [x] Mostrar cada reunión con el **registro de lo conversado** (queda guardado ahí mismo)
+- [x] Mostrar cada reunión con el **registro de lo conversado** (acta, queda guardada ahí mismo)
+- [x] Campo **link de la reunión** (Zoom/Meet) en el form + botón "Unirse a la reunión" en la tarjeta
+- [ ] Integración directa con Zoom API para traer el resumen automático (por ahora se pega a mano en el acta) — a evaluar post-cierre
 
 ## ⚙️ Configuración
 - [x] Bug: el modal de "modificar profesional" no cabía en pantalla → ahora con scroll

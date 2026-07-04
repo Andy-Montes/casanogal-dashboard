@@ -2472,6 +2472,11 @@
 .ed-diag-add input { flex: 1; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-md); font-family: inherit; font-size: 12.5px; }
 .ed-diag-add input:focus { outline: none; border-color: var(--cn-azul); box-shadow: 0 0 0 3px rgba(27,107,138,0.1); }
 
+/* Link de reunión (Zoom/Meet) */
+.reu-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: #fff; background: var(--cn-azul); border-radius: var(--r-md); text-decoration: none; }
+.reu-link:hover { background: var(--cn-azul-deep); }
+.reu-link svg { flex-shrink: 0; }
+
 /* Preferencia de atención por día (regla del profesional) */
 .cfg-prog-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 4px; }
 .cfg-prog-col { display: flex; flex-direction: column; gap: 3px; }

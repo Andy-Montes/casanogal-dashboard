@@ -955,6 +955,7 @@ const Fichas = {
         <div class="reu-title">${UI.esc(r.tipo)} <span style="color:var(--text-3);font-weight:400;margin-left:6px;font-size:12px">${UI.esc(r.hora)}</span></div>
         <div class="reu-meta">Con ${UI.esc(r.con)}${r.modo ? ' · ' + UI.esc(r.modo) : ''}</div>
         ${r.nota ? `<div class="reu-nota">${UI.esc(r.nota)}</div>` : ''}
+        ${r.link ? `<a class="reu-link" href="${UI.esc(r.link)}" target="_blank" rel="noopener"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14M4 6h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg> Unirse a la reunión</a>` : ''}
         <details class="reu-acta"${r.acta ? ' open' : ''}>
           <summary>${r.acta ? 'Registro de la reunión' : 'Agregar registro de lo conversado'}</summary>
           <textarea class="reu-acta-input" data-rid="${r.id}" rows="3" placeholder="¿Qué se conversó? Acuerdos, próximos pasos, responsables…">${UI.esc(r.acta || '')}</textarea>
@@ -1029,6 +1030,10 @@ const Fichas = {
               </select>
             </div>
             <div class="field">
+              <label class="field-label">Link de la reunión (Zoom / Meet · opcional)</label>
+              <input type="url" class="field-input" id="reuLink" placeholder="https://zoom.us/j/…">
+            </div>
+            <div class="field">
               <label class="field-label">Tema / nota (opcional)</label>
               <input type="text" class="field-input" id="reuNota" placeholder="Ej: Revisar objetivos del mes y avances">
             </div>
@@ -1053,6 +1058,7 @@ const Fichas = {
         hora: document.getElementById('reuHora').value,
         con: document.getElementById('reuCon').value.trim() || 'Equipo',
         modo: document.getElementById('reuModo').value,
+        link: document.getElementById('reuLink').value.trim(),
         nota: document.getElementById('reuNota').value.trim(),
       };
       const list = this._leerReuniones(idNino);
