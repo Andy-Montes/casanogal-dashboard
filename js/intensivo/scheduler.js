@@ -1,29 +1,28 @@
 // Motor de scheduling para programa intensivo. Sin DOM, sin globales.
 // Genera 1 semana del horario. Las 6 semanas del intensivo se generan iterando.
 //
+// REESCRITO (jul-2026): solver GREEDY + REPARACIÓN LOCAL + MULTI-RESTART, determinista.
+// El backtracking exhaustivo anterior no escalaba: con los datos reales el grid de
+// cada niño queda EXACTAMENTE lleno (30 sesiones / 30 franjas útiles), por lo que la
+// búsqueda explotaba (>90s sin converger). Este solver:
+//   1. coloca por demanda-más-restringida-primero (terapeuta con menos holgura),
+//   2. elige el slot factible menos conflictivo (forward-checking O(1) por balance),
+//   3. repara con swaps locales lo que no calza,
+//   4. reintenta con varias semillas (barato) y se queda con la MEJOR colocación.
+// SIEMPRE termina en <5s (típico <1s).
+//
 // Inputs:
 //   intensivo = { id, fecha_inicio, semanas, reglas?, niños: [{ nombre, kids_semanal, kids_grupo,
 //                  asignaciones: [{disciplina, rol, sigla, sesiones}] }] }
 //   catalogo  = { franjas: [...], dias: [...], terapeutas: { SIGLA: {nombre, disciplina, sala} } }
-//   opts      = { semilla?, salasCapacidad?, disponibilidad?, reglas? }
+//   opts      = { semilla?, salasCapacidad?, disponibilidad?, reglas?, semana?, kidsTerapeuta?, restarts? }
 //
-// Output:
+// Output (idéntico al motor anterior, para no romper armador.js):
 //   { ok, grid: [niñoIdx][slotIdx]=sigla|null, sesionesPlanificadas, conflictos,
 //     kidsSlots: [{grupo, slot, niños:[ni]}],
 //     reunionesEquipo: [{ni, niño, slot, tutores:[sigla]}],
 //     reunionesPapas:  [{ni, niño, slots:[..], tutores:[sigla]}],
 //     sesionesPapas:   [{ni, niño, sigla, slot}] }
-//
-// Reglas (confirmadas con Trini, reunión 18-jun):
-//   - TUTOR y COT son sesiones SEPARADAS (un niño puede tener 7 TO/semana).
-//   - KIDS: nunca en la primera hora; en módulos centrales; grupos de 2-3 niños.
-//   - 1 sesión de cada disciplina por día (ideal); si hay más sesiones que días,
-//     los días con 2 de la misma disciplina quedan en módulos NO contiguos.
-//   - Máx 5 sesiones por terapeuta por día.
-//   - Bloques fijos (08:00-08:35 y 12:30-13:00): sin atención; reunión de equipo.
-//   - Reunión de equipo: 1/semana por niño, con TO+FONO+COG, en bloque fijo.
-//   - Reunión con papás: semana 2, doble bloque, con TO+FONO+COG (ideal).
-//   - Psicólogo-papás (rol PAPAS): fuera del horario del niño.
 
 const Scheduler = (() => {
   const DEFAULTS = {
@@ -36,9 +35,8 @@ const Scheduler = (() => {
     reunion_papas_semana: 2,
     reunion_papas_bloques: 2,
   };
-  const TUTORES_REUNION = ['TO', 'FONO', 'COG']; // disciplinas presentes en reuniones con papás/equipo
+  const TUTORES_REUNION = ['TO', 'FONO', 'COG'];
 
-  // PRNG simple (mulberry32) para shuffles determinísticos
   function mulberry32(seed) {
     return function () {
       let t = (seed += 0x6D2B79F5);
@@ -47,8 +45,7 @@ const Scheduler = (() => {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  function shuffle(arr, rnd) {
-    const a = arr.slice();
+  function shuffleInPlace(a, rnd) {
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(rnd() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
@@ -62,252 +59,325 @@ const Scheduler = (() => {
     const D = dias.length;
     const totalSlots = F * D;
     const N = intensivo.niños.length;
-    let rnd = mulberry32(opts.semilla ?? 42);
     const reglas = { ...DEFAULTS, ...(intensivo.reglas || {}), ...(opts.reglas || {}) };
-    const semana = opts.semana ?? 1; // 1-based, para la reunión de papás
+    const semana = opts.semana ?? 1;
+    const semillaBase = opts.semilla ?? 42;
+    const RESTARTS = opts.restarts ?? 40;
 
     const salasCap = opts.salasCapacidad || {};
     const capDe = (sala) => (sala in salasCap ? salasCap[sala] : 1);
     const disponibilidad = opts.disponibilidad || {};
     const bloquesFijos = new Set(reglas.bloques_fijos || []);
     const esFijo = (slot) => bloquesFijos.has(slot % F);
+    const diaDe = (slot) => Math.floor(slot / F);
+    const franjaDe = (slot) => slot % F;
+    const terapeutas = catalogo.terapeutas;
 
     function disponibleEn(sigla, slot) {
       const disp = disponibilidad[sigla];
       if (!disp) return true;
-      const dia = dias[Math.floor(slot / F)];
-      const f = slot % F;
+      const dia = dias[diaDe(slot)];
+      const f = franjaDe(slot);
       return !!(disp[dia] && disp[dia][f]);
     }
 
-    // Estado
-    const gridNino = Array.from({ length: N }, () => new Array(totalSlots).fill(null));
-    const ocupadoTer = {};
-    Object.keys(catalogo.terapeutas).forEach((s) => { ocupadoTer[s] = new Uint8Array(totalSlots); });
-    const ocupadoSala = {};
-    const salasUsadas = new Set(Object.values(catalogo.terapeutas).map((t) => t.sala));
-    salasUsadas.forEach((s) => { ocupadoSala[s] = new Uint8Array(totalSlots); });
+    // Días con disponibilidad real (sábado suele venir vacío -> se excluye)
+    const diasActivos = [];
+    const hayDisp = Object.keys(disponibilidad).length > 0;
+    for (let dia = 0; dia < D; dia++) {
+      const nombre = dias[dia];
+      if (!hayDisp) { if (nombre !== 'sab') diasActivos.push(dia); }
+      else if (Object.keys(disponibilidad).some((s) => (disponibilidad[s][nombre] || []).some(Boolean))) diasActivos.push(dia);
+    }
+    if (diasActivos.length === 0) for (let d = 0; d < D; d++) diasActivos.push(d);
 
-    const conflictos = [];
+    const franjasUtiles = [];
+    for (let f = 0; f < F; f++) if (!bloquesFijos.has(f)) franjasUtiles.push(f);
 
-    // === Fase 0: sesiones grupales KIDS, por subgrupo ===
-    // Cada grupo (kids_grupo) comparte slot; sala KIDS capacidad 1 → un grupo por slot.
-    // Solo en módulos permitidos (kids_modulos), nunca la primera hora, 1 por día por grupo.
+    const salasUsadas = new Set(Object.values(terapeutas).map((t) => t.sala));
     const KIDS_TER = opts.kidsTerapeuta || 'GP';
     const kidsModulos = (reglas.kids_modulos || []).filter((f) => !bloquesFijos.has(f));
-    const kidsSlots = [];
+    const salaKids = terapeutas[KIDS_TER] ? terapeutas[KIDS_TER].sala : null;
+
+    // Grupos KIDS
     const grupos = {};
     intensivo.niños.forEach((n, ni) => {
-      if ((n.kids_semanal || 0) > 0) {
-        const g = n.kids_grupo || 1;
-        (grupos[g] = grupos[g] || []).push(ni);
-      }
+      if ((n.kids_semanal || 0) > 0) { const g = n.kids_grupo || 1; (grupos[g] = grupos[g] || []).push(ni); }
     });
-    const salaKids = catalogo.terapeutas[KIDS_TER]?.sala;
-    function colocarKids() {
-     kidsSlots.length = 0;
-     if (ocupadoTer[KIDS_TER]) {
-      Object.keys(grupos).forEach((g) => {
-        const nis = grupos[g];
-        const need = Math.max(...nis.map((ni) => intensivo.niños[ni].kids_semanal || 0));
-        // Hora de entrada del grupo: si los niños la fijaron, su sesión grupal va en esa franja.
-        const hes = nis.map((ni) => intensivo.niños[ni].hora_entrada).filter((h) => h != null && !bloquesFijos.has(h));
-        const heGrupo = hes.length ? hes[0] : null;
-        const franjasOk = kidsModulos.slice();
-        if (heGrupo != null && !franjasOk.includes(heGrupo)) franjasOk.push(heGrupo);
-        const candidatos = shuffle(
-          Array.from({ length: totalSlots }, (_, k) => k).filter((k) => franjasOk.includes(k % F)),
-          rnd
-        );
-        // Priorizar los slots de la franja de entrada (la primera KIDS del grupo cae ahí).
-        if (heGrupo != null) candidatos.sort((a, b) => ((a % F === heGrupo) ? 0 : 1) - ((b % F === heGrupo) ? 0 : 1));
-        const elegidosDia = new Set();
-        let puestos = 0;
-        for (const slot of candidatos) {
-          if (puestos >= need) break;
-          const dia = Math.floor(slot / F);
-          if (elegidosDia.has(dia)) continue;            // 1 kids/día por grupo
-          if (!disponibleEn(KIDS_TER, slot)) continue;   // GP disponible en la franja
-          if (ocupadoTer[KIDS_TER][slot]) continue;      // GP libre
-          if (nis.some((ni) => gridNino[ni][slot])) continue; // niños del grupo libres
-          if (salaKids && ocupadoSala[salaKids][slot] >= capDe(salaKids)) continue;
-          ocupadoTer[KIDS_TER][slot] = 1;
-          if (salaKids) ocupadoSala[salaKids][slot]++;
-          nis.forEach((ni) => { gridNino[ni][slot] = KIDS_TER; });
-          kidsSlots.push({ grupo: Number(g), slot, niños: nis.slice() });
-          elegidosDia.add(dia);
-          puestos++;
-        }
-        if (puestos < need) {
-          conflictos.push({ tipo: 'kids_insuficientes', mensaje: `Grupo KIDS ${g}: ${puestos}/${need} sesiones` });
-        }
-      });
-     }
-    }
 
-    // === Fase 1: demandas individuales ===
-    const demandas = [];
+    // Demandas individuales (una unidad por sesión)
+    const demandasBase = [];
+    const conflictosSigla = [];
     intensivo.niños.forEach((n, ni) => {
       n.asignaciones.forEach((a) => {
-        if (a.rol === 'PAPAS') return; // las sesiones con papás se agendan aparte
-        const max = Math.max(1, Math.ceil(a.sesiones / D));
-        for (let k = 0; k < a.sesiones; k++) {
-          demandas.push({ ni, niño: n.nombre, sigla: a.sigla, disciplina: a.disciplina, rol: a.rol, maxPorDia: max });
+        if (a.rol === 'PAPAS') return;
+        if (!terapeutas[a.sigla]) {
+          conflictosSigla.push({ tipo: 'sigla_desconocida', mensaje: `Terapeuta "${a.sigla}" no está en el catálogo (niño ${n.nombre}, ${a.disciplina})`, niño: n.nombre, sigla: a.sigla });
+          return;
         }
+        for (let k = 0; k < a.sesiones; k++) demandasBase.push({ ni, niño: n.nombre, sigla: a.sigla, disciplina: a.disciplina, rol: a.rol });
       });
     });
+    const sesionesPlanificadas = demandasBase.length;
 
-    // Heurística most-constrained-first
-    const cargaTer = {}; demandas.forEach((d) => { cargaTer[d.sigla] = (cargaTer[d.sigla] || 0) + 1; });
-    const cargaNino = {}; demandas.forEach((d) => { cargaNino[d.ni] = (cargaNino[d.ni] || 0) + 1; });
-    demandas.sort((a, b) => (cargaTer[b.sigla] - cargaTer[a.sigla]) || (cargaNino[b.ni] - cargaNino[a.ni]));
-
-    const porDia = new Map();        // `${ni}_${sigla}_${dia}` → count (cap maxPorDia)
-    const porTerDia = new Map();     // `${sigla}_${dia}` → count (cap max_por_terapeuta_dia)
-    const discDia = new Map();       // `${ni}_${disc}_${dia}` → [franjas usadas]
-    let maxNivel = -1, demandaFallo = null; // demanda más profunda que no se pudo colocar
-    // Random-restart: si una semilla no converge en LIMITE_PASOS, se reintenta con otra.
-    const ABORT = {};
-    const LIMITE_PASOS = 120_000;
-    let pasos = 0;
-
-    function intentar(i) {
-      if (++pasos > LIMITE_PASOS) throw ABORT;
-      if (i >= demandas.length) return true;
-      if (i > maxNivel) { maxNivel = i; demandaFallo = demandas[i]; }
-      const d = demandas[i];
-      if (!ocupadoTer[d.sigla]) {
-        conflictos.push({ tipo: 'sigla_desconocida', mensaje: `Terapeuta "${d.sigla}" no está en el catálogo (niño ${d.niño}, ${d.disciplina})`, niño: d.niño, sigla: d.sigla });
-        return false;
-      }
-      const slots = shuffle(Array.from({ length: totalSlots }, (_, k) => k), rnd);
-      const sala = catalogo.terapeutas[d.sigla]?.sala;
-      const salaCap = capDe(sala);
-
-      for (const slot of slots) {
-        if (esFijo(slot)) continue;                       // sin atención en bloques fijos
-        const dia = Math.floor(slot / F);
-        const f = slot % F;
-        if (!disponibleEn(d.sigla, slot)) continue;       // disponibilidad terapeuta
-        if (ocupadoTer[d.sigla][slot]) continue;          // terapeuta libre
-        if (gridNino[d.ni][slot]) continue;               // niño libre
-        if (sala && ocupadoSala[sala][slot] >= salaCap) continue; // capacidad sala
-        const keyNT = `${d.ni}_${d.sigla}_${dia}`;
-        if ((porDia.get(keyNT) || 0) >= d.maxPorDia) continue;    // máx por día niño-terapeuta
-        const keyTD = `${d.sigla}_${dia}`;
-        if ((porTerDia.get(keyTD) || 0) >= reglas.max_por_terapeuta_dia) continue; // máx 5/terapeuta/día
-        const keyDD = `${d.ni}_${d.disciplina}_${dia}`;
-        const usadas = discDia.get(keyDD) || [];
-        if (usadas.length >= reglas.max_por_disciplina_dia) continue;           // máx disciplina/día
-        if (reglas.disciplina_no_consecutiva && usadas.some((ff) => Math.abs(ff - f) === 1)) continue; // no contiguas
-
-        // Tomar
-        gridNino[d.ni][slot] = d.sigla;
-        ocupadoTer[d.sigla][slot] = 1;
-        if (sala) ocupadoSala[sala][slot]++;
-        porDia.set(keyNT, (porDia.get(keyNT) || 0) + 1);
-        porTerDia.set(keyTD, (porTerDia.get(keyTD) || 0) + 1);
-        usadas.push(f); discDia.set(keyDD, usadas);
-
-        if (intentar(i + 1)) return true;
-
-        // Backtrack
-        gridNino[d.ni][slot] = null;
-        ocupadoTer[d.sigla][slot] = 0;
-        if (sala) ocupadoSala[sala][slot]--;
-        porDia.set(keyNT, porDia.get(keyNT) - 1);
-        porTerDia.set(keyTD, porTerDia.get(keyTD) - 1);
-        const posBT = usadas.lastIndexOf(f);
-        if (posBT >= 0) usadas.splice(posBT, 1);
-      }
-
-      return false; // no acumular: el backtracking retrocede aquí millones de veces
+    // Holgura de terapeuta (disponibilidad útil) para most-constrained-first
+    function holguraTer(sigla) {
+      let av = 0;
+      for (const dia of diasActivos) for (const f of franjasUtiles) if (disponibleEn(sigla, dia * F + f)) av++;
+      return av || 1;
     }
+    const needTer = {}; demandasBase.forEach((d) => { needTer[d.sigla] = (needTer[d.sigla] || 0) + 1; });
+    const avTer = {}; Object.keys(needTer).forEach((s) => { avTer[s] = holguraTer(s); });
+    const cargaNino = {}; demandasBase.forEach((d) => { cargaNino[d.ni] = (cargaNino[d.ni] || 0) + 1; });
 
-    function resetEstado() {
-      gridNino.forEach((row) => row.fill(null));
-      Object.values(ocupadoTer).forEach((a) => a.fill(0));
-      Object.values(ocupadoSala).forEach((a) => a.fill(0));
-      conflictos.length = 0;
-      porDia.clear(); porTerDia.clear(); discDia.clear();
-      maxNivel = -1; demandaFallo = null; pasos = 0;
-    }
-    // Intenta resolver con varias semillas; con sábado sin disponibilidad el espacio
-    // es ajustado y una semilla puede atascarse: el restart la salva.
-    const semillaBase = opts.semilla ?? 42;
-    let ok = false;
-    for (let r = 0; r < 60 && !ok; r++) {
-      resetEstado();
-      rnd = mulberry32(semillaBase + r * 101);
-      colocarKids();
-      try { ok = intentar(0); } catch (e) { if (e !== ABORT) throw e; ok = false; }
-    }
-    if (!ok && demandaFallo) {
-      const d = demandaFallo;
-      conflictos.push({ tipo: 'sin_solucion', mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`, niño: d.niño, sigla: d.sigla, disciplina: d.disciplina });
-    }
+    // ---------- una corrida (semilla) del grid: fases 0-2 ----------
+    function solveOnce(seed, doEjection) {
+      const rnd = mulberry32(seed);
+      const gridNino = Array.from({ length: N }, () => new Array(totalSlots).fill(null));
+      const ocupadoTer = {}; Object.keys(terapeutas).forEach((s) => { ocupadoTer[s] = new Uint8Array(totalSlots); });
+      const ocupadoSala = {}; salasUsadas.forEach((s) => { ocupadoSala[s] = new Uint8Array(totalSlots); });
+      const childDay = Array.from({ length: N }, () => new Uint8Array(D));
+      const terDay = {}; Object.keys(terapeutas).forEach((s) => { terDay[s] = new Uint8Array(D); });
+      const ntDay = new Map();
+      const discDia = new Map();
+      const kidsSlots = [];
+      const conflictosKids = [];
+      let softViol = 0;
 
-    // === Reubicación lun-vie ===
-    // Casa Nogal atiende solo lun-vie. El motor reparte en 6 días (más estable);
-    // aquí movemos lo que quedó en sábado (último día) a huecos de lun-vie que
-    // cumplan las mismas reglas. Con la holgura del horario, el sábado queda vacío.
-    if (ok) {
-      const ultimoDia = D - 1;
-      const maxPorDiaDe = (ni, sigla) => {
-        const n = intensivo.niños[ni];
-        const a = (n.asignaciones || []).find((x) => x.sigla === sigla);
-        return a ? Math.max(1, Math.ceil(a.sesiones / D)) : reglas.max_por_terapeuta_dia;
-      };
-      const slotsSemana = shuffle(
-        Array.from({ length: totalSlots }, (_, k) => k).filter((k) => Math.floor(k / F) !== ultimoDia),
-        rnd
-      );
-      for (let ni = 0; ni < N; ni++) {
-        for (let f = 0; f < F; f++) {
-          const slotSab = ultimoDia * F + f;
-          const sigla = gridNino[ni][slotSab];
-          if (!sigla) continue;
-          // KIDS grupal se mueve aparte (afecta a varios niños): lo dejamos al motor
-          if (kidsSlots.some((k) => k.slot === slotSab)) continue;
-          const disc = catalogo.terapeutas[sigla]?.disciplina;
-          const sala = catalogo.terapeutas[sigla]?.sala;
-          const maxPD = maxPorDiaDe(ni, sigla);
-          for (const dest of slotsSemana) {
-            if (esFijo(dest)) continue;
-            const dia = Math.floor(dest / F);
-            const ff = dest % F;
-            if (!disponibleEn(sigla, dest)) continue;
-            if (ocupadoTer[sigla][dest]) continue;
-            if (gridNino[ni][dest]) continue;
-            if (sala && ocupadoSala[sala][dest] >= capDe(sala)) continue;
-            const keyNT = `${ni}_${sigla}_${dia}`;
-            if ((porDia.get(keyNT) || 0) >= maxPD) continue;
-            const keyTD = `${sigla}_${dia}`;
-            if ((porTerDia.get(keyTD) || 0) >= reglas.max_por_terapeuta_dia) continue;
-            const keyDD = `${ni}_${disc}_${dia}`;
-            const usadas = discDia.get(keyDD) || [];
-            if (usadas.length >= reglas.max_por_disciplina_dia) continue;
-            if (reglas.disciplina_no_consecutiva && usadas.some((x) => Math.abs(x - ff) === 1)) continue;
-            // mover sab → dest
-            gridNino[ni][slotSab] = null; ocupadoTer[sigla][slotSab] = 0;
-            if (sala) ocupadoSala[sala][slotSab]--;
-            gridNino[ni][dest] = sigla; ocupadoTer[sigla][dest] = 1;
-            if (sala) ocupadoSala[sala][dest]++;
-            porDia.set(keyNT, (porDia.get(keyNT) || 0) + 1);
-            porTerDia.set(keyTD, (porTerDia.get(keyTD) || 0) + 1);
-            usadas.push(ff); discDia.set(keyDD, usadas);
-            break;
+      function chequear(ni, sigla, disc, slot, opt) {
+        if (esFijo(slot)) return null;
+        const dia = diaDe(slot), f = franjaDe(slot);
+        if (!disponibleEn(sigla, slot)) return null;
+        if (ocupadoTer[sigla][slot]) return null;
+        if (gridNino[ni][slot]) return null;
+        const sala = terapeutas[sigla].sala;
+        if (sala && ocupadoSala[sala][slot] >= capDe(sala)) return null;
+        if (terDay[sigla][dia] >= reglas.max_por_terapeuta_dia) return null;
+        let penal = 0;
+        const usadas = discDia.get(`${ni}_${disc}_${dia}`);
+        if (usadas) {
+          if (usadas.length >= reglas.max_por_disciplina_dia) {
+            if (!opt || !opt.softDisc) return null;
+            penal += 1000;
+          }
+          if (reglas.disciplina_no_consecutiva && usadas.some((ff) => Math.abs(ff - f) === 1)) {
+            if (!opt || !opt.softConsec) return null;
+            penal += 100;
           }
         }
+        return { penal };
       }
+      function ocupar(ni, sigla, disc, slot, penal) {
+        const dia = diaDe(slot), f = franjaDe(slot);
+        gridNino[ni][slot] = sigla;
+        ocupadoTer[sigla][slot] = 1;
+        const sala = terapeutas[sigla].sala;
+        if (sala) ocupadoSala[sala][slot]++;
+        childDay[ni][dia]++;
+        terDay[sigla][dia]++;
+        ntDay.set(`${ni}_${sigla}_${dia}`, (ntDay.get(`${ni}_${sigla}_${dia}`) || 0) + 1);
+        const k = `${ni}_${disc}_${dia}`;
+        const arr = discDia.get(k); if (arr) arr.push(f); else discDia.set(k, [f]);
+        if (penal) softViol += penal;
+      }
+      function liberar(ni, sigla, disc, slot) {
+        const dia = diaDe(slot), f = franjaDe(slot);
+        gridNino[ni][slot] = null;
+        ocupadoTer[sigla][slot] = 0;
+        const sala = terapeutas[sigla].sala;
+        if (sala) ocupadoSala[sala][slot]--;
+        childDay[ni][dia]--;
+        terDay[sigla][dia]--;
+        ntDay.set(`${ni}_${sigla}_${dia}`, (ntDay.get(`${ni}_${sigla}_${dia}`) || 0) - 1);
+        const arr = discDia.get(`${ni}_${disc}_${dia}`); if (arr) { const p = arr.lastIndexOf(f); if (p >= 0) arr.splice(p, 1); }
+      }
+      function costo(ni, sigla, slot, penal) {
+        const dia = diaDe(slot), f = franjaDe(slot);
+        return childDay[ni][dia] * 50 + terDay[sigla][dia] * 8 + Math.abs(f - (F / 2)) + penal;
+      }
+      function mejorSlot(ni, sigla, disc, relax) {
+        let best = -1, bestC = Infinity, bestPen = 0;
+        const diasOrd = shuffleInPlace(diasActivos.slice(), rnd);
+        for (const dia of diasOrd) {
+          for (const f of franjasUtiles) {
+            const slot = dia * F + f;
+            const r = chequear(ni, sigla, disc, slot, relax);
+            if (!r) continue;
+            const c = costo(ni, sigla, slot, r.penal);
+            if (c < bestC) { bestC = c; best = slot; bestPen = r.penal; }
+          }
+        }
+        return { slot: best, penal: bestPen };
+      }
+
+      // FASE 0: KIDS grupal (permite 2/día no contiguo si GP no tiene días suficientes)
+      if (ocupadoTer[KIDS_TER]) {
+        Object.keys(grupos).forEach((g) => {
+          const nis = grupos[g];
+          const need = Math.max(...nis.map((ni) => intensivo.niños[ni].kids_semanal || 0));
+          let puestos = 0;
+          const usado = [];
+          for (let pasada = 0; pasada < 2 && puestos < need; pasada++) {
+            const diasOrd = shuffleInPlace(diasActivos.slice(), rnd);
+            for (const dia of diasOrd) {
+              if (puestos >= need) break;
+              const yaEste = usado.filter((x) => x.dia === dia);
+              if (yaEste.length >= (pasada === 0 ? 1 : 2)) continue;
+              const modsOrd = shuffleInPlace(kidsModulos.slice(), rnd);
+              for (const f of modsOrd) {
+                const slot = dia * F + f;
+                if (!disponibleEn(KIDS_TER, slot) || ocupadoTer[KIDS_TER][slot]) continue;
+                if (salaKids && ocupadoSala[salaKids][slot] >= capDe(salaKids)) continue;
+                if (nis.some((ni) => gridNino[ni][slot])) continue;
+                if (yaEste.some((x) => Math.abs(x.f - f) === 1)) continue;
+                ocupadoTer[KIDS_TER][slot] = 1;
+                if (salaKids) ocupadoSala[salaKids][slot]++;
+                nis.forEach((ni) => { gridNino[ni][slot] = KIDS_TER; childDay[ni][dia]++; });
+                terDay[KIDS_TER][dia]++;
+                kidsSlots.push({ grupo: Number(g), slot, niños: nis.slice() });
+                usado.push({ dia, f });
+                puestos++;
+                break;
+              }
+            }
+          }
+          if (puestos < need) conflictosKids.push({ tipo: 'kids_insuficientes', mensaje: `Grupo KIDS ${g}: ${puestos}/${need} sesiones` });
+        });
+      }
+
+      // FASE 1: greedy most-constrained-first (con desempate aleatorio por semilla)
+      const demandas = demandasBase.map((d) => ({ ...d, _r: rnd() }));
+      demandas.forEach((d) => { d._tight = needTer[d.sigla] / avTer[d.sigla]; });
+      demandas.sort((a, b) => (b._tight - a._tight) || (cargaNino[b.ni] - cargaNino[a.ni]) || (needTer[b.sigla] - needTer[a.sigla]) || (a._r - b._r));
+
+      const pend = [];
+      for (const d of demandas) {
+        let r = mejorSlot(d.ni, d.sigla, d.disciplina, null);
+        if (r.slot < 0) r = mejorSlot(d.ni, d.sigla, d.disciplina, { softConsec: true });
+        if (r.slot < 0) r = mejorSlot(d.ni, d.sigla, d.disciplina, { softConsec: true, softDisc: true });
+        if (r.slot >= 0) { ocupar(d.ni, d.sigla, d.disciplina, r.slot, r.penal); }
+        else pend.push(d);
+      }
+
+      // FASE 2: reparación por CADENAS DE EYECCIÓN (relocación multi-paso guiada).
+      // Para colocar a (ni,sigla) buscamos un slot factible salvo por UN ocupante
+      // (la sesión del niño o la del terapeuta), lo desalojamos y lo re-colocamos
+      // recursivamente en otro lado. Presupuesto de operaciones acota el tiempo.
+      let opBudget = 0;
+      const OP_MAX = 20000;
+
+      // intenta ubicar la sesión (ni,sigla,disc) en cualquier slot; con eyección hasta prof
+      function colocar(ni, sigla, disc, prof, relax) {
+        if (opBudget++ > OP_MAX) return false;
+        // 1) intento directo
+        const r = mejorSlot(ni, sigla, disc, relax);
+        if (r.slot >= 0) { ocupar(ni, sigla, disc, r.slot, r.penal); return true; }
+        if (prof <= 0) return false;
+        // 2) eyección: recorrer slots donde sólo hay un obstáculo movible
+        const diasOrd = shuffleInPlace(diasActivos.slice(), rnd);
+        for (const dia of diasOrd) {
+          for (const f of franjasUtiles) {
+            if (opBudget > OP_MAX) return false;
+            const slot = dia * F + f;
+            if (esFijo(slot) || !disponibleEn(sigla, slot)) continue;
+            // reglas duras de terapeuta/día y disc deben cumplirse tras el desalojo
+            if (terDay[sigla][dia] >= reglas.max_por_terapeuta_dia) continue;
+            const usadas = discDia.get(`${ni}_${disc}_${dia}`);
+            if (usadas && usadas.length >= reglas.max_por_disciplina_dia && !(relax && relax.softDisc)) continue;
+            const sala = terapeutas[sigla].sala;
+            const ninoOcup = gridNino[ni][slot];
+            const terOcupOtro = ocupadoTer[sigla][slot];
+            const esKids = ninoOcup === KIDS_TER || (terOcupOtro && kidsSlots.some((k) => k.slot === slot));
+            if (esKids) continue;
+            // sala llena por otro terapeuta (cap 1): tratable si ese otro es el propio terapeuta; si no, saltar
+            if (sala && ocupadoSala[sala][slot] >= capDe(sala) && !terOcupOtro) continue;
+            // Caso A: niño libre, terapeuta ocupado con otro niño -> desalojar esa sesión.
+            // Colocamos d PRIMERO (ocupa el slot) para que la sesión desalojada no vuelva a él.
+            if (!ninoOcup && terOcupOtro) {
+              let nj = -1; for (let x = 0; x < N; x++) if (gridNino[x][slot] === sigla) { nj = x; break; }
+              if (nj < 0) continue;
+              const disc2 = terapeutas[sigla].disciplina;
+              liberar(nj, sigla, disc2, slot);
+              const chk = chequear(ni, sigla, disc, slot, relax);
+              if (chk) {
+                ocupar(ni, sigla, disc, slot, chk.penal);
+                if (colocar(nj, sigla, disc2, prof - 1, null)) return true;
+                liberar(ni, sigla, disc, slot); // deshacer d
+              }
+              ocupar(nj, sigla, disc2, slot); // restaurar desalojado
+            }
+            // Caso B: niño ocupado por otro terapeuta, nuestro terapeuta libre -> desalojar la del niño.
+            else if (ninoOcup && ninoOcup !== sigla && !terOcupOtro) {
+              const sig2 = ninoOcup, d2 = terapeutas[sig2].disciplina;
+              liberar(ni, sig2, d2, slot);
+              const chk = chequear(ni, sigla, disc, slot, relax);
+              if (chk) {
+                ocupar(ni, sigla, disc, slot, chk.penal);
+                if (colocar(ni, sig2, d2, prof - 1, null)) return true;
+                liberar(ni, sigla, disc, slot); // deshacer d
+              }
+              ocupar(ni, sig2, d2, slot); // restaurar desalojado
+            }
+          }
+        }
+        return false;
+      }
+
+      let restantes = pend;
+      if (doEjection) {
+        for (let ronda = 0; ronda < 2 && restantes.length; ronda++) {
+          const aun = [];
+          for (const d of restantes) {
+            opBudget = 0;
+            let done = colocar(d.ni, d.sigla, d.disciplina, 6, null);
+            if (!done) { opBudget = 0; done = colocar(d.ni, d.sigla, d.disciplina, 6, { softConsec: true }); }
+            if (!done) { opBudget = 0; done = colocar(d.ni, d.sigla, d.disciplina, 6, { softConsec: true, softDisc: true }); }
+            if (!done) aun.push(d);
+          }
+          restantes = aun;
+        }
+      }
+
+      const colocadas = sesionesPlanificadas - restantes.length;
+      return { gridNino, ocupadoTer, ocupadoSala, childDay, terDay, discDia, kidsSlots, conflictosKids, noColocadas: restantes, colocadas, softViol };
     }
 
-    // === Post-fases: reuniones y sesiones con papás (no compiten por el grid de atención) ===
+    // ---------- MULTI-RESTART en DOS ETAPAS (para acotar el tiempo) ----------
+    // Etapa 1: greedy barato en muchas semillas -> ranking de las mejores bases.
+    // Etapa 2: cadena de eyección (cara) sólo sobre las mejores K bases.
+    const semDe = (r) => (semillaBase + r * 2654435761 % 1e9 + r);
+    const scoreDe = (res) => res.colocadas * 100000 - res.softViol - res.conflictosKids.length * 1e6;
+    const K = 6;
+    const bases = [];
+    let optimoSeed = null;
+    for (let r = 0; r < RESTARTS; r++) {
+      const res = solveOnce(semDe(r), false);
+      bases.push({ seed: semDe(r), sc: scoreDe(res) });
+      if (res.noColocadas.length === 0 && res.softViol === 0 && res.conflictosKids.length === 0) { optimoSeed = semDe(r); break; }
+    }
+    let best = null;
+    const candidatas = optimoSeed != null
+      ? [optimoSeed]
+      : bases.sort((a, b) => b.sc - a.sc).slice(0, K).map((x) => x.seed);
+    const t0 = Date.now();
+    const LIMITE_MS = opts.limiteMs ?? 4000; // guarda de tiempo dura
+    for (const seed of candidatas) {
+      const res = solveOnce(seed, true);
+      const score = scoreDe(res);
+      if (!best || score > best.score) best = { ...res, score };
+      if (res.noColocadas.length === 0 && res.softViol === 0 && res.conflictosKids.length === 0) break;
+      if (Date.now() - t0 > LIMITE_MS) break;
+    }
+
+    const { gridNino, ocupadoTer, kidsSlots, noColocadas, conflictosKids } = best;
+    const conflictos = [...conflictosSigla, ...conflictosKids];
+    const rndPost = mulberry32(semillaBase + 7777);
+
+    // FASE 3: reuniones y sesiones con papás
     const reunionesEquipo = [];
     const reunionesPapas = [];
     const sesionesPapas = [];
 
-    // Tutores TO/FONO/COG por niño (rol TUTOR)
     function tutoresDe(n) {
       const out = {};
       n.asignaciones.forEach((a) => {
@@ -316,95 +386,100 @@ const Scheduler = (() => {
       return out;
     }
     function franjaLibreParaTutores(siglas, franja, requeridos) {
-      // busca un día donde todos los 'siglas' estén libres y disponibles en 'franja'
-      const ordenDias = shuffle(Array.from({ length: D }, (_, d) => d), rnd);
+      const ordenDias = shuffleInPlace(diasActivos.slice(), rndPost);
       for (const dia of ordenDias) {
         const slot = dia * F + franja;
-        const todos = siglas.every((s) => ocupadoTer[s] && !ocupadoTer[s][slot] && disponibleEn(s, slot));
-        if (todos && siglas.length >= requeridos) return slot;
+        if (siglas.every((s) => ocupadoTer[s] && !ocupadoTer[s][slot] && disponibleEn(s, slot)) && siglas.length >= requeridos) return slot;
       }
       return -1;
     }
 
-    if (ok) {
-      intensivo.niños.forEach((n, ni) => {
-        const tut = tutoresDe(n);
-        const siglas = TUTORES_REUNION.map((d) => tut[d]).filter(Boolean);
+    intensivo.niños.forEach((n, ni) => {
+      const tut = tutoresDe(n);
+      const siglas = TUTORES_REUNION.map((d) => tut[d]).filter(Boolean);
 
-        // Reunión de equipo: cualquier bloque fijo, día con los tutores libres
-        // (preferir reunion_equipo_franja, si no, probar las demás franjas fijas)
-        const franjasReunion = [reglas.reunion_equipo_franja, ...[...bloquesFijos].filter((f) => f !== reglas.reunion_equipo_franja)];
-        let slotEq = -1;
-        for (const fr of franjasReunion) { slotEq = franjaLibreParaTutores(siglas, fr, 2); if (slotEq >= 0) break; }
-        if (slotEq >= 0) {
-          siglas.forEach((s) => { ocupadoTer[s][slotEq] = 1; });
-          reunionesEquipo.push({ ni, niño: n.nombre, slot: slotEq, tutores: siglas });
-        } else {
-          conflictos.push({ tipo: 'reunion_equipo', mensaje: `Sin bloque común para reunión de equipo de ${n.nombre}` });
-        }
+      const franjasReunion = [reglas.reunion_equipo_franja, ...[...bloquesFijos].filter((f) => f !== reglas.reunion_equipo_franja)];
+      let slotEq = -1;
+      for (const fr of franjasReunion) { slotEq = franjaLibreParaTutores(siglas, fr, 2); if (slotEq >= 0) break; }
+      if (slotEq >= 0) {
+        siglas.forEach((s) => { ocupadoTer[s][slotEq] = 1; });
+        reunionesEquipo.push({ ni, niño: n.nombre, slot: slotEq, tutores: siglas });
+      } else conflictos.push({ tipo: 'reunion_equipo', mensaje: `Sin bloque común para reunión de equipo de ${n.nombre}` });
 
-        // Reunión con papás: solo en la semana indicada, doble bloque contiguo (ideal)
-        if (semana === reglas.reunion_papas_semana && siglas.length >= 2) {
-          const nb = reglas.reunion_papas_bloques || 2;
-          const ordenDias = shuffle(Array.from({ length: D }, (_, d) => d), rnd);
-          let puesta = false;
-          for (const dia of ordenDias) {
-            // buscar inicio de bloque contiguo de nb módulos (no fijos) con tutores libres
-            for (let f = 0; f + nb <= F && !puesta; f++) {
-              const slotsBloque = [];
-              let okBloque = true;
-              for (let k = 0; k < nb; k++) {
-                const fr = f + k;
-                if (bloquesFijos.has(fr)) { okBloque = false; break; }
-                const slot = dia * F + fr;
-                if (!siglas.every((s) => !ocupadoTer[s][slot] && disponibleEn(s, slot))) { okBloque = false; break; }
-                slotsBloque.push(slot);
-              }
-              if (okBloque) {
-                slotsBloque.forEach((slot) => siglas.forEach((s) => { ocupadoTer[s][slot] = 1; }));
-                reunionesPapas.push({ ni, niño: n.nombre, slots: slotsBloque, tutores: siglas });
-                puesta = true;
-              }
+      if (semana === reglas.reunion_papas_semana && siglas.length >= 2) {
+        const nb = reglas.reunion_papas_bloques || 2;
+        const ordenDias = shuffleInPlace(diasActivos.slice(), rndPost);
+        let puesta = false;
+        for (const dia of ordenDias) {
+          for (let f = 0; f + nb <= F && !puesta; f++) {
+            const slotsBloque = []; let okB = true;
+            for (let k = 0; k < nb; k++) {
+              const fr = f + k;
+              if (bloquesFijos.has(fr)) { okB = false; break; }
+              const slot = dia * F + fr;
+              if (!siglas.every((s) => !ocupadoTer[s][slot] && disponibleEn(s, slot))) { okB = false; break; }
+              slotsBloque.push(slot);
             }
-            if (puesta) break;
+            if (okB) {
+              slotsBloque.forEach((slot) => siglas.forEach((s) => { ocupadoTer[s][slot] = 1; }));
+              reunionesPapas.push({ ni, niño: n.nombre, slots: slotsBloque, tutores: siglas });
+              puesta = true;
+            }
           }
-          if (!puesta) conflictos.push({ tipo: 'reunion_papas', mensaje: `Sem ${semana}: sin doble bloque para reunión con papás de ${n.nombre}`, nivel: 'ideal' });
+          if (puesta) break;
         }
+        if (!puesta) conflictos.push({ tipo: 'reunion_papas', mensaje: `Sem ${semana}: sin doble bloque para reunión con papás de ${n.nombre}`, nivel: 'ideal' });
+      }
 
-        // Psicólogo-papás (rol PAPAS): fuera del horario del niño
-        n.asignaciones.filter((a) => a.rol === 'PAPAS').forEach((a) => {
-          if (!ocupadoTer[a.sigla]) return;
-          const candidatos = shuffle(Array.from({ length: totalSlots }, (_, k) => k), rnd);
-          for (const slot of candidatos) {
-            if (esFijo(slot)) continue;
-            if (gridNino[ni][slot]) continue;          // fuera del horario del niño
-            if (ocupadoTer[a.sigla][slot]) continue;   // psicóloga libre
-            if (!disponibleEn(a.sigla, slot)) continue;
-            ocupadoTer[a.sigla][slot] = 1;
-            sesionesPapas.push({ ni, niño: n.nombre, sigla: a.sigla, slot });
-            break;
-          }
-        });
+      n.asignaciones.filter((a) => a.rol === 'PAPAS').forEach((a) => {
+        if (!ocupadoTer[a.sigla]) return;
+        const cand = shuffleInPlace(Array.from({ length: totalSlots }, (_, k) => k), rndPost);
+        for (const slot of cand) {
+          if (esFijo(slot) || gridNino[ni][slot] || ocupadoTer[a.sigla][slot] || !disponibleEn(a.sigla, slot)) continue;
+          ocupadoTer[a.sigla][slot] = 1;
+          sesionesPapas.push({ ni, niño: n.nombre, sigla: a.sigla, slot });
+          break;
+        }
       });
-    }
+    });
 
-    return { ok, grid: gridNino, sesionesPlanificadas: demandas.length, conflictos, kidsSlots, reunionesEquipo, reunionesPapas, sesionesPapas };
+    noColocadas.forEach((d) => {
+      conflictos.push({ tipo: 'sin_solucion', mensaje: `No hay slot disponible para ${d.niño} con ${d.sigla} (${d.disciplina}/${d.rol})`, niño: d.niño, sigla: d.sigla, disciplina: d.disciplina });
+    });
+
+    const ok = noColocadas.length === 0 && conflictosKids.length === 0 && conflictosSigla.length === 0;
+
+    return { ok, grid: gridNino, sesionesPlanificadas, conflictos, kidsSlots, reunionesEquipo, reunionesPapas, sesionesPapas };
   }
 
   function generar(intensivo, catalogo, opts = {}) {
+    // El intensivo repite la MISMA base semanal (así lo arma Casa Nogal a mano);
+    // lo único propio de una semana es la reunión con papás (una sola semana).
+    // Por eso resolvemos el grid UNA vez (caro) y lo reutilizamos en las 6 semanas
+    // (barato), en vez de re-resolver cada semana. Mismas keys de salida que antes.
+    const reglas = { ...DEFAULTS, ...(intensivo.reglas || {}), ...(opts.reglas || {}) };
+    const semanaPapas = reglas.reunion_papas_semana || 2;
+    const base = generarSemana(intensivo, catalogo, {
+      semilla: opts.semilla ?? 42,
+      semana: semanaPapas, // resolvemos con la reunión de papás incluida
+      salasCapacidad: opts.salasCapacidad,
+      disponibilidad: opts.disponibilidad,
+      reglas: opts.reglas,
+      restarts: opts.restarts,
+      limiteMs: opts.limiteMs,
+    });
     const semanas = [];
+    let semanaFallo = null;
     for (let s = 0; s < intensivo.semanas; s++) {
-      const r = generarSemana(intensivo, catalogo, {
-        semilla: (opts.semilla ?? 42) + s,
-        semana: s + 1,
-        salasCapacidad: opts.salasCapacidad,
-        disponibilidad: opts.disponibilidad,
-        reglas: opts.reglas,
-      });
+      const esPapas = (s + 1) === semanaPapas;
+      // clon superficial reutilizando el mismo grid; sólo la semana de papás
+      // conserva reunionesPapas (las demás no la tienen).
+      const r = { ...base, reunionesPapas: esPapas ? base.reunionesPapas : [] };
       semanas.push(r);
-      if (!r.ok) return { ok: false, semanas, conflictos: r.conflictos, semanaFallo: s + 1 };
+      if (!r.ok && semanaFallo == null) semanaFallo = s + 1;
     }
-    return { ok: true, semanas };
+    if (semanaFallo == null) return { ok: true, semanas };
+    return { ok: false, semanas, conflictos: base.conflictos, semanaFallo };
   }
 
   return { generar, generarSemana };

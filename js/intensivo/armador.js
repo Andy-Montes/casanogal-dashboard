@@ -45,27 +45,44 @@ const Armador = {
   _borrarGrupo(id) { this._persistirGrupos(this._gruposGuardados().filter(g => g.id !== id)); this._generar(); this.render(); },
 
   async _cargar() {
-    if (this._cache) return this._cache;
-    const [intensivo, catalogo, disponibilidad, salasCapacidad, real] = await Promise.all([
+    if (this._cache40) { this._activarCacheSegunToggle(); return this._cache; }
+    const [int40, catalogo, disp40, salasCapacidad, real, int41, dispReal] = await Promise.all([
       fetch('data/intensivos/int40.json').then(r => r.json()),
       fetch('data/intensivos/catalogo.json').then(r => r.json()),
       fetch('data/intensivos/disponibilidad.json').then(r => r.json()),
       fetch('data/intensivos/salas_capacidad.json').then(r => r.json()),
       fetch('data/intensivos/int40_real.json').then(r => r.json()).catch(() => null),
+      fetch('data/intensivos/int41.json').then(r => r.json()),
+      fetch('data/intensivos/_disp_real.json').then(r => r.json()),
     ]);
-    // Aplicar niños extra guardados en localStorage
+    // Aplicar niños extra guardados en localStorage (van al Intensivo 40, el editable de la demo)
     try {
       const extras = JSON.parse(localStorage.getItem(this.KEY_NINOS_EXTRA) || '[]');
       if (Array.isArray(extras) && extras.length) {
-        intensivo.niños = intensivo.niños.concat(extras);
+        int40.niños = int40.niños.concat(extras);
       }
     } catch {}
-    this._cache = { intensivo, catalogo, disponibilidad, salasCapacidad };
-    this._resultadoReal = real;
+    // Intensivo 40 = demo con disponibilidad sintética + horario real armado a mano.
+    // Intensivo 41 = intensivo REAL de Trini (data del Excel) con disponibilidad REAL; lo arma el motor.
+    this._cache40 = { intensivo: int40, catalogo, disponibilidad: disp40, salasCapacidad };
+    this._cache41 = { intensivo: int41, catalogo, disponibilidad: dispReal, salasCapacidad };
+    this._realPorIntensivo = { 40: real, 41: null };
+    this._resultadoPorIntensivo = {};
     this._bannerCerrado = localStorage.getItem(this.KEY_BANNER) === '1';
     const fuenteGuardada = localStorage.getItem(this.KEY_FUENTE);
     if (fuenteGuardada === 'real' || fuenteGuardada === 'generado') this._fuente = fuenteGuardada;
+    this._activarCacheSegunToggle();
     return this._cache;
+  },
+
+  // Apunta this._cache al intensivo activo (40 o 41) y restaura su resultado/fuente.
+  _activarCacheSegunToggle() {
+    const k = this._verIntensivo41 ? 41 : 40;
+    this._cache = this._verIntensivo41 ? this._cache41 : this._cache40;
+    this._resultadoReal = this._realPorIntensivo[k];
+    // El Intensivo 41 no tiene horario armado a mano: siempre se ve el generado por el motor.
+    if (this._verIntensivo41) this._fuente = 'generado';
+    this._resultado = this._resultadoPorIntensivo[k] || null;
   },
 
   _ninosExtraGuardados() {
@@ -96,7 +113,8 @@ const Armador = {
       return;
     }
     if (!this._resultado) this._generar();
-    if (this._verIntensivo41) {
+    // Si el intensivo activo no tiene niños, se muestra el estado "aún sin armar"; si tiene, se arma.
+    if ((data.intensivo.niños || []).length === 0) {
       main.innerHTML = this._html41(data);
     } else {
       main.innerHTML = this._html(data);
@@ -138,6 +156,7 @@ const Armador = {
     });
     this._colocarGrupos(this._resultado, this._gruposGuardados());
     this._kidsSlotsPorSemana = this._computarKidsSlots(this._resultado);
+    if (this._resultadoPorIntensivo) this._resultadoPorIntensivo[this._verIntensivo41 ? 41 : 40] = this._resultado;
   },
 
   // Coloca los grupos/duplas como post-proceso del resultado (igual que reuniones/papás), sin tocar el motor.
@@ -270,14 +289,9 @@ const Armador = {
       subtitulo = `Este es el horario que Trini armó a mano en el Excel. ${intensivo.niños.length} niños · ${totalSes} sesiones por semana · base que se repite en las ${intensivo.semanas} semanas.`;
       badgeClass = 'ok'; badgeIcon = this._icons.check;
       badgeText = 'Fuente: Excel original';
-    } else if (!res.ok) {
-      titulo = 'El horario tiene conflictos sin resolver';
-      subtitulo = `El sistema no pudo asignar todas las sesiones. Revisa el detalle a la derecha y prueba otra distribución.`;
-      badgeClass = 'ko'; badgeIcon = this._icons.alert;
-      badgeText = `${res.conflictos?.length || 0} conflicto${res.conflictos?.length === 1 ? '' : 's'}`;
     } else if (agg.incompletos.length === 0) {
       titulo = 'Horario generado por el sistema';
-      subtitulo = `Distribución calculada automáticamente con los inputs reales del INT 40. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
+      subtitulo = `Distribución calculada automáticamente con los inputs reales. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = 'Completo · 100%';
     } else {
@@ -363,8 +377,8 @@ const Armador = {
           <label class="armador-select">
             <span class="armador-select-label">Intensivo:</span>
             <select id="armadorIntensivo">
-              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · actual</option>
-              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · próximo</option>
+              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · demo</option>
+              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · real</option>
             </select>
           </label>
           <label class="armador-select">
@@ -958,6 +972,8 @@ const Armador = {
 
     document.getElementById('armadorIntensivo')?.addEventListener('change', (e) => {
       this._verIntensivo41 = e.target.value === '41';
+      this._filtroNino = -1; // los niños difieren entre intensivos; volver a "Todos"
+      this._activarCacheSegunToggle();
       this.render();
     });
     document.getElementById('armadorFiltroNino')?.addEventListener('change', (e) => {
