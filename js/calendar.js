@@ -211,9 +211,8 @@ const Calendar = {
       const cards = dia.map(s => {
         const c = ESPECIALIDAD_VAR[s.tipo_terapia] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
         const nino = Data.nino(s.id_nino);
-        const cn = UI.colorNino(s.id_nino);
         const { antes, despues } = adj(s);
-        return `<div class="ter-card" style="border-left-color:${cn.bg}">
+        return `<div class="ter-card" style="border-left-color:${c.main}">
           <div class="ter-card-top">
             <span class="ter-card-hora mono">${s.hora_inicio}</span>
             <span class="ter-card-nino">${UI.esc((s.nino_visible || '').trim())}${UI.badgeIntensivo(nino)}</span>
@@ -563,13 +562,14 @@ const Calendar = {
     }
     const ter = Data.terapeuta(s.id_terapeuta);
     const nino = Data.nino(s.id_nino);
-    const cn = UI.colorNino(s.id_nino);          // color identitario del niño
+    // Color POR DISCIPLINA (pedido de Trini): TO verde, Fono naranja, Cognitivo azul,
+    // Psicología amarillo, Kine gris, Kids rosado. No por niño.
+    const disc = ESPECIALIDAD_VAR[s.tipo_terapia] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
     const isConflict = !!s.conflicto_detectado;
     const isDupla = s.es_dupla;
     let extraCls = '';
-    // Identidad por color del niño como ACENTO (barra lateral), no fondo saturado:
-    // fondo en un tinte muy suave del color + texto oscuro legible. La dupla mantiene su gradiente.
-    let extraStyle = isDupla ? '' : `background:color-mix(in srgb, ${cn.bg} 13%, var(--bg, #fff));border-left-color:${cn.bg};color:var(--text);`;
+    // Fondo en un tinte del color de la disciplina + barra lateral con el color pleno.
+    let extraStyle = isDupla ? '' : `background:color-mix(in srgb, ${disc.bg} 55%, var(--bg, #fff));border-left-color:${disc.main};color:var(--text);`;
     let nombre = UI.esc(s.nino_visible);
     let sub = `${UI.esc(s.tipo_terapia)} · ${UI.esc(s.sala_nombre)}`;
     if (isConflict) extraCls += ' s-conflict';

@@ -124,7 +124,7 @@
 ## 🏫 Salas / Disponibilidad
 - [x] Indicador claro de **"qué semana estás viendo"** (badge "Semana del X al Y" en el título de Disponibilidad)
 - [ ] Poder agregar **OBSERVACIÓN** a un niño agendado; que se refleje en horario del niño y del terapeuta (color/marca) — desde disponibilidad
-- [ ] Colores de terapeutas **por área/especialidad** (no por niño) — Trini manda los colores (TO verde, FONO naranja, gris, etc.)
+- [x] Colores **por disciplina** (no por niño) con la paleta fija de Trini (2026-07-06): TO verde · Fono naranja · Cognitivo azul · Psicología amarillo · Kine gris · Kids rosado. Cambiados en tokens.css (--psico→amarillo, --kids→rosado; TO/Fono/Cog/Kine ya calzaban) y el calendario + vista terapeuta ahora pintan la sesión por disciplina
 
 ## 👩‍⚕️ Terapeuta (vista)
 - [x] Vista terapeuta ve **notificaciones** (bandeja) + **chat** (puede mandar); NO ve enviar-aviso/reglas/mails (solo coordinación). Calendario y ficha ya los tenía
