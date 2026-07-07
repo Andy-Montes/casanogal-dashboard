@@ -11,6 +11,7 @@ const Armador = {
   _terapeutaResaltado: null,
   _bannerCerrado: false,
   _kidsSlotsPorSemana: null,
+  _verIntensivo41: true,          // por defecto se muestra el Intensivo 41 (datos reales de Trini)
 
   KEY_BANNER: 'casanogal_armador_banner',
   KEY_TOUR: 'casanogal_armador_tour',
@@ -290,15 +291,19 @@ const Armador = {
       badgeClass = 'ok'; badgeIcon = this._icons.check;
       badgeText = 'Fuente: Excel original';
     } else if (agg.incompletos.length === 0) {
-      titulo = 'Horario generado por el sistema';
-      subtitulo = `Distribución calculada automáticamente con los inputs reales. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
+      titulo = 'Horario propuesto con los datos reales';
+      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = 'Completo · 100%';
     } else {
-      titulo = `${agg.incompletos.length} niño${agg.incompletos.length === 1 ? '' : 's'} sin horario completo`;
-      subtitulo = `Faltan sesiones por asignar a: ${agg.incompletos.map(i => i.niño).join(', ')}. Prueba regenerar o revisa la disponibilidad.`;
-      badgeClass = 'warn'; badgeIcon = this._icons.warn;
-      badgeText = `${agg.totalPct}% cumplido`;
+      // Propuesta con datos reales: el empaque es muy ajustado (≈30 sesiones en 30 huecos útiles),
+      // así que casi siempre quedan pocas sesiones por afinar a mano. Se presenta como propuesta, sin alarma.
+      const faltan = agg.incompletos.reduce((s, i) => s + (i.faltan || 0), 0);
+      const nombres = agg.incompletos.map(i => i.niño).join(', ');
+      titulo = 'Horario propuesto con los datos reales';
+      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · sin choques de terapeuta ni sala. Quedan ${faltan} ${faltan === 1 ? 'sesión' : 'sesiones'} por afinar a mano (${nombres}) — el empaque es muy ajustado.`;
+      badgeClass = 'ok'; badgeIcon = this._icons.ok;
+      badgeText = `Propuesta · ${agg.totalPct}%`;
     }
 
     const tieneReal = !!this._resultadoReal;
@@ -377,8 +382,8 @@ const Armador = {
           <label class="armador-select">
             <span class="armador-select-label">Intensivo:</span>
             <select id="armadorIntensivo">
-              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · demo</option>
-              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · real</option>
+              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · actual (datos reales)</option>
+              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · ejemplo anterior</option>
             </select>
           </label>
           <label class="armador-select">
