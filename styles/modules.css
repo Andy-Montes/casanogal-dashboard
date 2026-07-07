@@ -2386,6 +2386,16 @@
 .pa-cp-badge.is-obs { background: var(--psico-bg, #FDF3C9); color: var(--psico-text, #8A6D00); }
 .pa-cp-badge.is-vinc { background: var(--cn-azul-bg, #E4F0F5); color: var(--cn-azul-deep, #0B4F63); }
 
+/* Panel de participación de los papás (periodicidad de observaciones / coaching / talleres) */
+.pa-particip-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pa-particip-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.pa-particip-list b { color: var(--text); }
+.pa-particip-badge { flex-shrink: 0; min-width: 92px; text-align: center; font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+.pa-particip-badge.is-obs { background: var(--to-bg, #E7F1E3); color: var(--to-text, #2E6B3A); }
+.pa-particip-badge.is-coach { background: var(--cn-azul-bg, #E4F0F5); color: var(--cn-azul-deep, #0B4F63); }
+.pa-particip-badge.is-taller { background: var(--cn-mostaza-bg, #FBEFD3); color: var(--cn-mostaza-deep, #8A5A00); }
+.pa-particip-hint { margin-top: 10px; font-size: 11.5px; color: var(--text-3); font-style: italic; }
+
 /* Grilla semanal */
 .pa-week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .pa-day { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }

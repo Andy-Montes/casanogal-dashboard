@@ -29,7 +29,7 @@ const Comunicacion = {
       <div id="paRoot" class="pa-root">
         ${this._paHeader(n)}
         <div class="pa-grid">
-          <div class="pa-col-main">${this._paHorario(n)}${this._paHorarioPadres(n)}</div>
+          <div class="pa-col-main">${this._paHorario(n)}${this._paParticipacion(n)}${this._paHorarioPadres(n)}</div>
           <aside class="pa-col-side">
             ${this._paEquipo(n)}
             ${this._paCapsulas(n)}
@@ -72,6 +72,28 @@ const Comunicacion = {
           </button>
         </div>
       </div>`;
+  },
+
+  // Participación de los papás en el intensivo (periodicidad que definió Trini). Se muestra siempre
+  // para que la familia sepa cuándo participa, aunque las sesiones puntuales aún no estén cargadas.
+  _paParticipacion(n) {
+    if (!UI.esIntensivo(n)) return '';
+    const primer = (n.nombre_completo || '').split(' ')[0];
+    return `
+      <section class="pa-card pa-particip-card">
+        <div class="pa-card-head">
+          <div>
+            <div class="pa-card-eyebrow">Su participación · se repite cada semana</div>
+            <h2 class="pa-card-title">Cuándo participan ustedes</h2>
+          </div>
+        </div>
+        <ul class="pa-particip-list">
+          <li><span class="pa-particip-badge is-obs">Observaciones</span><span>Cada semana <b>desde la semana 2</b>: acompañas a ${UI.esc(primer)} en su sesión de <b>Terapia Ocupacional, Fonoaudiología y Cognitivo</b> (a veces Kinesiología).</span></li>
+          <li><span class="pa-particip-badge is-coach">Coaching</span><span>Todos los <b>viernes de 10:00 a 12:00</b> · orientación para ustedes.</span></li>
+          <li><span class="pa-particip-badge is-taller">Talleres</span><span>Los <b>jueves</b> · taller grupal para las familias (a veces se suma alguno extra entremedio).</span></li>
+        </ul>
+        <div class="pa-particip-hint">Coordinación les confirma el día y la hora exacta de cada observación durante la semana.</div>
+      </section>`;
   },
 
   // El niño está CON los papás (el papá acompaña): va en el calendario del hijo, marcado con color.
