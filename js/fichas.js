@@ -180,6 +180,10 @@ const Fichas = {
           ` : ''}
         </div>
         <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" id="exportRegistro" title="Registro clínico completo: las 6 semanas con cada atención, terapeuta, estado, notas y avances">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+            Registro completo
+          </button>
           <button class="btn btn-secondary" id="exportFicha">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar ficha
@@ -208,6 +212,7 @@ const Fichas = {
 
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => this._descargarFicha(n));
+    document.getElementById('exportRegistro')?.addEventListener('click', () => this._exportarRegistroCompleto(n));
     document.querySelectorAll('.fhist-export').forEach(b =>
       b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const hi = b.dataset.hidx; this._exportarEvento(n, hi === 'curso' ? 'curso' : Number(hi)); })
     );
@@ -887,6 +892,87 @@ const Fichas = {
     }
     this._descargarDoc(titulo, cuerpo, `${(titulo || 'evento').replace(/[^\wáéíóúñ]+/gi, '-').toLowerCase()}.doc`);
     UI.toast('Evento exportado', 'success');
+  },
+
+  // Registro clínico COMPLETO del niño: las semanas del intensivo con cada atención en detalle
+  // (fecha, terapeuta, disciplina, sala, estado, nota clínica, objetivos trabajados y avance /10),
+  // más equipo, objetivos, reuniones con acta, documentos e historial. (Pedido de Trini 2026-07-07.)
+  _exportarRegistroCompleto(n) {
+    const esc = UI.esc;
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}') || {}; } catch {}
+    const prog = Data.programa(n.id_programa);
+    const ses = Data.sesionesDeNino(n.id_nino)
+      .filter(s => s.tipo_actividad !== 'Reunión de equipo')
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    if (!ses.length) { UI.toast('Este niño no tiene atenciones registradas', 'warning'); return; }
+
+    // Agrupar por semana (lunes) desde el inicio del programa (o la primera atención)
+    const lunesDe = (iso) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
+    const baseLunes = lunesDe(n.fecha_inicio_programa || ses[0].fecha);
+    const semanaDe = (iso) => Math.floor((lunesDe(iso) - baseLunes) / (7 * 86400000)) + 1;
+    const porSemana = {};
+    ses.forEach(s => { const w = semanaDe(s.fecha); (porSemana[w] = porSemana[w] || []).push(s); });
+
+    const notaDe = (s) => {
+      const base = Data.notaPorSesion(s.id_sesion);
+      const locRaw = stored[s.id_sesion];
+      const loc = typeof locRaw === 'string' ? { texto: locRaw } : locRaw;
+      return {
+        texto: (loc && loc.texto) || (base && base.notas_libres) || '',
+        objetivos: (base && base.objetivos_trabajados) || [],
+        avance: base ? base.avance_percibido : null,
+      };
+    };
+    const DIA = { lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié', jueves: 'Jue', viernes: 'Vie', 'sábado': 'Sáb', domingo: 'Dom' };
+
+    const semanasHtml = Object.keys(porSemana).sort((a, b) => a - b).map(w => {
+      const filas = porSemana[w].map(s => {
+        const ter = Data.terapeuta(s.id_terapeuta);
+        const nota = notaDe(s);
+        const reg = nota.texto
+          ? `${esc(nota.texto)}${nota.objetivos.length ? `<br><i>Objetivos trabajados: ${nota.objetivos.map(esc).join(' · ')}</i>` : ''}${nota.avance != null ? `<br><b>Avance percibido: ${nota.avance}/10</b>` : ''}`
+          : '<span style="color:#999">— sin nota —</span>';
+        const modal = (s.tipo_actividad && s.tipo_actividad !== 'Sesión') ? ` <i>(${esc(s.tipo_actividad)})</i>` : '';
+        return `<tr>
+          <td>${esc(UI.fmtFechaCorta(s.fecha))} ${esc(DIA[s.dia_semana] || '')}</td>
+          <td>${esc(s.hora_inicio || '')}</td>
+          <td>${esc(s.tipo_terapia || '')}${modal}</td>
+          <td>${esc(ter?.nombre_completo || s.terapeuta_abr || '—')}</td>
+          <td>${esc(s.sala_nombre || '—')}</td>
+          <td>${esc(s.estado || '')}</td>
+          <td>${reg}</td>
+        </tr>`;
+      }).join('');
+      const real = porSemana[w].filter(s => s.estado === 'Realizada').length;
+      return `<h2 style="color:#1B6B8A">Semana ${w} <span style="font-size:12px;font-weight:400;color:#666">(${real} de ${porSemana[w].length} realizadas)</span></h2>
+        <table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:11.5px">
+          <tr style="background:#EAF2F5"><th>Fecha</th><th>Hora</th><th>Terapia</th><th>Terapeuta</th><th>Sala</th><th>Estado</th><th>Registro / notas / avance</th></tr>
+          ${filas}
+        </table>`;
+    }).join('');
+
+    const equipo = Data.equipoDeNino(n.id_nino).map(e => { const t = Data.terapeuta(e.id_terapeuta); return `<li>${esc(t?.nombre_completo || e.terapeuta_visible || '')} · ${esc(e.area || t?.especialidad || '')} · ${esc(e.rol || '')}${e.fecha_inicio ? ` (desde ${esc(e.fecha_inicio)})` : ''}</li>`; });
+    const objs = Data.objetivosDeNino(n.id_nino).map(o => `<li><b>${esc(o.area || '')}:</b> ${esc(o.descripcion || '')} — <i>${esc(o.estado || '')}</i>${o.fecha_planteamiento ? ` · planteado ${esc(o.fecha_planteamiento)}` : ''}${o.fecha_estimada_logro ? ` · meta ${esc(o.fecha_estimada_logro)}` : ''}</li>`);
+    const reus = this._leerReuniones(n.id_nino).map(r => `<li>${esc(r.fecha || '')} · ${esc(r.tipo || '')} · con ${esc(r.con || '')}${r.acta ? `<br><i>${esc(r.acta)}</i>` : ''}</li>`);
+    const docs = Data.documentosDeNino(n.id_nino).map(d => `<li>${esc(d.tipo || '')} · ${esc(d.nombre_archivo || '')}${d.fecha_documento ? ` · ${esc(d.fecha_documento)}` : ''}</li>`);
+    const hist = Data.historialDeNino(n.id_nino).map(h => `<li><b>${esc(h.tipo || '')}</b> · ${esc(h.fecha_inicio || '')}${h.fecha_termino ? `–${esc(h.fecha_termino)}` : ''}${h.resumen ? `<br><i>${esc(h.resumen)}</i>` : ''}${h.informe ? `<br>Informe: ${esc(h.informe.nombre_archivo || h.informe.tipo || '')}` : ''}</li>`);
+    const totalReal = ses.filter(s => s.estado === 'Realizada').length;
+
+    const cuerpo = `
+      <p><b>Paciente:</b> ${esc(n.nombre_completo)} · ${esc(this._edadEn(n.fecha_nacimiento, HOY_ISO))}${(n.diagnosticos && n.diagnosticos.length) ? ` · ${n.diagnosticos.map(esc).join(', ')}` : ''}</p>
+      <p><b>Programa:</b> ${esc(prog?.nombre || n.programa_nombre || '—')}${n.fecha_inicio_programa ? ` · inicio ${esc(n.fecha_inicio_programa)}` : ''}</p>
+      <p><b>Encargado del caso:</b> ${esc(n.apoderado_principal || '—')}</p>
+      <p><b>Total de atenciones:</b> ${ses.length} registradas · ${totalReal} realizadas</p>
+      <h2 style="color:#1B6B8A">Equipo tratante</h2><ul>${equipo.join('') || '<li>—</li>'}</ul>
+      <h2 style="color:#1B6B8A">Objetivos terapéuticos</h2><ul>${objs.join('') || '<li>—</li>'}</ul>
+      <h1 style="color:#1B6B8A;margin-top:20px;border-top:2px solid #1B6B8A;padding-top:10px">Registro de atenciones · semana por semana</h1>
+      ${semanasHtml}
+      <h2 style="color:#1B6B8A">Reuniones</h2><ul>${reus.join('') || '<li>—</li>'}</ul>
+      <h2 style="color:#1B6B8A">Documentos</h2><ul>${docs.join('') || '<li>—</li>'}</ul>
+      <h2 style="color:#1B6B8A">Ciclos anteriores (historia de vida)</h2><ul>${hist.join('') || '<li>—</li>'}</ul>`;
+    this._descargarDoc(`Registro clínico completo · ${n.nombre_completo}`, cuerpo, `registro-completo-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
+    UI.toast(`Registro completo de ${n.nombre_completo.split(' ')[0]} descargado`, 'success');
   },
 
   // Crear un niño nuevo (ingreso) desde la ficha, antes de diagnosticar. Entra como Evaluación.
