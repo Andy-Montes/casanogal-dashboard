@@ -179,14 +179,18 @@ const Fichas = {
             <div class="progress-label">Semana ${n.semana_actual} de ${prog.duracion_semanas} · ${semProg}%</div>
           ` : ''}
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary" id="exportRegistro" title="Registro clínico completo: las 6 semanas con cada atención, terapeuta, estado, notas y avances">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-            Registro completo
-          </button>
-          <button class="btn btn-secondary" id="exportFicha">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary" id="exportFicha" title="Ficha completa: identificación, antecedentes, situación familiar, estado actual, equipo, objetivos e intensivos anteriores">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar ficha
+            Ficha completa
+          </button>
+          <button class="btn btn-secondary" id="exportRegistro" title="Hoja de vida: la ficha + toda la trayectoria de atenciones sesión por sesión con notas de cada profesional">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+            Hoja de vida
+          </button>
+          <button class="btn btn-secondary" id="exportEnCurso" title="Tratamiento en curso: solo el intensivo actual, lo realizado y las horas agendadas pendientes">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Tratamiento en curso
           </button>
           <button class="btn btn-primary" id="editFicha">Editar datos</button>
         </div>
@@ -213,6 +217,7 @@ const Fichas = {
     document.getElementById('fichaBack').addEventListener('click', () => { State.fichaActiva = null; this.render(); });
     document.getElementById('exportFicha').addEventListener('click', () => this._descargarFicha(n));
     document.getElementById('exportRegistro')?.addEventListener('click', () => this._exportarRegistroCompleto(n));
+    document.getElementById('exportEnCurso')?.addEventListener('click', () => this._exportarEnCurso(n));
     document.querySelectorAll('.fhist-export').forEach(b =>
       b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const hi = b.dataset.hidx; this._exportarEvento(n, hi === 'curso' ? 'curso' : Number(hi)); })
     );
@@ -801,38 +806,123 @@ const Fichas = {
     </section>`;
   },
 
-  // ----- Descarga de ficha completa en Word (pedido de Trini) -----
-  _fichaDocHtml(n) {
-    const equipo = Data.equipoDeNino(n.id_nino).map(e => {
-      const t = Data.terapeuta(e.id_terapeuta);
-      return t ? `${t.nombre_completo} (${t.especialidad})` : '';
-    }).filter(Boolean);
-    const objetivos = Data.objetivosDeNino(n.id_nino);
-    const sesiones = Data.sesionesDeNino(n.id_nino);
-    const realizadas = sesiones.filter(s => s.estado === 'Realizada').length;
-    const fila = (k, v) => `<tr><td style="padding:4px 10px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:bold;width:200px">${k}</td><td style="padding:4px 10px;border:1px solid #cbd5e1">${v || '—'}</td></tr>`;
-    const objHtml = objetivos.length
-      ? `<ul>${objetivos.map(o => `<li><b>${o.area}:</b> ${o.descripcion} <i>(${o.estado})</i></li>`).join('')}</ul>`
-      : '<p>Sin objetivos planteados.</p>';
+  // ----- Descargas en Word (pedido de Trini): ficha completa, hoja de vida, tratamiento en curso -----
+
+  _docH2(t) { return `<h2 style="font-size:16px;color:#1B6B8A;border-bottom:2px solid #1B6B8A;padding-bottom:4px;margin-top:16px">${UI.esc(t)}</h2>`; },
+
+  // Bloque de datos COMPLETOS del niño (identificación, estado actual, familia, antecedentes)
+  _docDatosNino(n) {
+    const esc = UI.esc;
+    const v = (x) => (x != null && x !== '') ? esc(x) : '<span style="color:#94a3b8">Por registrar</span>';
+    const fila = (k, val) => `<tr><td style="padding:5px 10px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:bold;width:210px">${k}</td><td style="padding:5px 10px;border:1px solid #cbd5e1">${val}</td></tr>`;
+    const T = 'border-collapse:collapse;width:100%;font-size:13px;margin-bottom:6px';
+    const edad = this._edadEn(n.fecha_nacimiento, HOY_ISO);
+    const term = n.fecha_termino_programa;
+    const enCurso = !term || term >= HOY_ISO;
+    const status = (n.estado === 'Activo')
+      ? (enCurso ? `<b style="color:#166534">En atención</b> · ${esc(n.programa_nombre || '')}${n.semana_actual ? ` (semana ${n.semana_actual})` : ''}` : `Activo · alta vencida (${esc(term)})`)
+      : `<b>${esc(n.estado || '—')}</b>`;
+    const madre = n.madre || n.apoderado_principal;
     return `
-      <h2 style="font-size:17px;color:#1B6B8A;border-bottom:2px solid #1B6B8A;padding-bottom:4px">${n.nombre_completo}</h2>
-      <table style="border-collapse:collapse;width:100%;font-size:13px;margin-bottom:10px">
-        ${fila('Programa', n.programa_nombre)}
-        ${fila('Fecha de nacimiento', `${UI.fmtFechaCorta(n.fecha_nacimiento)}${n.edad_anios ? ' · ' + n.edad_anios + ' años' : ''}`)}
-        ${fila('Estado civil de los padres', n.estado_civil_padres)}
-        ${fila('Madre / apoderada', n.madre || n.apoderado_principal)}
-        ${fila('Padre / apoderado', n.padre)}
-        ${fila('Teléfono', n.telefono_apoderado)}
-        ${fila('Email', n.email_apoderado)}
-        ${fila('Colegio', n.colegio)}
-        ${fila('Médico externo', n.medico_externo)}
-        ${fila('Alergias', n.alergias)}
-        ${fila('Diagnósticos', (n.diagnosticos || []).join(', '))}
+      ${this._docH2('Identificación')}
+      <table style="${T}">
+        ${fila('Nombre completo', v(n.nombre_completo))}
+        ${fila('RUT', v(n.rut))}
+        ${fila('Fecha de nacimiento', n.fecha_nacimiento ? `${esc(UI.fmtFechaCorta(n.fecha_nacimiento))} · ${esc(edad)}` : v(null))}
+        ${fila('Diagnósticos', (n.diagnosticos && n.diagnosticos.length) ? esc(n.diagnosticos.join(', ')) : v(null))}
+        ${fila('Colegio / jardín', v(n.colegio))}
+        ${fila('Médico externo', v(n.medico_externo))}
+        ${fila('Alergias', v(n.alergias))}
+        ${fila('Consideraciones', v(n.consideraciones))}
+        ${fila('Primera evaluación', v(n.fecha_primera_evaluacion))}
+        ${fila('Ingreso a Casa Nogal', v(n.fecha_creacion))}
       </table>
-      <p style="font-size:13px"><b>Equipo tratante:</b> ${equipo.join(' · ') || '—'}</p>
-      <p style="font-size:13px"><b>Sesiones:</b> ${sesiones.length} registradas · ${realizadas} realizadas</p>
-      <h3 style="font-size:14px;color:#1B6B8A">Objetivos terapéuticos</h3>
-      <div style="font-size:13px">${objHtml}</div>`;
+      ${this._docH2('Estado actual')}
+      <table style="${T}">
+        ${fila('Situación', status)}
+        ${fila('Programa', v(n.programa_nombre))}
+        ${fila('Período del programa', (n.fecha_inicio_programa || term) ? `${esc(n.fecha_inicio_programa || '—')} → ${esc(term || '—')}` : v(null))}
+        ${fila('Frecuencia', n.frecuencia_semanal ? `${n.frecuencia_semanal} sesiones por semana` : v(null))}
+        ${fila('Jornada', v(n.horario_tipo))}
+      </table>
+      ${this._docH2('Situación familiar')}
+      <table style="${T}">
+        ${fila('Madre / apoderada', v(madre))}
+        ${fila('Teléfono madre', v(n.telefono_madre || n.telefono_apoderado))}
+        ${fila('Email madre', v(n.email_madre || n.email_apoderado))}
+        ${fila('Padre / apoderado', v(n.padre))}
+        ${fila('Teléfono padre', v(n.telefono_padre))}
+        ${fila('Email padre', v(n.email_padre))}
+        ${fila('Estado civil de los padres', v(n.estado_civil_padres))}
+        ${fila('Dirección', v(n.direccion))}
+      </table>`;
+  },
+
+  // Tabla de sesiones reutilizable. conNota=true agrega la columna de registro clínico.
+  _docTablaSesiones(arr, conNota) {
+    const esc = UI.esc;
+    const DIA = { lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié', jueves: 'Jue', viernes: 'Vie', 'sábado': 'Sáb', domingo: 'Dom' };
+    let stored = {};
+    if (conNota) { try { stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}') || {}; } catch {} }
+    const filas = arr.map(s => {
+      const ter = Data.terapeuta(s.id_terapeuta);
+      const modal = (s.tipo_actividad && s.tipo_actividad !== 'Sesión') ? ` <i>(${esc(s.tipo_actividad)})</i>` : '';
+      let notaCell = '';
+      if (conNota) {
+        const base = Data.notaPorSesion(s.id_sesion);
+        const locRaw = stored[s.id_sesion];
+        const loc = typeof locRaw === 'string' ? { texto: locRaw } : locRaw;
+        const texto = (loc && loc.texto) || (base && base.notas_libres) || '';
+        const objs = (base && base.objetivos_trabajados) || [];
+        const av = base ? base.avance_percibido : null;
+        notaCell = `<td>${texto ? esc(texto) : '<span style="color:#999">— sin nota —</span>'}${objs.length ? `<br><i>Objetivos: ${objs.map(esc).join(' · ')}</i>` : ''}${av != null ? `<br><b>Avance: ${av}/10</b>` : ''}</td>`;
+      }
+      return `<tr>
+        <td>${esc(UI.fmtFechaCorta(s.fecha))} ${esc(DIA[s.dia_semana] || '')}</td>
+        <td>${esc(s.hora_inicio || '')}</td>
+        <td>${esc(s.tipo_terapia || '')}${modal}</td>
+        <td>${esc(ter?.nombre_completo || s.terapeuta_abr || '—')}</td>
+        <td>${esc(s.sala_nombre || '—')}</td>
+        <td>${esc(s.estado || '')}</td>
+        ${notaCell}
+      </tr>`;
+    }).join('');
+    return `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:11.5px">
+      <tr style="background:#EAF2F5"><th>Fecha</th><th>Hora</th><th>Terapia</th><th>Terapeuta</th><th>Sala</th><th>Estado</th>${conNota ? '<th>Registro / notas / avance</th>' : ''}</tr>
+      ${filas}
+    </table>`;
+  },
+
+  _docIntensivosPasados(n) {
+    const esc = UI.esc;
+    const hist = Data.historialDeNino(n.id_nino);
+    if (!hist.length) return '<p style="font-size:13px">Sin intensivos anteriores registrados.</p>';
+    return `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:12px">
+      <tr style="background:#EAF2F5"><th>Ciclo</th><th>Período</th><th>Estado</th><th>Resumen</th><th>Informe</th></tr>
+      ${hist.map(h => `<tr><td>${esc(h.tipo || '')}</td><td>${esc(h.fecha_inicio || '')}${h.fecha_termino ? `–${esc(h.fecha_termino)}` : ''}</td><td>${esc(h.estado || '')}</td><td>${esc(h.resumen || '—')}</td><td>${h.informe ? esc(h.informe.nombre_archivo || h.informe.tipo || 'sí') : '—'}</td></tr>`).join('')}
+    </table>`;
+  },
+
+  // EXPORT 1 · Ficha completa
+  _fichaDocHtml(n) {
+    const esc = UI.esc;
+    const equipo = Data.equipoDeNino(n.id_nino).map(e => { const t = Data.terapeuta(e.id_terapeuta); return t ? `<li>${esc(t.nombre_completo)} · ${esc(e.area || t.especialidad || '')} · ${esc(e.rol || '')}</li>` : ''; }).filter(Boolean);
+    const objetivos = Data.objetivosDeNino(n.id_nino);
+    const objHtml = objetivos.length
+      ? `<ul>${objetivos.map(o => `<li><b>${esc(o.area || '')}:</b> ${esc(o.descripcion || '')} <i>(${esc(o.estado || '')})</i>${o.fecha_estimada_logro ? ` · meta ${esc(o.fecha_estimada_logro)}` : ''}</li>`).join('')}</ul>`
+      : '<p>Sin objetivos planteados.</p>';
+    const ses = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo');
+    const real = ses.filter(s => s.estado === 'Realizada').length;
+    return `
+      ${this._docDatosNino(n)}
+      ${this._docH2('Equipo tratante actual')}
+      <ul style="font-size:13px">${equipo.join('') || '<li>—</li>'}</ul>
+      ${this._docH2('Objetivos terapéuticos')}
+      <div style="font-size:13px">${objHtml}</div>
+      ${this._docH2('Intensivos y ciclos anteriores')}
+      ${this._docIntensivosPasados(n)}
+      ${this._docH2('Resumen de atenciones')}
+      <p style="font-size:13px">${ses.length} atenciones registradas · ${real} realizadas en Casa Nogal.</p>`;
   },
 
   _descargarDoc(titulo, cuerpo, filename) {
@@ -894,85 +984,67 @@ const Fichas = {
     UI.toast('Evento exportado', 'success');
   },
 
-  // Registro clínico COMPLETO del niño: las semanas del intensivo con cada atención en detalle
-  // (fecha, terapeuta, disciplina, sala, estado, nota clínica, objetivos trabajados y avance /10),
-  // más equipo, objetivos, reuniones con acta, documentos e historial. (Pedido de Trini 2026-07-07.)
+  // EXPORT 2 · HOJA DE VIDA: la ficha completa + toda la trayectoria de atenciones en Casa Nogal,
+  // sesión por sesión (horario, terapeuta, estado, nota, objetivos trabajados y avance), agrupada
+  // por semana, más reuniones con acta y documentos. (Pedido de Trini 2026-07-07.)
   _exportarRegistroCompleto(n) {
     const esc = UI.esc;
-    let stored = {};
-    try { stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}') || {}; } catch {}
-    const prog = Data.programa(n.id_programa);
     const ses = Data.sesionesDeNino(n.id_nino)
       .filter(s => s.tipo_actividad !== 'Reunión de equipo')
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
     if (!ses.length) { UI.toast('Este niño no tiene atenciones registradas', 'warning'); return; }
 
-    // Agrupar por semana (lunes) desde el inicio del programa (o la primera atención)
     const lunesDe = (iso) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
     const baseLunes = lunesDe(n.fecha_inicio_programa || ses[0].fecha);
     const semanaDe = (iso) => Math.floor((lunesDe(iso) - baseLunes) / (7 * 86400000)) + 1;
     const porSemana = {};
     ses.forEach(s => { const w = semanaDe(s.fecha); (porSemana[w] = porSemana[w] || []).push(s); });
-
-    const notaDe = (s) => {
-      const base = Data.notaPorSesion(s.id_sesion);
-      const locRaw = stored[s.id_sesion];
-      const loc = typeof locRaw === 'string' ? { texto: locRaw } : locRaw;
-      return {
-        texto: (loc && loc.texto) || (base && base.notas_libres) || '',
-        objetivos: (base && base.objetivos_trabajados) || [],
-        avance: base ? base.avance_percibido : null,
-      };
-    };
-    const DIA = { lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié', jueves: 'Jue', viernes: 'Vie', 'sábado': 'Sáb', domingo: 'Dom' };
-
     const semanasHtml = Object.keys(porSemana).sort((a, b) => a - b).map(w => {
-      const filas = porSemana[w].map(s => {
-        const ter = Data.terapeuta(s.id_terapeuta);
-        const nota = notaDe(s);
-        const reg = nota.texto
-          ? `${esc(nota.texto)}${nota.objetivos.length ? `<br><i>Objetivos trabajados: ${nota.objetivos.map(esc).join(' · ')}</i>` : ''}${nota.avance != null ? `<br><b>Avance percibido: ${nota.avance}/10</b>` : ''}`
-          : '<span style="color:#999">— sin nota —</span>';
-        const modal = (s.tipo_actividad && s.tipo_actividad !== 'Sesión') ? ` <i>(${esc(s.tipo_actividad)})</i>` : '';
-        return `<tr>
-          <td>${esc(UI.fmtFechaCorta(s.fecha))} ${esc(DIA[s.dia_semana] || '')}</td>
-          <td>${esc(s.hora_inicio || '')}</td>
-          <td>${esc(s.tipo_terapia || '')}${modal}</td>
-          <td>${esc(ter?.nombre_completo || s.terapeuta_abr || '—')}</td>
-          <td>${esc(s.sala_nombre || '—')}</td>
-          <td>${esc(s.estado || '')}</td>
-          <td>${reg}</td>
-        </tr>`;
-      }).join('');
       const real = porSemana[w].filter(s => s.estado === 'Realizada').length;
-      return `<h2 style="color:#1B6B8A">Semana ${w} <span style="font-size:12px;font-weight:400;color:#666">(${real} de ${porSemana[w].length} realizadas)</span></h2>
-        <table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:11.5px">
-          <tr style="background:#EAF2F5"><th>Fecha</th><th>Hora</th><th>Terapia</th><th>Terapeuta</th><th>Sala</th><th>Estado</th><th>Registro / notas / avance</th></tr>
-          ${filas}
-        </table>`;
+      return `<h3 style="color:#1B6B8A;margin:14px 0 4px">Semana ${w} <span style="font-size:12px;font-weight:400;color:#666">(${real} de ${porSemana[w].length} realizadas)</span></h3>
+        ${this._docTablaSesiones(porSemana[w], true)}`;
     }).join('');
 
-    const equipo = Data.equipoDeNino(n.id_nino).map(e => { const t = Data.terapeuta(e.id_terapeuta); return `<li>${esc(t?.nombre_completo || e.terapeuta_visible || '')} · ${esc(e.area || t?.especialidad || '')} · ${esc(e.rol || '')}${e.fecha_inicio ? ` (desde ${esc(e.fecha_inicio)})` : ''}</li>`; });
-    const objs = Data.objetivosDeNino(n.id_nino).map(o => `<li><b>${esc(o.area || '')}:</b> ${esc(o.descripcion || '')} — <i>${esc(o.estado || '')}</i>${o.fecha_planteamiento ? ` · planteado ${esc(o.fecha_planteamiento)}` : ''}${o.fecha_estimada_logro ? ` · meta ${esc(o.fecha_estimada_logro)}` : ''}</li>`);
     const reus = this._leerReuniones(n.id_nino).map(r => `<li>${esc(r.fecha || '')} · ${esc(r.tipo || '')} · con ${esc(r.con || '')}${r.acta ? `<br><i>${esc(r.acta)}</i>` : ''}</li>`);
     const docs = Data.documentosDeNino(n.id_nino).map(d => `<li>${esc(d.tipo || '')} · ${esc(d.nombre_archivo || '')}${d.fecha_documento ? ` · ${esc(d.fecha_documento)}` : ''}</li>`);
-    const hist = Data.historialDeNino(n.id_nino).map(h => `<li><b>${esc(h.tipo || '')}</b> · ${esc(h.fecha_inicio || '')}${h.fecha_termino ? `–${esc(h.fecha_termino)}` : ''}${h.resumen ? `<br><i>${esc(h.resumen)}</i>` : ''}${h.informe ? `<br>Informe: ${esc(h.informe.nombre_archivo || h.informe.tipo || '')}` : ''}</li>`);
     const totalReal = ses.filter(s => s.estado === 'Realizada').length;
 
     const cuerpo = `
-      <p><b>Paciente:</b> ${esc(n.nombre_completo)} · ${esc(this._edadEn(n.fecha_nacimiento, HOY_ISO))}${(n.diagnosticos && n.diagnosticos.length) ? ` · ${n.diagnosticos.map(esc).join(', ')}` : ''}</p>
-      <p><b>Programa:</b> ${esc(prog?.nombre || n.programa_nombre || '—')}${n.fecha_inicio_programa ? ` · inicio ${esc(n.fecha_inicio_programa)}` : ''}</p>
-      <p><b>Encargado del caso:</b> ${esc(n.apoderado_principal || '—')}</p>
-      <p><b>Total de atenciones:</b> ${ses.length} registradas · ${totalReal} realizadas</p>
-      <h2 style="color:#1B6B8A">Equipo tratante</h2><ul>${equipo.join('') || '<li>—</li>'}</ul>
-      <h2 style="color:#1B6B8A">Objetivos terapéuticos</h2><ul>${objs.join('') || '<li>—</li>'}</ul>
-      <h1 style="color:#1B6B8A;margin-top:20px;border-top:2px solid #1B6B8A;padding-top:10px">Registro de atenciones · semana por semana</h1>
+      ${this._docDatosNino(n)}
+      ${this._docH2('Intensivos y ciclos anteriores')}
+      ${this._docIntensivosPasados(n)}
+      <h1 style="color:#1B6B8A;margin-top:22px;border-top:2px solid #1B6B8A;padding-top:10px">Trayectoria de atenciones en Casa Nogal</h1>
+      <p style="font-size:13px">${ses.length} atenciones · ${totalReal} realizadas. Cada sesión con su terapeuta, estado y registro clínico.</p>
       ${semanasHtml}
-      <h2 style="color:#1B6B8A">Reuniones</h2><ul>${reus.join('') || '<li>—</li>'}</ul>
-      <h2 style="color:#1B6B8A">Documentos</h2><ul>${docs.join('') || '<li>—</li>'}</ul>
-      <h2 style="color:#1B6B8A">Ciclos anteriores (historia de vida)</h2><ul>${hist.join('') || '<li>—</li>'}</ul>`;
-    this._descargarDoc(`Registro clínico completo · ${n.nombre_completo}`, cuerpo, `registro-completo-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
-    UI.toast(`Registro completo de ${n.nombre_completo.split(' ')[0]} descargado`, 'success');
+      ${this._docH2('Reuniones')}<ul style="font-size:13px">${reus.join('') || '<li>—</li>'}</ul>
+      ${this._docH2('Documentos')}<ul style="font-size:13px">${docs.join('') || '<li>—</li>'}</ul>`;
+    this._descargarDoc(`Hoja de vida · ${n.nombre_completo}`, cuerpo, `hoja-de-vida-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
+    UI.toast(`Hoja de vida de ${n.nombre_completo.split(' ')[0]} descargada`, 'success');
+  },
+
+  // EXPORT 3 · TRATAMIENTO EN CURSO: solo el programa/intensivo actual — lo ya realizado (pasado)
+  // y las horas agendadas pendientes. (Pedido de Trini 2026-07-07.)
+  _exportarEnCurso(n) {
+    const esc = UI.esc;
+    const prog = Data.programa(n.id_programa);
+    const ses = Data.sesionesDeNino(n.id_nino)
+      .filter(s => s.tipo_actividad !== 'Reunión de equipo' && (!n.id_programa || !s.id_programa || s.id_programa === n.id_programa))
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    if (!ses.length) { UI.toast('No hay sesiones del tratamiento en curso', 'warning'); return; }
+    const pendientes = ses.filter(s => s.estado === 'Agendada' && (s.fecha || '') >= HOY_ISO);
+    const pasadas = ses.filter(s => !(s.estado === 'Agendada' && (s.fecha || '') >= HOY_ISO));
+    const real = pasadas.filter(s => s.estado === 'Realizada').length;
+
+    const cuerpo = `
+      <p><b>Paciente:</b> ${esc(n.nombre_completo)} · ${esc(this._edadEn(n.fecha_nacimiento, HOY_ISO))}</p>
+      <p><b>Programa:</b> ${esc(prog?.nombre || n.programa_nombre || '—')}${n.fecha_inicio_programa ? ` · ${esc(n.fecha_inicio_programa)} → ${esc(n.fecha_termino_programa || '—')}` : ''}${n.semana_actual ? ` · semana ${n.semana_actual}` : ''}</p>
+      <p><b>Resumen:</b> ${real} realizadas · ${pasadas.length - real} no realizadas/suspendidas · <b>${pendientes.length} agendadas pendientes</b>.</p>
+      ${this._docH2(`Sesiones agendadas pendientes (${pendientes.length})`)}
+      ${pendientes.length ? this._docTablaSesiones(pendientes, false) : '<p style="font-size:13px">No hay sesiones pendientes por venir.</p>'}
+      ${this._docH2(`Sesiones ya realizadas / pasadas (${pasadas.length})`)}
+      ${pasadas.length ? this._docTablaSesiones(pasadas, true) : '<p style="font-size:13px">Aún no hay sesiones pasadas.</p>'}`;
+    this._descargarDoc(`Tratamiento en curso · ${n.nombre_completo}`, cuerpo, `tratamiento-en-curso-${n.nombre_completo.replace(/\s+/g, '-').toLowerCase()}.doc`);
+    UI.toast(`Tratamiento en curso de ${n.nombre_completo.split(' ')[0]} descargado`, 'success');
   },
 
   // Crear un niño nuevo (ingreso) desde la ficha, antes de diagnosticar. Entra como Evaluación.
