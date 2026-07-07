@@ -2417,6 +2417,7 @@
 .pa-ses.is-padre { background: #FDECE0; border-left-color: #E07B39; }
 .pa-ses-time { font-size: 12px; font-weight: 700; color: var(--cn-azul); }
 .pa-ses-esp { font-size: 12px; font-weight: 600; color: var(--text); margin-top: 1px; }
+.pa-ses-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 .pa-ses-sala { font-size: 10.5px; color: var(--text-3); margin-top: 1px; }
 .pa-ses-badge { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; margin-top: 2px; color: #8A5A12; }
 .pa-ses.is-padre .pa-ses-badge { color: #A8521E; }

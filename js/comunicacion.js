@@ -261,10 +261,14 @@ const Comunicacion = {
               : estado === 'Suspendida' ? 'is-cancel'
               : estado === 'No Asistió' ? 'is-miss' : 'is-next';
     const rango = s.hora_inicio && s.hora_fin ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || '');
+    const discCol = UI.discColor(s.tipo_terapia);
+    // Barra lateral con el color de la disciplina en las terapias; las sesiones con papás
+    // conservan su color propio (amarillo/durazno). El punto de color se muestra siempre.
+    const bstyle = (tp === 'observacion' || tp === 'vincular' || tp === 'individual_padre') ? '' : ` style="border-left:3px solid ${discCol}"`;
     return `
-      <div class="pa-ses ${cls}">
+      <div class="pa-ses ${cls}"${bstyle}>
         <div class="pa-ses-time mono">${UI.esc(rango)}</div>
-        <div class="pa-ses-esp">${UI.esc(s.tipo_terapia || '')}</div>
+        <div class="pa-ses-esp"><span class="pa-ses-dot" style="background:${discCol}"></span>${UI.esc(s.tipo_terapia || '')}</div>
         ${badge ? `<div class="pa-ses-badge">${badge}</div>` : `<div class="pa-ses-sala">${UI.esc(sala?.nombre || s.sala_nombre || '')}</div>`}
         <a class="pa-cal-link" href="${this._gcalLink(s)}" target="_blank" rel="noopener" title="Agregar esta sesión a mi calendario">${this._svgCal} agenda</a>
       </div>`;

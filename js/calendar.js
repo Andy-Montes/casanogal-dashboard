@@ -112,6 +112,13 @@ const Calendar = {
               <option value="all">Todos los niños</option>
               ${Data.ninosVisibles().slice().sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)).map(n => `<option value="${n.id_nino}" ${State.filterNino === n.id_nino ? 'selected' : ''}>${UI.esc(n.nombre_completo)}</option>`).join('')}
             </select>
+          </div>
+          <div class="cal-filtro-nino">
+            <label for="calFiltroTerapia">Terapia</label>
+            <select id="calFiltroTerapia">
+              <option value="all">Todas las terapias</option>
+              ${[...new Set((State.data.sesiones || []).map(s => s.tipo_terapia).filter(Boolean))].sort((a, b) => a.localeCompare(b)).map(t => `<option value="${UI.esc(t)}" ${State.filterTerapia === t ? 'selected' : ''}>${UI.esc(t)}</option>`).join('')}
+            </select>
           </div>` : ''}
         <div class="tip">Tip: arrastra una sesión para moverla · <kbd>click</kbd> para abrir</div>
       </div>
@@ -525,6 +532,8 @@ const Calendar = {
   _matchPrograma(s) {
     if (State.filterNino && State.filterNino !== 'all'
         && s.id_nino !== State.filterNino && s.id_nino_secundario !== State.filterNino) return false;
+    // Filtro por tipo de terapia (disciplina); las reuniones de equipo se ocultan si hay filtro de terapia
+    if (State.filterTerapia && State.filterTerapia !== 'all' && s.tipo_terapia !== State.filterTerapia) return false;
     if (s.tipo_actividad === 'Reunión de equipo') return true; // del centro, no de un programa
     if (State.filterPrograma === 'all') return true;
     return s.id_programa === 'PROG-' + State.filterPrograma;
@@ -694,6 +703,11 @@ const Calendar = {
     // Filtro por niño (coordinación)
     document.getElementById('calFiltroNino')?.addEventListener('change', (e) => {
       State.filterNino = e.target.value;
+      this.render();
+    });
+    // Filtro por tipo de terapia (coordinación)
+    document.getElementById('calFiltroTerapia')?.addEventListener('change', (e) => {
+      State.filterTerapia = e.target.value;
       this.render();
     });
 
