@@ -2701,6 +2701,11 @@
 .ter-card-top { display: flex; align-items: baseline; gap: 8px; }
 .ter-card-hora { font-size: 13px; font-weight: 700; color: var(--text); }
 .ter-card-nino { font-size: 13px; font-weight: 700; color: var(--text); }
+/* Aviso en la agenda del terapeuta: el papá observa / sesión con los papás */
+.ter-card-papa { background: var(--cn-mostaza-bg, #FBEFD3); }
+.ter-papa-badge { margin-left: auto; font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.ter-papa-badge.is-obs { background: var(--cn-mostaza, #E0A400); color: #fff; }
+.ter-papa-badge.is-con { background: var(--cn-azul, #2C7A93); color: #fff; }
 .ter-card-disc { font-size: 11.5px; font-weight: 600; margin: 1px 0 6px; }
 .ter-adj-wrap { display: flex; flex-direction: column; gap: 3px; border-top: 1px dashed var(--border); padding-top: 6px; }
 .ter-adj { font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 5px; }

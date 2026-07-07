@@ -212,10 +212,16 @@ const Calendar = {
         const c = ESPECIALIDAD_VAR[s.tipo_terapia] || ESPECIALIDAD_VAR['Terapia Ocupacional'];
         const nino = Data.nino(s.id_nino);
         const { antes, despues } = adj(s);
-        return `<div class="ter-card" style="border-left-color:${c.main}">
+        // Aviso al terapeuta: el papá observa esta sesión, o es una sesión con los papás.
+        const papaBadge = UI.esObservacionPadres(s)
+          ? '<span class="ter-papa-badge is-obs" title="El papá o mamá acompaña esta sesión (observación)">Papá observa</span>'
+          : UI.esConPapas(s)
+            ? '<span class="ter-papa-badge is-con" title="Sesión con los papás">Con los papás</span>' : '';
+        return `<div class="ter-card${papaBadge ? ' ter-card-papa' : ''}" style="border-left-color:${c.main}">
           <div class="ter-card-top">
             <span class="ter-card-hora mono">${s.hora_inicio}</span>
             <span class="ter-card-nino">${UI.esc((s.nino_visible || '').trim())}${UI.badgeIntensivo(nino)}</span>
+            ${papaBadge}
           </div>
           <div class="ter-card-disc" style="color:${c.text}"><span class="ses-disc-dot" style="background:${UI.discColor(s.tipo_terapia)}"></span>${UI.esc(s.tipo_terapia)}${s.sala_nombre && s.sala_nombre !== '—' ? ` · ${UI.esc(s.sala_nombre)}` : ''}</div>
           <div class="ter-adj-wrap">${lineaAdj(antes, 'antes')}${lineaAdj(despues, 'despues')}</div>

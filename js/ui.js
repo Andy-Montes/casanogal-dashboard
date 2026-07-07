@@ -97,4 +97,31 @@ const UI = {
   badgeIntensivo(n) { return this.esIntensivo(n) ? '<span class="badge-int" title="En el programa Intensivo">INT</span>' : ''; },
   // Anillo mostaza alrededor del avatar del niño intensivo (string de box-shadow, '' si no)
   ringIntensivo(n) { return this.esIntensivo(n) ? 'box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--cn-mostaza);' : ''; },
+
+  // ---- Participación de los papás (misma regla que el portal de padres) ----
+  _lunISOWk(iso) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); },
+  // Nº de semana del programa (1-based) para una fecha, o null
+  semanaDeNino(n, fechaISO) {
+    if (!n || !n.fecha_inicio_programa || !fechaISO) return null;
+    return Math.floor((new Date(this._lunISOWk(fechaISO)) - new Date(this._lunISOWk(n.fecha_inicio_programa))) / (7 * 86400000)) + 1;
+  },
+  // ¿Esta sesión es una observación donde el papá acompaña? (dato explícito, o la 1ª de TO/Fono/Cog
+  // del niño esa semana, desde la semana 2, en intensivo). Misma regla que _paParticipacion.
+  esObservacionPadres(s) {
+    if (!s) return false;
+    if (s.tipo_sesion_padre === 'observacion') return true;
+    if (typeof Data === 'undefined') return false;
+    const n = Data.nino(s.id_nino);
+    if (!n || !this.esIntensivo(n)) return false;
+    if (['Terapia Ocupacional', 'Fonoaudiología', 'Cognitivo'].indexOf(s.tipo_terapia) < 0) return false;
+    const sem = this.semanaDeNino(n, s.fecha);
+    if (sem == null || sem < 2) return false;
+    const wk = this._lunISOWk(s.fecha);
+    const grupo = Data.sesionesDeNino(n.id_nino)
+      .filter(x => x.tipo_terapia === s.tipo_terapia && x.tipo_actividad !== 'Reunión de equipo' && this._lunISOWk(x.fecha) === wk)
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''));
+    return grupo.length > 0 && grupo[0].id_sesion === s.id_sesion;
+  },
+  // ¿Sesión con los papás (sin el niño): sesión de padres, coaching, individual?
+  esConPapas(s) { return !!s && (s.tipo_actividad === 'Sesión de padres' || s.tipo_actividad === 'Coaching a padres' || s.tipo_sesion_padre === 'individual_padre' || s.tipo_sesion_padre === 'vincular'); },
 };
