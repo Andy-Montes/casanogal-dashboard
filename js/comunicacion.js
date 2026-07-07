@@ -74,25 +74,53 @@ const Comunicacion = {
       </div>`;
   },
 
-  // Participación de los papás en el intensivo (periodicidad que definió Trini). Se muestra siempre
-  // para que la familia sepa cuándo participa, aunque las sesiones puntuales aún no estén cargadas.
+  // HORARIO real de participación de los papás en el intensivo (periodicidad de Trini): una grilla
+  // semanal con día y hora. Observaciones (desde la semana 2) = el papá acompaña la sesión de TO/
+  // Fono/Cog del niño esa semana; coaching viernes 10-12; taller jueves. Solo intensivo.
   _paParticipacion(n) {
     if (!UI.esIntensivo(n)) return '';
-    const primer = (n.nombre_completo || '').split(' ')[0];
+    const fechas = fechasSemana();
+    const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const ABBR = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+    const inicio = n.fecha_inicio_programa || fechas[0];
+    const semNum = Math.floor((new Date(this._lunISO(fechas[0])) - new Date(this._lunISO(inicio))) / (7 * 86400000)) + 1;
+    const eventos = DIAS.map(() => []);
+    // Observaciones desde la semana 2: una por TO / Fono / Cognitivo (Kine a veces), en el bloque real del niño
+    if (semNum >= 2) {
+      const OBS = { 'Terapia Ocupacional': 1, 'Fonoaudiología': 1, 'Cognitivo': 1 }; // Kine "a veces" → lo agrega coordinación
+      const vistas = {};
+      Data.sesionesDeNino(n.id_nino)
+        .filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo' && OBS[s.tipo_terapia])
+        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+        .forEach(s => {
+          if (vistas[s.tipo_terapia]) return; // una observación por disciplina
+          vistas[s.tipo_terapia] = 1;
+          const di = DIAS.indexOf(s.dia_semana);
+          if (di >= 0) eventos[di].push({ hora: s.hora_inicio, horaFin: s.hora_fin, txt: 'Observación · ' + s.tipo_terapia, tag: 'obs' });
+        });
+    }
+    // Coaching viernes 10:00–12:00 · Taller jueves
+    eventos[4].push({ hora: '10:00', horaFin: '12:00', txt: 'Coaching para papás', tag: 'coach' });
+    eventos[3].push({ hora: '', horaFin: '', txt: 'Taller para papás', tag: 'taller' });
+    const cols = DIAS.map((d, i) => {
+      const evs = eventos[i].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+      const cuerpo = evs.length ? evs.map(e => `
+        <div class="pa-ses pa-particip-ev is-${e.tag}">
+          <div class="pa-ses-time mono">${e.hora ? UI.esc(e.hora) + (e.horaFin ? '–' + UI.esc(e.horaFin) : '') : 'Por confirmar'}</div>
+          <div class="pa-ses-esp">${UI.esc(e.txt)}</div>
+        </div>`).join('') : '<div class="pa-day-empty">—</div>';
+      return `<div class="pa-day"><div class="pa-day-head"><span class="pa-day-name">${ABBR[i]}</span></div><div class="pa-day-body">${cuerpo}</div></div>`;
+    }).join('');
     return `
       <section class="pa-card pa-particip-card">
         <div class="pa-card-head">
           <div>
-            <div class="pa-card-eyebrow">Su participación · se repite cada semana</div>
-            <h2 class="pa-card-title">Cuándo participan ustedes</h2>
+            <div class="pa-card-eyebrow">Su participación · semana ${semNum}</div>
+            <h2 class="pa-card-title">Su horario de participación</h2>
           </div>
         </div>
-        <ul class="pa-particip-list">
-          <li><span class="pa-particip-badge is-obs">Observaciones</span><span>Cada semana <b>desde la semana 2</b>: acompañas a ${UI.esc(primer)} en su sesión de <b>Terapia Ocupacional, Fonoaudiología y Cognitivo</b> (a veces Kinesiología).</span></li>
-          <li><span class="pa-particip-badge is-coach">Coaching</span><span>Todos los <b>viernes de 10:00 a 12:00</b> · orientación para ustedes.</span></li>
-          <li><span class="pa-particip-badge is-taller">Talleres</span><span>Los <b>jueves</b> · taller grupal para las familias (a veces se suma alguno extra entremedio).</span></li>
-        </ul>
-        <div class="pa-particip-hint">Coordinación les confirma el día y la hora exacta de cada observación durante la semana.</div>
+        <div class="pa-week">${cols}</div>
+        <div class="pa-particip-hint">Observaciones cada semana desde la semana 2 (TO, Fono y Cognitivo; a veces Kine) · Coaching los viernes 10:00–12:00 · Taller los jueves. Coordinación confirma la hora exacta de cada observación.</div>
       </section>`;
   },
 
