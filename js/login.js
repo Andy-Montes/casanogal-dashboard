@@ -138,9 +138,9 @@ const Login = {
 
           <div id="loginFormPadres" style="display:none">
             <div class="login-field">
-              <label>Correo</label>
-              <input type="email" id="loginPadEmail" placeholder="tu correo registrado" autocomplete="off">
-              <div class="login-hint">Demo: <code>carolina.perez@gmail.com</code></div>
+              <label>¿De qué niño eres apoderado?</label>
+              <select id="loginPadSelect"></select>
+              <div class="login-hint">En producción, cada apoderado entra con su correo; en la demo eliges el niño.</div>
             </div>
             <div class="login-field">
               <label>Contraseña</label>
@@ -175,7 +175,7 @@ const Login = {
         padForm.style.display = tipo === 'padres' ? 'block' : 'none';
         if (tipo === 'admin') setTimeout(() => document.getElementById('loginAdminPwd').focus(), 50);
         else if (tipo === 'terapeuta') { this._fillTerSelect(); setTimeout(() => document.getElementById('loginTerSelect').focus(), 50); }
-        else setTimeout(() => document.getElementById('loginPadEmail').focus(), 50);
+        else { this._fillPadSelect(); setTimeout(() => document.getElementById('loginPadSelect').focus(), 50); }
       });
     });
 
@@ -195,15 +195,13 @@ const Login = {
   },
 
   _submitPadres() {
-    const email = (document.getElementById('loginPadEmail').value || '').trim().toLowerCase();
+    const nid = document.getElementById('loginPadSelect').value;
     const pwd = document.getElementById('loginPadPwd').value;
     const err = document.getElementById('loginPadErr');
+    if (!nid) { err.textContent = 'Elige de qué niño eres apoderado'; err.style.display = 'block'; return; }
     if (pwd !== '1234') { err.textContent = 'Contraseña incorrecta (demo: 1234)'; err.style.display = 'block'; return; }
-    // Buscar al niño cuyo apoderado tenga ese correo; si no, el primer activo (demo)
-    const ninos = (State.data?.ninos) || [];
-    const match = ninos.find(n => (n.email_apoderado || '').toLowerCase() === email);
-    const nino = match || ninos.find(n => n.estado === 'Activo');
-    if (!nino) { err.textContent = 'No encontramos un niño asociado a ese correo'; err.style.display = 'block'; return; }
+    const nino = (State.data?.ninos || []).find(n => n.id_nino === nid);
+    if (!nino) { err.textContent = 'No encontramos ese niño'; err.style.display = 'block'; return; }
     this.save({ tipo: 'padres', id_nino: nino.id_nino });
     this.hide();
     Main.init();
@@ -222,6 +220,21 @@ const Login = {
       .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
     sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +
       lista.map(t => `<option value="${t.id_terapeuta}">${UI.esc(t.nombre_completo)} · ${UI.esc(t.especialidad)}</option>`).join('');
+  },
+
+  _fillPadSelect() {
+    const sel = document.getElementById('loginPadSelect');
+    if (!sel) return;
+    if (!State.data) {
+      sel.innerHTML = '<option>Cargando…</option>';
+      Data.load().then(() => this._fillPadSelect());
+      return;
+    }
+    const lista = (State.data.ninos || [])
+      .filter(n => n.estado === 'Activo')
+      .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+    sel.innerHTML = '<option value="">— Selecciona al niño —</option>' +
+      lista.map(n => `<option value="${n.id_nino}">${UI.esc(n.nombre_completo)}${n.apoderado_principal ? ` · apoderado: ${UI.esc(n.apoderado_principal)}` : ''}</option>`).join('');
   },
 
   _submitAdmin() {
