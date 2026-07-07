@@ -40,7 +40,9 @@
     "DT":  { "nombre": "Diego Tello",  "disciplina": "PSIC",   "sala": "ESPEJO" },
     "CS":  { "nombre": "Cata Saez",    "disciplina": "RDI",    "sala": "ESPEJO" },
     "CAR": { "nombre": "Caro",         "disciplina": "ILS",    "sala": "ESPEJO 2" },
-    "CC":  { "nombre": "Cuki",         "disciplina": "PSIC0",  "sala": "ESPEJO" },
-    "LP":  { "nombre": "Lore",         "disciplina": "NEU",    "sala": "ESPEJO" }
+    "CC":  { "nombre": "Cuki",         "disciplina": "PSIC",   "sala": "ESPEJO" },
+    "LP":  { "nombre": "Lore",         "disciplina": "NEU",    "sala": "ESPEJO" },
+    "MM":  { "nombre": "Manu",         "disciplina": "PSIC",   "sala": "SALA 5" },
+    "NAT": { "nombre": "Nat A",        "disciplina": "FONO",   "sala": "MAR" }
   }
 }

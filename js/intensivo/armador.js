@@ -1025,6 +1025,34 @@ const Armador = {
   },
 
   // ===== Form Agregar Niño =====
+  // Adapta el formulario de "Agregar niño" según la instancia elegida.
+  _aplicarInstanciaForm(inst) {
+    const esInt = inst === 'intensivo', esCont = inst === 'continua', esEval = inst === 'evaluacion';
+    const ov = document.getElementById('armadorFormOverlay');
+    if (!ov) return;
+    // Campos que solo aplican al intensivo (KIDS, hora grupal, preferencia de inicio, hint grupal)
+    ov.querySelectorAll('.arm-solo-intensivo').forEach(el => { el.style.display = esInt ? '' : 'none'; });
+    // Fecha de término: continua y evaluación (el intensivo la fija la cohorte)
+    const termWrap = document.getElementById('armadorFormTerminoWrap');
+    if (termWrap) termWrap.style.display = esInt ? 'none' : '';
+    const termInput = document.getElementById('armadorFormTermino');
+    if (termInput && !termInput.value && !esInt) termInput.value = HOY_ISO.slice(0, 4) + '-12-20';
+    // Bloques informativos
+    const contInfo = document.getElementById('armadorFormContInfo');
+    if (contInfo) contInfo.style.display = esCont ? '' : 'none';
+    const evalInfo = document.getElementById('armadorFormEvalInfo');
+    if (evalInfo) evalInfo.style.display = esEval ? '' : 'none';
+    // Título y botón según instancia
+    const titulo = ov.querySelector('.pendiente-modal-title');
+    if (titulo) titulo.textContent = esInt ? 'Agregar niño al intensivo' : esCont ? 'Agregar niño a atención continua' : 'Agregar niño a evaluación';
+    const eyebrow = ov.querySelector('.pendiente-modal-eyebrow');
+    if (eyebrow) eyebrow.textContent = esInt ? 'Completa los datos y el sistema regenera el horario solo'
+      : esEval ? 'Lunes y miércoles con la Dra. Lorena · se arma en la instancia de Evaluación'
+      : 'Horario fijo hasta fin de año · se arma en la instancia de Atención continua';
+    const save = document.getElementById('armadorFormSave');
+    if (save) save.textContent = esInt ? 'Agregar y regenerar' : 'Registrar niño';
+  },
+
   _abrirFormNino() {
     const { catalogo } = this._cache;
     // Agrupar terapeutas del catálogo por disciplina mapeada a las 5 secciones del form
@@ -1095,6 +1123,10 @@ const Armador = {
               <span>Fecha de inicio</span>
               <input type="date" id="armadorFormFechaInicio" value="${HOY_ISO}" />
             </label>
+            <label class="armador-form-field" id="armadorFormTerminoWrap" style="display:none">
+              <span>Fecha de término</span>
+              <input type="date" id="armadorFormTermino" value="" />
+            </label>
             <label class="armador-form-field">
               <span>Nombre del niño *</span>
               <input type="text" id="armadorFormNombre" maxlength="40" placeholder="Ej: TOMÁS" required />
@@ -1103,18 +1135,18 @@ const Armador = {
               <span>Encargado del caso</span>
               <input type="text" id="armadorFormEncargado" maxlength="60" placeholder="Ej: Krasna Music" />
             </label>
-            <label class="armador-form-field armador-form-kids">
+            <label class="armador-form-field armador-form-kids arm-solo-intensivo">
               <span>Sesiones KIDS grupales / semana</span>
               <input type="number" id="armadorFormKids" min="0" max="10" value="5" />
             </label>
-            <label class="armador-form-field">
+            <label class="armador-form-field arm-solo-intensivo">
               <span>Hora de entrada (sesión grupal)</span>
               <select id="armadorFormHoraEntrada">
                 <option value="">— sin fijar —</option>
                 ${(catalogo.franjas || []).map((fr, i) => (i !== 0 && i !== (catalogo.franjas.length - 1)) ? `<option value="${i}">${UI.esc(fr)}</option>` : '').join('')}
               </select>
             </label>
-            <label class="armador-form-field">
+            <label class="armador-form-field arm-solo-intensivo">
               <span>Preferencia de inicio del día</span>
               <select id="armadorFormInicio">
                 <option value="">— sin preferencia —</option>
@@ -1126,7 +1158,13 @@ const Armador = {
               </select>
             </label>
           </div>
-          <div class="armador-form-hint armador-form-hint-soft">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora. Las duplas y grupos se arman con el botón "Crear grupo".</div>
+          <div class="armador-form-hint armador-form-hint-soft arm-solo-intensivo">Los niños con la misma hora de entrada comparten su sesión grupal a esa hora. Las duplas y grupos se arman con el botón "Crear grupo".</div>
+          <div class="armador-form-info arm-info-continua" id="armadorFormContInfo" style="display:none">
+            <b>Atención continua:</b> pocas sesiones por semana, con horario fijo hasta la fecha de término (fin de año). Se registra como bloques ocupados para que el motor los respete al armar los próximos intensivos.
+          </div>
+          <div class="armador-form-info arm-info-eval" id="armadorFormEvalInfo" style="display:none">
+            <b>Evaluación:</b> 2 sesiones por semana (lunes y miércoles), liderada por la <b>Dra. Lorena</b> (NEU). Estructura: reunión de ingreso (Dra. Lorena) → evaluación presencial (Dra. Lorena + psicología + cognitivo + fono) → devolución (Dra. Lorena). Completa abajo el equipo evaluador.
+          </div>
           <div class="armador-form-disc-grid">
             ${SECCIONES.map(seccionHtml).join('')}
           </div>
@@ -1148,6 +1186,11 @@ const Armador = {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
     setTimeout(() => document.getElementById('armadorFormNombre')?.focus(), 80);
 
+    // El formulario cambia según la instancia (intensivo / continua / evaluación)
+    const instSel = document.getElementById('armadorFormInstancia');
+    instSel?.addEventListener('change', () => this._aplicarInstanciaForm(instSel.value));
+    this._aplicarInstanciaForm(instSel?.value || 'intensivo');
+
     document.getElementById('armadorFormSave').addEventListener('click', () => {
       const nombre = document.getElementById('armadorFormNombre').value.trim().toUpperCase();
       if (!nombre) {
@@ -1156,12 +1199,15 @@ const Armador = {
         return;
       }
       const encargado = document.getElementById('armadorFormEncargado').value.trim();
-      const kids = parseInt(document.getElementById('armadorFormKids').value, 10) || 0;
-      const heRaw = document.getElementById('armadorFormHoraEntrada').value;
-      const horaEntrada = heRaw === '' ? null : Number(heRaw);
-      const preferenciaInicio = document.getElementById('armadorFormInicio').value || null;
       const instancia = document.getElementById('armadorFormInstancia')?.value || 'intensivo';
+      const esInt = instancia === 'intensivo';
+      // KIDS, hora grupal y preferencia solo aplican al intensivo
+      const kids = esInt ? (parseInt(document.getElementById('armadorFormKids').value, 10) || 0) : 0;
+      const heRaw = document.getElementById('armadorFormHoraEntrada').value;
+      const horaEntrada = esInt && heRaw !== '' ? Number(heRaw) : null;
+      const preferenciaInicio = esInt ? (document.getElementById('armadorFormInicio').value || null) : null;
       const fechaInicio = document.getElementById('armadorFormFechaInicio')?.value || HOY_ISO;
+      const fechaTermino = esInt ? null : (document.getElementById('armadorFormTermino')?.value || null);
       const asignaciones = [];
       SECCIONES.forEach(s => {
         const roles = s.key === 'PSI' ? ['TUTOR', 'COT', 'PAPAS'] : ['TUTOR', 'COT'];
@@ -1185,6 +1231,7 @@ const Armador = {
         encargado,
         instancia,        // intensivo | continua | evaluacion
         fecha_inicio: fechaInicio,
+        fecha_termino: fechaTermino,  // fin de año para continua/evaluación; null en intensivo
         kids_semanal: kids,
         hora_entrada: horaEntrada,  // franja índice o null; agrupa la sesión grupal a esa hora
         preferencia_inicio: preferenciaInicio,  // disciplina con la que prefiere partir el día
@@ -1193,8 +1240,22 @@ const Armador = {
         _extra: true,  // marcador para distinguir niños agregados a mano
       };
       cerrar();
-      this._aplicarNinoNuevo(ninoNuevo);
+      // El intensivo se regenera con el motor; continua/evaluación se registran en su propia instancia.
+      if (esInt) this._aplicarNinoNuevo(ninoNuevo);
+      else this._registrarNinoOtraInstancia(ninoNuevo);
     });
+  },
+
+  // Registra un niño de atención continua o evaluación sin tocar el grid del intensivo
+  // (esas instancias se arman por separado; el motor por instancia queda para una fase dedicada).
+  _registrarNinoOtraInstancia(nino) {
+    const KEY = 'casanogal_armador_otras_instancias';
+    let arr = [];
+    try { const a = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(a)) arr = a; } catch {}
+    arr.push(nino);
+    localStorage.setItem(KEY, JSON.stringify(arr));
+    const etq = nino.instancia === 'continua' ? 'Atención continua' : 'Evaluación';
+    UI.toast(`${nino.nombre} registrado en ${etq}. Esa instancia se arma por separado (en construcción).`, 'success');
   },
 
   _aplicarNinoNuevo(nino) {

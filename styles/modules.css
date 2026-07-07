@@ -630,6 +630,20 @@
 }
 .armador-form-hint b { color: var(--cn-mostaza-deep); }
 .armador-form-hint-soft { background: var(--bg-soft); border-left-color: var(--border); color: var(--text-3); margin-top: 8px; }
+/* Bloques informativos por instancia (continua / evaluación) */
+.armador-form-info {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  padding: 10px 13px;
+  border-radius: 6px;
+  background: var(--cn-azul-bg-soft, var(--bg-soft));
+  border-left: 3px solid var(--cn-azul);
+}
+.armador-form-info b { color: var(--cn-azul-deep, var(--text)); }
+.armador-form-info.arm-info-eval { background: var(--psico-bg, var(--bg-soft)); border-left-color: var(--psico, var(--cn-mostaza)); }
+.armador-form-info.arm-info-eval b { color: var(--psico-text, var(--cn-mostaza-deep)); }
 .armador-form-row-papas .armador-form-rol { color: var(--psico-text, var(--cn-mostaza-deep)); }
 .armador-form-papas-hint { font-size: 11px; color: var(--text-3); font-style: italic; margin-top: 4px; padding-left: 2px; }
 
