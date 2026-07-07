@@ -208,7 +208,8 @@ const Recursos = {
     // Mapas de ocupación por niño y por sala (para las columnas de niños y de salas)
     const ocupNino = {}, ocupSala = {};
     sesDia.forEach(s => {
-      if (s.id_nino) (ocupNino[s.id_nino + '|' + s.id_bloque] = ocupNino[s.id_nino + '|' + s.id_bloque] || []).push(s);
+      // Las sesiones solo con los padres (sin el niño) no van en la fila del niño, solo en la del terapeuta/sala.
+      if (s.id_nino && !esSesionSoloPadres(s)) (ocupNino[s.id_nino + '|' + s.id_bloque] = ocupNino[s.id_nino + '|' + s.id_bloque] || []).push(s);
       if (s.id_sala) (ocupSala[s.id_sala + '|' + s.id_bloque] = ocupSala[s.id_sala + '|' + s.id_bloque] || []).push(s);
     });
     const ninos = (State.data.ninos || [])

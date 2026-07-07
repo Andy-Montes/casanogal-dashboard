@@ -45,6 +45,10 @@ const ESPECIALIDAD_VAR = {
 // Modalidades de sesión (pedido de Trini): además de la individual, sesiones de papás,
 // talleres grupales, coaching y la supervisión semanal de neurología.
 const MODALIDADES = ['Sesión', 'Sesión de padres', 'Taller grupal', 'Coaching a padres', 'Supervisión neurología'];
+// Modalidades que son SOLO con los padres (sin el niño). No deben aparecer en el horario del niño;
+// solo cuentan en la agenda del terapeuta y de los padres. (Pedido de Trini 2026-07-07.)
+const MODALIDADES_SOLO_PADRES = ['Sesión de padres', 'Coaching a padres'];
+function esSesionSoloPadres(s) { return !!s && MODALIDADES_SOLO_PADRES.includes(s.tipo_actividad); }
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];

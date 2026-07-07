@@ -415,7 +415,7 @@ const Fichas = {
 
   _seccionHorarioSemana(n) {
     const fechas = fechasSemana();
-    const ses = Data.sesionesDeNino(n.id_nino).filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo');
+    const ses = Data.sesionesDeNino(n.id_nino).filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo' && !esSesionSoloPadres(s));
     if (!ses.length) return '';
     const primer = (n.nombre_completo || '').split(' ')[0];
     const porDia = fechas.map(f => ses.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));

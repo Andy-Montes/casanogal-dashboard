@@ -11,7 +11,7 @@ const Armador = {
   _terapeutaResaltado: null,
   _bannerCerrado: false,
   _kidsSlotsPorSemana: null,
-  _verIntensivo41: true,          // por defecto se muestra el Intensivo 41 (datos reales de Trini)
+  _intensivoVista: '41',          // '40' ejemplo · '41' actual (real) · '42' próximo (en blanco, se arma)
 
   KEY_BANNER: 'casanogal_armador_banner',
   KEY_TOUR: 'casanogal_armador_tour',
@@ -56,18 +56,28 @@ const Armador = {
       fetch('data/intensivos/int41.json').then(r => r.json()),
       fetch('data/intensivos/_disp_real.json').then(r => r.json()),
     ]);
-    // Aplicar niños extra guardados en localStorage (van al Intensivo 40, el editable de la demo)
+    // Intensivo 42 = PRÓXIMO ciclo, en blanco. Se arma agregando niños; recibe los niños extra guardados.
+    const int42 = {
+      id: 'Intensivo 42',
+      fecha_inicio: this._sumarDias(int41.fecha_fin, 21),
+      fecha_fin: this._sumarDias(int41.fecha_fin, 21 + (int41.semanas || 6) * 7 - 1),
+      semanas: int41.semanas || 6,
+      reglas: int41.reglas,
+      niños: [],
+    };
     try {
       const extras = JSON.parse(localStorage.getItem(this.KEY_NINOS_EXTRA) || '[]');
       if (Array.isArray(extras) && extras.length) {
-        int40.niños = int40.niños.concat(extras);
+        int42.niños = int42.niños.concat(extras.filter(e => (e.instancia || 'intensivo') === 'intensivo'));
       }
     } catch {}
-    // Intensivo 40 = demo con disponibilidad sintética + horario real armado a mano.
-    // Intensivo 41 = intensivo REAL de Trini (data del Excel) con disponibilidad REAL; lo arma el motor.
+    // Intensivo 40 = demo/ejemplo (disponibilidad sintética + horario real armado a mano).
+    // Intensivo 41 = intensivo REAL de Trini (data del Excel) con disponibilidad REAL.
+    // Intensivo 42 = próximo, en blanco, para armar el siguiente.
     this._cache40 = { intensivo: int40, catalogo, disponibilidad: disp40, salasCapacidad };
     this._cache41 = { intensivo: int41, catalogo, disponibilidad: dispReal, salasCapacidad };
-    this._realPorIntensivo = { 40: real, 41: null };
+    this._cache42 = { intensivo: int42, catalogo, disponibilidad: dispReal, salasCapacidad };
+    this._realPorIntensivo = { '40': real, '41': null, '42': null };
     this._resultadoPorIntensivo = {};
     this._bannerCerrado = localStorage.getItem(this.KEY_BANNER) === '1';
     const fuenteGuardada = localStorage.getItem(this.KEY_FUENTE);
@@ -76,14 +86,21 @@ const Armador = {
     return this._cache;
   },
 
-  // Apunta this._cache al intensivo activo (40 o 41) y restaura su resultado/fuente.
+  // Suma días a una fecha ISO (YYYY-MM-DD) y devuelve ISO.
+  _sumarDias(iso, dias) {
+    const d = new Date((iso || HOY_ISO) + 'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().slice(0, 10);
+  },
+
+  // Apunta this._cache al intensivo activo ('40' | '41' | '42') y restaura su resultado/fuente.
   _activarCacheSegunToggle() {
-    const k = this._verIntensivo41 ? 41 : 40;
-    this._cache = this._verIntensivo41 ? this._cache41 : this._cache40;
-    this._resultadoReal = this._realPorIntensivo[k];
-    // El Intensivo 41 no tiene horario armado a mano: siempre se ve el generado por el motor.
-    if (this._verIntensivo41) this._fuente = 'generado';
-    this._resultado = this._resultadoPorIntensivo[k] || null;
+    const v = this._intensivoVista || '41';
+    this._cache = v === '40' ? this._cache40 : v === '42' ? this._cache42 : this._cache41;
+    this._resultadoReal = this._realPorIntensivo[v] || null;
+    // Solo el Intensivo 40 tiene horario armado a mano; el 41 y el 42 se ven generados por el motor.
+    if (v !== '40') this._fuente = 'generado';
+    this._resultado = this._resultadoPorIntensivo[v] || null;
   },
 
   _ninosExtraGuardados() {
@@ -113,29 +130,32 @@ const Armador = {
       main.innerHTML = `<div class="empty-state"><div class="empty-state-title">No se pudo cargar la data del intensivo</div><div>${UI.esc(e.message)}</div></div>`;
       return;
     }
-    if (!this._resultado) this._generar();
+    const tieneNinos = (data.intensivo.niños || []).length > 0;
+    if (!this._resultado && tieneNinos) this._generar();
     // Si el intensivo activo no tiene niños, se muestra el estado "aún sin armar"; si tiene, se arma.
-    if ((data.intensivo.niños || []).length === 0) {
+    if (!tieneNinos) {
       main.innerHTML = this._html41(data);
     } else {
       main.innerHTML = this._html(data);
     }
     this._wire();
 
-    if (!this._verIntensivo41 && !localStorage.getItem(this.KEY_TOUR)) {
+    if (this._intensivoVista === '41' && !localStorage.getItem(this.KEY_TOUR)) {
       setTimeout(() => this._abrirTour(), 400);
     }
   },
 
-  // Vista del próximo intensivo (aún sin armar) — demuestra que cada intensivo es navegable.
+  // Vista de un intensivo aún sin armar (el próximo ciclo en blanco) — cada intensivo es navegable.
   _html41(data) {
+    const nom = data.intensivo.id || 'Intensivo';
+    const rango = data.intensivo.fecha_inicio ? ` · ${data.intensivo.fecha_inicio} → ${data.intensivo.fecha_fin}` : '';
     return `
       ${this._toolbarHtml(data.intensivo)}
       <div class="armador-hero">
         <div class="armador-hero-info">
-          <div class="armador-eyebrow">Cohorte Intensivo 41 · próximo ciclo</div>
-          <h2 class="armador-title">Intensivo 41 — aún sin armar</h2>
-          <p class="armador-subtitle">Cada intensivo queda guardado por separado. Cuando empiece el Intensivo 41, agregas a los niños y el sistema arma su horario, sin tocar el del Intensivo 40 (que queda archivado y consultable).</p>
+          <div class="armador-eyebrow">${UI.esc(nom)} · próximo ciclo${rango}</div>
+          <h2 class="armador-title">${UI.esc(nom)} — aún sin armar</h2>
+          <p class="armador-subtitle">Cada intensivo queda guardado por separado. Agrega a los niños que participan y el sistema arma su horario con la disponibilidad real de los terapeutas, sin tocar los intensivos anteriores.</p>
         </div>
         <div class="armador-hero-cta">
           <button class="btn btn-primary" id="armadorAddBtn">${this._icons.plus}Agregar primer niño</button>
@@ -143,7 +163,7 @@ const Armador = {
       </div>
       <div class="empty-state" style="margin-top:18px">
         <div class="empty-state-title">Horario en blanco</div>
-        <div class="empty-state-sub">Todavía no hay niños en el Intensivo 41. Agrega niños para construir su horario; el Intensivo 40 permanece intacto.</div>
+        <div class="empty-state-sub">Todavía no hay niños en ${UI.esc(nom)}. Agrega niños para construir su horario; los intensivos anteriores quedan intactos.</div>
       </div>
     `;
   },
@@ -157,7 +177,7 @@ const Armador = {
     });
     this._colocarGrupos(this._resultado, this._gruposGuardados());
     this._kidsSlotsPorSemana = this._computarKidsSlots(this._resultado);
-    if (this._resultadoPorIntensivo) this._resultadoPorIntensivo[this._verIntensivo41 ? 41 : 40] = this._resultado;
+    if (this._resultadoPorIntensivo) this._resultadoPorIntensivo[this._intensivoVista] = this._resultado;
   },
 
   // Coloca los grupos/duplas como post-proceso del resultado (igual que reuniones/papás), sin tocar el motor.
@@ -382,8 +402,9 @@ const Armador = {
           <label class="armador-select">
             <span class="armador-select-label">Intensivo:</span>
             <select id="armadorIntensivo">
-              <option value="41" ${this._verIntensivo41 ? 'selected' : ''}>Intensivo 41 · actual (datos reales)</option>
-              <option value="40" ${!this._verIntensivo41 ? 'selected' : ''}>Intensivo 40 · ejemplo anterior</option>
+              <option value="41" ${this._intensivoVista === '41' ? 'selected' : ''}>Intensivo 41 · actual (datos reales)</option>
+              <option value="42" ${this._intensivoVista === '42' ? 'selected' : ''}>Intensivo 42 · próximo (armar nuevo)</option>
+              <option value="40" ${this._intensivoVista === '40' ? 'selected' : ''}>Intensivo 40 · ejemplo anterior</option>
             </select>
           </label>
           <label class="armador-select">
@@ -976,7 +997,7 @@ const Armador = {
     });
 
     document.getElementById('armadorIntensivo')?.addEventListener('change', (e) => {
-      this._verIntensivo41 = e.target.value === '41';
+      this._intensivoVista = e.target.value; // '40' | '41' | '42'
       this._filtroNino = -1; // los niños difieren entre intensivos; volver a "Todos"
       this._activarCacheSegunToggle();
       this.render();
