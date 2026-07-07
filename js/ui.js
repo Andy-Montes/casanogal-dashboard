@@ -94,7 +94,7 @@ const UI = {
   // Niño en programa Intensivo
   esIntensivo(n) { return !!(n && n.id_programa === 'PROG-INT'); },
   // Insignia "INT" junto al nombre (vacío si no es intensivo)
-  badgeIntensivo(n) { return this.esIntensivo(n) ? '<span class="dot-int" title="En intensivo"></span>' : ''; },
+  badgeIntensivo(n) { return this.esIntensivo(n) ? '<span class="badge-int" title="En el programa Intensivo">INT</span>' : ''; },
   // Anillo mostaza alrededor del avatar del niño intensivo (string de box-shadow, '' si no)
   ringIntensivo(n) { return this.esIntensivo(n) ? 'box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--cn-mostaza);' : ''; },
 };

@@ -2662,6 +2662,8 @@
 .ses-disc-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,0.75); vertical-align: middle; flex-shrink: 0; }
 /* Insignia "INT" para niños de Intensivo */
 .dot-int { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--cn-mostaza); margin-left: 6px; vertical-align: middle; flex-shrink: 0; }
+/* Etiqueta "INT" (reemplaza el punto amarillo suelto): marca que el niño está en el programa Intensivo */
+.badge-int { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px; background: var(--cn-mostaza-bg); color: var(--cn-mostaza-deep); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; line-height: 15px; vertical-align: middle; flex-shrink: 0; }
 .legend-note { font-size: 11px; color: var(--text-2); margin-right: 6px; font-weight: 600; }
 
 /* ====== Vista terapeuta: calendario compacto + panel de traspasos ====== */

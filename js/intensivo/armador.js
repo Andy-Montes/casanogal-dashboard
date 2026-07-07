@@ -316,12 +316,14 @@ const Armador = {
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = 'Completo · 100%';
     } else {
-      // Propuesta con datos reales: el empaque es muy ajustado (≈30 sesiones en 30 huecos útiles),
-      // así que casi siempre quedan pocas sesiones por afinar a mano. Se presenta como propuesta, sin alarma.
-      const faltan = agg.incompletos.reduce((s, i) => s + (i.faltan || 0), 0);
+      // Propuesta con datos reales: el empaque es muy ajustado (≈30 sesiones en 30 huecos útiles).
+      // La semana base se repite las N semanas, así que se expresa POR SEMANA (no acumulado ×semanas).
+      const semanas = intensivo.semanas || 6;
+      const faltanTotal = agg.incompletos.reduce((s, i) => s + (i.faltan || 0), 0);
+      const porSem = Math.max(1, Math.round(faltanTotal / semanas)); // sesiones/semana que no alcanzan a entrar
       const nombres = agg.incompletos.map(i => i.niño).join(', ');
       titulo = 'Horario propuesto con los datos reales';
-      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · sin choques de terapeuta ni sala. Quedan ${faltan} ${faltan === 1 ? 'sesión' : 'sesiones'} por afinar a mano (${nombres}) — el empaque es muy ajustado.`;
+      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · sin choques de terapeuta ni sala. Solo ${porSem === 1 ? 'queda 1 sesión' : `quedan ${porSem} sesiones`} por semana por acomodar a mano (${nombres}); la misma base se repite las ${semanas} semanas. El empaque es muy ajustado (cada niño lleva ~30 sesiones en ~30 bloques).`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
       badgeText = `Propuesta · ${agg.totalPct}%`;
     }
