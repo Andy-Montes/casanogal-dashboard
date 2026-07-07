@@ -2375,6 +2375,17 @@
 .pa-week-btn:hover { background: var(--cn-azul-bg); border-color: var(--cn-azul); }
 .pa-week-label { font-size: 13px; font-weight: 600; color: var(--text-2); min-width: 120px; text-align: center; }
 
+/* Sesiones puntuales donde el papá acompaña (observación / con el hijo) */
+.pa-conpapas { margin-top: 14px; padding: 12px 14px; background: var(--cn-azul-bg-soft, var(--bg-soft)); border: 1px solid var(--border); border-radius: var(--r-md); }
+.pa-conpapas-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pa-conpapas-list li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.pa-cp-fecha { font-weight: 700; color: var(--text); min-width: 58px; }
+.pa-cp-esp { flex: 1; min-width: 80px; }
+.pa-cp-hora { color: var(--text-3); }
+.pa-cp-badge { font-size: 10px; font-weight: 800; letter-spacing: 0.03em; padding: 1px 7px; border-radius: 999px; text-transform: uppercase; }
+.pa-cp-badge.is-obs { background: var(--psico-bg, #FDF3C9); color: var(--psico-text, #8A6D00); }
+.pa-cp-badge.is-vinc { background: var(--cn-azul-bg, #E4F0F5); color: var(--cn-azul-deep, #0B4F63); }
+
 /* Grilla semanal */
 .pa-week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .pa-day { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }

@@ -23,6 +23,8 @@ const Comunicacion = {
         </div>`;
       return;
     }
+    // Abrir el horario en una semana que tenga sesiones de ESTE niño (no una vacía)
+    State.weekStart = this._bestWeekStart(n);
     main.innerHTML = `
       <div id="paRoot" class="pa-root">
         ${this._paHeader(n)}
@@ -81,31 +83,60 @@ const Comunicacion = {
     return s.tipo_sesion_padre === 'individual_padre' || s.tipo_actividad === 'Sesión de padres';
   },
 
+  // Lunes ISO de la semana que contiene una fecha
+  _lunISO(iso) { const wd = (new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7; return this._shiftISO(iso, -wd); },
+  // Elige una semana que SÍ tenga sesiones del niño (la de HOY si tiene; si no, la más cargada),
+  // así el portal nunca abre en una semana vacía.
+  _bestWeekStart(n) {
+    const fechas = Data.sesionesDeNino(n.id_nino)
+      .filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esPadresSolos(s))
+      .map(s => s.fecha).filter(Boolean);
+    if (!fechas.length) return this._lunISO(HOY_ISO);
+    const cnt = {}; fechas.forEach(f => { const L = this._lunISO(f); cnt[L] = (cnt[L] || 0) + 1; });
+    const hoyL = this._lunISO(HOY_ISO);
+    if (cnt[hoyL]) return hoyL;
+    return Object.entries(cnt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+  },
+
+  // Horario del niño: una semana REAL (con fechas), eligiendo una que tenga sesiones. Como el niño
+  // viene todas las semanas, se rotula "se repite cada semana" y se puede navegar con ‹ ›. Las
+  // sesiones de observación / con el hijo se listan aparte (cualquier semana) para que no se pierdan.
   _paHorario(n) {
     const fechas = fechasSemana();
-    // El calendario del hijo incluye sus terapias y las sesiones "con papás" (marcadas);
-    // excluye las reuniones de equipo y las sesiones de papás solos (esas van al 2º calendario).
-    const sesNino = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esPadresSolos(s) && fechas.includes(s.fecha));
+    const primer = (n.nombre_completo || '').split(' ')[0];
+    const clin = Data.sesionesDeNino(n.id_nino).filter(s => s.tipo_actividad !== 'Reunión de equipo' && !this._esPadresSolos(s));
+    const sesNino = clin.filter(s => fechas.includes(s.fecha));
     const porDia = fechas.map(f => sesNino.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
     const cols = fechas.map((f, i) => {
       const [, , d] = f.split('-').map(Number);
       const ses = porDia[i];
       const esHoy = f === HOY_ISO;
-      const cuerpo = ses.length
-        ? ses.map(s => this._paSesionCard(s)).join('')
-        : '<div class="pa-day-empty">Sin sesiones</div>';
+      const cuerpo = ses.length ? ses.map(s => this._paSesionCard(s)).join('') : '<div class="pa-day-empty">Libre</div>';
       return `
         <div class="pa-day${esHoy ? ' is-today' : ''}">
           <div class="pa-day-head"><span class="pa-day-name">${DIAS_ABBR[i]}</span><span class="pa-day-date">${d}</span></div>
           <div class="pa-day-body">${cuerpo}</div>
         </div>`;
     }).join('');
+    // Frecuencia semanal aproximada (mediana de sesiones por semana con actividad)
+    const porSemana = {}; clin.forEach(s => { const L = this._lunISO(s.fecha); porSemana[L] = (porSemana[L] || 0) + 1; });
+    const freqs = Object.values(porSemana).sort((a, b) => a - b);
+    const freq = freqs.length ? freqs[Math.floor(freqs.length / 2)] : 0;
+    // Todas las sesiones de observación / con el hijo (de cualquier semana), con su fecha
+    const conPapas = clin.filter(s => this._esConPapas(s)).sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    const conPapasHtml = conPapas.length ? `
+      <div class="pa-conpapas">
+        <div class="pa-card-eyebrow">Sesiones donde acompañas a ${UI.esc(primer)}</div>
+        <ul class="pa-conpapas-list">
+          ${conPapas.map(s => `<li><span class="pa-cp-fecha mono">${UI.esc(UI.fmtFechaCorta(s.fecha))}</span><span class="pa-cp-esp">${UI.esc(s.tipo_terapia || s.tipo_actividad || '')}</span><span class="pa-cp-badge ${s.tipo_sesion_padre === 'observacion' ? 'is-obs' : 'is-vinc'}">${s.tipo_sesion_padre === 'observacion' ? 'Observación' : 'Con tu hijo'}</span><span class="pa-cp-hora mono">${UI.esc(s.hora_inicio || '')}</span></li>`).join('')}
+        </ul>
+      </div>` : '';
     return `
       <section id="paHorarioWrap" class="pa-card">
         <div class="pa-card-head">
           <div>
-            <div class="pa-card-eyebrow">Horario del niño</div>
-            <h2 class="pa-card-title">Las terapias de ${UI.esc((n.nombre_completo || '').split(' ')[0])} esta semana</h2>
+            <div class="pa-card-eyebrow">Horario semanal · se repite cada semana${freq ? ` · ~${freq} sesiones` : ''}</div>
+            <h2 class="pa-card-title">La semana de ${UI.esc(primer)}</h2>
           </div>
           <div class="pa-week-nav">
             <button class="pa-week-btn" data-pa-week="-7" aria-label="Semana anterior">‹</button>
@@ -113,29 +144,17 @@ const Comunicacion = {
             <button class="pa-week-btn" data-pa-week="7" aria-label="Semana siguiente">›</button>
           </div>
         </div>
-        ${sesNino.length ? `<div class="pa-cal-week"><a class="pa-cal-week-btn" href="${this._icsHref(sesNino)}" download="casa-nogal-semana.ics">${this._svgCal} Agregar toda la semana a mi calendario</a></div>` : ''}
+        ${sesNino.length ? `<div class="pa-cal-week"><a class="pa-cal-week-btn" href="${this._icsHref(sesNino)}" download="casa-nogal-semana.ics">${this._svgCal} Agregar esta semana a mi calendario</a></div>` : ''}
         <div class="pa-week">${cols}</div>
+        ${conPapasHtml}
       </section>`;
   },
 
   // SEGUNDO calendario, solo de los papás (sesiones sin el niño). Misma grilla semanal
   // que el del hijo. Se oculta si el niño no tiene ninguna sesión de papás solos.
   _paHorarioPadres(n) {
-    if (!Data.sesionesDeNino(n.id_nino).some(s => this._esPadresSolos(s))) return '';
-    const fechas = fechasSemana();
-    const ses = Data.sesionesDeNino(n.id_nino).filter(s => this._esPadresSolos(s) && fechas.includes(s.fecha));
-    const porDia = fechas.map(f => ses.filter(s => s.fecha === f).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')));
-    const cols = fechas.map((f, i) => {
-      const [, , d] = f.split('-').map(Number);
-      const dd = porDia[i];
-      const esHoy = f === HOY_ISO;
-      const cuerpo = dd.length ? dd.map(s => this._paSesionCard(s)).join('') : '<div class="pa-day-empty">—</div>';
-      return `
-        <div class="pa-day${esHoy ? ' is-today' : ''}">
-          <div class="pa-day-head"><span class="pa-day-name">${DIAS_ABBR[i]}</span><span class="pa-day-date">${d}</span></div>
-          <div class="pa-day-body">${cuerpo}</div>
-        </div>`;
-    }).join('');
+    const solos = Data.sesionesDeNino(n.id_nino).filter(s => this._esPadresSolos(s)).sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    if (!solos.length) return '';
     return `
       <section class="pa-card pa-padres-card">
         <div class="pa-card-head">
@@ -144,7 +163,9 @@ const Comunicacion = {
             <h2 class="pa-card-title">Sus sesiones como papás</h2>
           </div>
         </div>
-        <div class="pa-week">${cols}</div>
+        <ul class="pa-conpapas-list" style="margin-top:4px">
+          ${solos.map(s => `<li><span class="pa-cp-fecha mono">${UI.esc(UI.fmtFechaCorta(s.fecha))}</span><span class="pa-cp-esp">${UI.esc(s.tipo_terapia || s.tipo_actividad || '')}</span><span class="pa-cp-badge is-vinc">Para ti</span><span class="pa-cp-hora mono">${UI.esc(s.hora_inicio || '')}</span></li>`).join('')}
+        </ul>
       </section>`;
   },
 
@@ -321,8 +342,12 @@ const Comunicacion = {
       const wk = e.target.closest('[data-pa-week]');
       if (wk) {
         State.weekStart = this._shiftISO(State.weekStart, parseInt(wk.dataset.paWeek, 10));
-        const wrap = document.getElementById('paHorarioWrap');
-        if (wrap) wrap.outerHTML = this._paHorario(Data.nino(DEMO_USERS.padres.id_nino));
+        // Re-renderiza AMBOS calendarios (el del hijo y el de sesiones con papás) del niño
+        // que se está viendo. Antes solo actualizaba el 1º, así que las sesiones de padres
+        // de otra semana quedaban congeladas / no aparecían.
+        const n = Data.nino(DEMO_USERS.padres.id_nino);
+        const col = root.querySelector('.pa-col-main');
+        if (col && n) col.innerHTML = this._paHorario(n) + this._paHorarioPadres(n);
         return;
       }
       if (e.target.closest('#paDescargar')) { Main._downloadPDF(); return; }
