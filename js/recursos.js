@@ -261,8 +261,12 @@ const Recursos = {
         }
         if (clin.length > 1) {
           const det = clin.map(s => `${s.tipo_terapia} (${s.terapeuta_abr || ''})`).join(' + ');
-          const abr = clin.map(s => UI.esc(s.terapeuta_abr || '·')).join('+');
-          return `<td class="disp-cell disp-ocupado" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${abr}</td>`;
+          // Cada terapia de la dupla es un chip arrastrable por separado (antes la celda combinada no se podía mover)
+          const chips = clin.map(s => {
+            const picked = movId === s.id_sesion;
+            return `<span class="disp-chip disp-pick${picked ? ' disp-picked' : ''}" data-id="${s.id_sesion}" title="${UI.esc(s.tipo_terapia)} (${UI.esc(s.terapeuta_abr || '')}) · arrastra para mover">${UI.esc(s.terapeuta_abr || '·')}</span>`;
+          }).join('');
+          return `<td class="disp-cell disp-ocupado disp-multi" style="background:${cn.bg};color:${cn.text}" title="${UI.esc(det)}">${chips}</td>`;
         }
         return `<td class="disp-cell disp-libre disp-crear" data-band="nino" data-nino="${n.id_nino}" data-bloque="${b.id_bloque}" title="Sin sesión · clic para crear"></td>`;
       }).join('');

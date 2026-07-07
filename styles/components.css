@@ -392,6 +392,28 @@
 .role-banner b { font-weight: 700; color: var(--text); }
 .role-banner > div { flex: 1; }
 
+/* Tarjeta de avisos de coordinación para el terapeuta (en el espacio del banner de la demo) */
+.ter-avisos {
+  margin: -8px 0 20px;
+  padding: 14px 18px;
+  background: var(--alert-bg, #FDECEC);
+  border: 1px solid rgba(200, 42, 42, 0.28);
+  border-left: 3px solid var(--alert, #C82A2A);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ter-avisos-head { display: flex; align-items: center; gap: 8px; color: var(--alert, #C82A2A); margin-bottom: 8px; }
+.ter-avisos-head svg { flex-shrink: 0; }
+.ter-avisos-head b { color: var(--text); font-weight: 700; }
+.ter-avisos-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ter-aviso-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ter-aviso-txt { color: var(--text); flex: 1; }
+.ter-avisos-link { display: inline-block; margin-top: 10px; color: var(--cn-azul); font-weight: 600; text-decoration: underline; font-size: 12px; }
+
+/* Badge de conteo en rojo (avisos sin leer en el nav) */
+.nav-count-alert { background: var(--alert, #C82A2A); color: #fff; }
+
 .ter-selector-list { display: flex; flex-direction: column; gap: 4px; }
 .ter-selector-row {
   display: flex; align-items: center; gap: 12px;

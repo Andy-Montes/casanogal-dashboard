@@ -456,6 +456,7 @@ const Main = {
       const t = Data.terapeuta(tid);
       const ninos = State.data.equipo_asignado.filter(e => e.id_terapeuta === tid && e.activa).length;
       const sesSem = Data.sesionesSemana().length;
+      const avisos = (Notificaciones._avisosParaTerapeuta(tid) || []).filter(n => !n.leida);
       html = `
         <div class="role-banner">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -463,7 +464,22 @@ const Main = {
             <b>Estás viendo como Terapeuta · ${UI.esc(t?.nombre_completo || DEMO_USERS.terapeuta?.name || '—')}.</b>
             Solo aparecen tus ${ninos} niños asignados y tus ${sesSem} sesiones de la semana. <a href="#" id="changeTerLink" style="color:var(--cn-azul);font-weight:600;text-decoration:underline">Cambiar de terapeuta</a> o cambia el rol arriba.
           </div>
-        </div>`;
+        </div>
+        ${avisos.length ? `
+        <div class="ter-avisos" role="status">
+          <div class="ter-avisos-head">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <b>Tienes ${avisos.length} aviso${avisos.length === 1 ? '' : 's'} de coordinación sin leer</b>
+          </div>
+          <ul class="ter-avisos-list">
+            ${avisos.slice(0, 3).map(n => `
+              <li class="ter-aviso-item">
+                <span class="ter-aviso-txt">${UI.esc(n.txt)}</span>
+                <button class="btn btn-ghost btn-sm ter-aviso-leer" data-id="${UI.esc(n.id)}" type="button">Ya la leí</button>
+              </li>`).join('')}
+          </ul>
+          <a href="#" id="verAvisosLink" class="ter-avisos-link">Ver todos en Notificaciones</a>
+        </div>` : ''}`;
     } else if (State.role === 'padres') {
       const nino = Data.nino(DEMO_USERS.padres.id_nino);
       html = `
@@ -478,6 +494,20 @@ const Main = {
       main.insertAdjacentHTML('afterbegin', html);
       document.getElementById('changeTerLink')?.addEventListener('click', (e) => { e.preventDefault(); this._openTerapeutaSelector(); });
       document.getElementById('downloadPDF')?.addEventListener('click', () => Main._downloadPDF());
+      // Tarjeta de avisos del terapeuta: marcar leído sin salir de la vista, o ir a Notificaciones.
+      main.querySelectorAll('.ter-aviso-leer').forEach(b => b.addEventListener('click', () => {
+        const inbox = Notificaciones._leerInbox().map(n => n.id === b.dataset.id ? { ...n, leida: true } : n);
+        Notificaciones._guardarInbox(inbox);
+        this.refreshCounts();
+        this.renderPendientes();
+        this._injectRoleBanner();
+      }));
+      document.getElementById('verAvisosLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        State.module = 'notificaciones';
+        this.activateNav('notificaciones');
+        this._renderModule();
+      });
     }
   },
 
@@ -508,6 +538,13 @@ const Main = {
     document.getElementById('navEquipoCount').textContent = State.data.terapeutas.length;
     document.getElementById('navNinosCount').textContent = Data.ninosVisibles().length;
     document.getElementById('navSalasCount').textContent = State.data.salas.length;
+    // Badge de avisos sin leer en Notificaciones (según el usuario/rol activo)
+    const notifCount = document.getElementById('navNotifCount');
+    if (notifCount) {
+      const n = Notificaciones.noLeidas();
+      notifCount.textContent = n;
+      notifCount.style.display = n ? '' : 'none';
+    }
   },
 
   renderPendientes() {
@@ -630,9 +667,20 @@ const Main = {
       const tName = DEMO_USERS.terapeuta?.short || 'terapeuta';
       const tid = DEMO_USERS.terapeuta?.id_terapeuta;
       const faltantes = this._notasFaltantes(tid);
-      const pend = [
+      const pend = [];
+      // Avisos de coordinación sin leer dirigidos a este terapeuta → arriba de todo.
+      (Notificaciones._avisosParaTerapeuta(tid) || []).filter(n => !n.leida).forEach(n => {
+        pend.push({
+          id: 'aviso-' + n.id,
+          t: 'alert',
+          msg: `Aviso de coordinación: ${n.txt}`,
+          detail: n.txt,
+          action: 'Ábrelo en el módulo Notificaciones y márcalo como leído cuando lo revises.',
+        });
+      });
+      pend.push(
         { id:'t-conf',  t:'alert', msg:`${conf.count} conflicto${conf.count===1?'':'s'} en tu agenda`, detail:`Hay ${conf.count} sesiones que chocan con otra terapeuta o sala en tu agenda de esta semana.`, action:'En el módulo Calendario, click en la tarjeta roja "Conflictos detectados" para ver el detalle.' },
-      ];
+      );
       if (faltantes.length > 0) {
         pend.push({
           id: 't-notas',

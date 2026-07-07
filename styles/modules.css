@@ -1848,15 +1848,17 @@
 
 /* === Reportes / Tabla genérica === */
 .table-wrap {
+  width: 100%;
+  max-width: 100%;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  overflow-x: auto;   /* si la tabla no cabe, hace scroll horizontal en vez de comprimirse/cortarse */
+  overflow-x: auto;   /* solo hace scroll si la tabla realmente no cabe */
   overflow-y: hidden;
 }
-.data-table { min-width: 640px; } /* evita que las columnas se aplasten en anchos chicos */
 .data-table {
   width: 100%;
+  min-width: min(640px, 100%); /* llena el ancho en desktop; nunca fuerza más que el contenedor (evita que se corra) */
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -2540,6 +2542,10 @@
 .disp-picked { outline: 2px solid var(--cn-azul) !important; outline-offset: -2px; box-shadow: inset 0 0 0 2px var(--cn-azul); }
 .disp-target { background: #D7F0DB !important; color: #1E5E2C !important; cursor: pointer; outline: 2px dashed #2E9B45; outline-offset: -2px; font-weight: 700; }
 .disp-target:hover { background: #C2E8C9 !important; }
+/* Dupla en la banda de niños: cada terapia es un chip arrastrable por separado */
+.disp-multi { padding: 1px; }
+.disp-multi .disp-chip { display: inline-block; padding: 1px 4px; margin: 1px; border-radius: 4px; line-height: 1.2; cursor: grab; }
+.disp-multi .disp-chip:active { cursor: grabbing; }
 .disp-moving { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--cn-azul-bg); color: var(--cn-azul-deep); border: 1px solid var(--cn-azul); border-radius: var(--r-md); padding: 9px 13px; margin-bottom: 10px; font-size: 13px; }
 .disp-mov-cancel { margin-left: auto; background: var(--bg); border: 1px solid var(--cn-azul); color: var(--cn-azul-deep); border-radius: var(--r-pill); padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .disp-mov-cancel:hover { background: var(--cn-azul); color: #fff; }

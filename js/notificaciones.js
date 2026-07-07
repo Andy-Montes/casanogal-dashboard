@@ -3,7 +3,7 @@
 const Notificaciones = {
   _chatKey: 'casanogal_chat',
   _reglasKey: 'casanogal_reglas_notif',
-  _inboxKey: 'casanogal_notif_inbox',
+  _inboxKey: 'casanogal_notif_inbox_v2', // v2: avisos con destinatario estructurado (dest) filtrable por terapeuta
 
   PLANTILLAS_MSG: [
     { t: 'Inasistencia', m: 'El niño no asistirá hoy. Avisado al equipo que lo atiende.' },
@@ -42,14 +42,43 @@ const Notificaciones = {
     return this._inboxSeed();
   },
   _inboxSeed() {
-    return [
-      { id: 'N1', para: 'Isa (TO)', txt: 'León viene atrasado hoy, llega 10:15.', hora: '09:30', leida: false },
-      { id: 'N2', para: 'Todo el equipo', txt: 'Viernes reunión de equipo a las 8:00.', hora: 'ayer', leida: false },
-      { id: 'N3', para: 'Marce (Fono)', txt: 'La mamá de Mati confirmó la sesión de papás.', hora: 'ayer', leida: true },
+    // Avisos con destinatario estructurado (dest): 'todos' | 'ter:<id>' | 'nino:<id>'.
+    // Se dirigen a terapeutas reales para que el terapeuta logueado vea avisos de inmediato.
+    const ters = (State.data?.terapeutas || []).filter(t => t.estado === 'Activo');
+    const t0 = ters[0], t1 = ters[1];
+    const seed = [
+      { id: 'N1', dest: 'todos', para: 'Todo el equipo', txt: 'Viernes 8:00 reunión de equipo. Confirmen asistencia.', hora: 'ayer', leida: false },
     ];
+    if (t0) seed.push({ id: 'N2', dest: 'ter:' + t0.id_terapeuta, para: t0.nombre_completo, txt: 'León viene atrasado hoy, llega 10:15. Ajusta el inicio de su sesión.', hora: '09:30', leida: false });
+    if (t1) seed.push({ id: 'N3', dest: 'ter:' + t1.id_terapeuta, para: t1.nombre_completo, txt: 'Cambio de horario: la sesión de Mati de mañana pasó a las 11:00.', hora: 'ayer', leida: false });
+    return seed;
   },
   _guardarInbox(list) { localStorage.setItem(this._inboxKey, JSON.stringify(list)); },
-  noLeidas() { return this._leerInbox().filter(n => !n.leida).length; },
+
+  // Avisos que le corresponden a un terapeuta: los dirigidos a él, a todo el equipo,
+  // o al equipo de un niño que atiende. Los avisos legacy sin dest quedan visibles.
+  _avisosParaTerapeuta(tid) {
+    if (!tid) return [];
+    const misNinos = new Set((State.data?.equipo_asignado || [])
+      .filter(e => e.id_terapeuta === tid && e.activa)
+      .map(e => e.id_nino));
+    return this._leerInbox().filter(n => {
+      const d = n.dest || 'todos';
+      if (d === 'todos') return true;
+      if (d.startsWith('ter:')) return d.slice(4) === tid;
+      if (d.startsWith('nino:')) return misNinos.has(d.slice(5));
+      return true;
+    });
+  },
+
+  // Inbox según el rol/usuario activo: el terapeuta ve solo lo suyo; coordinación ve todo.
+  _inboxActivo() {
+    if (State.role === 'terapeuta' && DEMO_USERS.terapeuta?.id_terapeuta) {
+      return this._avisosParaTerapeuta(DEMO_USERS.terapeuta.id_terapeuta);
+    }
+    return this._leerInbox();
+  },
+  noLeidas() { return this._inboxActivo().filter(n => !n.leida).length; },
 
   _leerReglas() {
     try { const r = JSON.parse(localStorage.getItem(this._reglasKey) || 'null'); if (r) return r; } catch {}
@@ -62,9 +91,9 @@ const Notificaciones = {
     const ninos = (State.data.ninos || []).filter(n => n.estado === 'Activo');
     const reglas = this._leerReglas();
     const chat = this._leerChat();
-    const inbox = this._leerInbox();
-    const noLeidas = inbox.filter(n => !n.leida).length;
     const esCoord = State.role === 'coordinacion'; // el terapeuta solo ve avisos y usa el chat; no crea notificaciones ni reglas
+    const inbox = this._inboxActivo();             // terapeuta: solo sus avisos; coordinación: todos
+    const noLeidas = inbox.filter(n => !n.leida).length;
 
     document.getElementById('main').innerHTML = `
       <div class="section-head"><div>
@@ -73,8 +102,8 @@ const Notificaciones = {
       </div></div>
 
       <section class="ficha-section notif-inbox">
-        <h2 class="ficha-section-title">Avisos recibidos ${noLeidas ? `<span class="ficha-section-count" style="background:var(--alert);color:#fff">${noLeidas} sin leer</span>` : ''}</h2>
-        <div class="ficha-section-hint">Los avisos sin leer quedan destacados hasta que marcas "ya la leí".</div>
+        <h2 class="ficha-section-title">${esCoord ? 'Avisos enviados' : 'Tus avisos'} ${noLeidas ? `<span class="ficha-section-count" style="background:var(--alert);color:#fff">${noLeidas} sin leer</span>` : ''}</h2>
+        <div class="ficha-section-hint">${esCoord ? 'Todos los avisos que has mandado al equipo. Los sin leer quedan destacados.' : 'Coordinación te avisa acá (inasistencias, cambios de horario, recordatorios). Los sin leer quedan destacados hasta que marcas "ya la leí".'}</div>
         <div class="notif-inbox-list">
           ${inbox.length ? inbox.map(n => `
             <div class="notif-item${n.leida ? ' leida' : ''}">
@@ -169,11 +198,12 @@ const Notificaciones = {
       const msg = document.getElementById('notifMsg').value.trim();
       if (!msg) { UI.toast('Escribe un mensaje primero', 'warn'); return; }
       const sel = document.getElementById('notifDest');
-      const dest = sel.options[sel.selectedIndex].text;
+      const dest = sel.value;                                  // 'todos' | 'nino:<id>' | 'ter:<id>'
+      const para = sel.options[sel.selectedIndex].text;        // texto legible
       const inbox = this._leerInbox();
-      inbox.unshift({ id: 'N' + Date.now(), para: dest, txt: msg, hora: this._horaAhora(), leida: false });
+      inbox.unshift({ id: 'N' + Date.now(), dest, para, txt: msg, hora: this._horaAhora(), leida: false });
       this._guardarInbox(inbox);
-      UI.toast(`Aviso enviado a ${dest}`, 'success');
+      UI.toast(`Aviso enviado a ${para}`, 'success');
       this.render();
     });
     // Marcar un aviso como leído
@@ -197,7 +227,7 @@ const Notificaciones = {
       const txt = t.value.trim();
       if (!txt) return;
       const list = this._leerChat();
-      list.push({ autor: 'Coordinación', txt, hora: HOY_HORA ? this._horaAhora() : '' });
+      list.push({ autor: this._autorActual(), txt, hora: HOY_HORA ? this._horaAhora() : '' });
       this._guardarChat(list);
       document.getElementById('chatFeed').insertAdjacentHTML('beforeend', this._msgHtml(list[list.length - 1]));
       t.value = '';
@@ -216,8 +246,33 @@ const Notificaciones = {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   },
 
+  // Abreviación corta de la especialidad para mostrar junto al nombre en el chat.
+  _discAbrev(esp) {
+    if (!esp) return '';
+    const map = {
+      'Terapia Ocupacional': 'TO', 'Fonoaudiología': 'Fono', 'Kinesiología': 'Kine',
+      'Psicología': 'Psico', 'Cognitivo': 'Cog', 'Educación Cognitiva': 'Cog',
+      'RDI': 'RDI', 'Neurología': 'Neuro',
+    };
+    return map[esp] || esp.split(' ')[0];
+  },
+
+  // Nombre con que firma el usuario activo en el chat (evita que el terapeuta aparezca como Coordinación).
+  _autorActual() {
+    if (State.role === 'terapeuta' && DEMO_USERS.terapeuta?.id_terapeuta) {
+      const t = Data.terapeuta(DEMO_USERS.terapeuta.id_terapeuta);
+      if (t) {
+        const disc = this._discAbrev(t.especialidad);
+        return `${t.nombre_visible || t.nombre_completo}${disc ? ` (${disc})` : ''}`;
+      }
+      return DEMO_USERS.terapeuta.short || 'Terapeuta';
+    }
+    if (State.role === 'padres') return 'Apoderado';
+    return 'Coordinación';
+  },
+
   _msgHtml(m) {
-    const mine = m.autor === 'Coordinación';
+    const mine = m.autor === this._autorActual();
     return `<div class="chat-msg ${mine ? 'is-mine' : ''}">
       <div class="chat-msg-head">${UI.esc(m.autor)}${m.hora ? ` · <span class="mono">${UI.esc(m.hora)}</span>` : ''}</div>
       <div class="chat-msg-body">${UI.esc(m.txt)}</div>
