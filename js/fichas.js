@@ -808,14 +808,22 @@ const Fichas = {
 
   // ----- Descargas en Word (pedido de Trini): ficha completa, hoja de vida, tratamiento en curso -----
 
-  _docH2(t) { return `<h2 style="font-size:16px;color:#1B6B8A;border-bottom:2px solid #1B6B8A;padding-bottom:4px;margin-top:16px">${UI.esc(t)}</h2>`; },
+  // Paleta de los documentos (Word HTML: solo colores/bordes/tablas simples)
+  _DOC: { p: '#0E5A6E', acc: '#E8A317', ink: '#22333F', mut: '#6B7B85', bord: '#D6E1E6', light: '#F1F7F8', zebra: '#F8FBFC' },
+
+  // Encabezado de sección: banda con el color de marca
+  _docH2(t) {
+    const c = this._DOC;
+    return `<table width="100%" style="border-collapse:collapse;margin:18px 0 8px"><tr><td style="background:${c.p};color:#fff;font-size:12.5px;font-weight:bold;letter-spacing:.6px;padding:6px 12px">${UI.esc((t || '').toUpperCase())}</td></tr></table>`;
+  },
 
   // Bloque de datos COMPLETOS del niño (identificación, estado actual, familia, antecedentes)
   _docDatosNino(n) {
     const esc = UI.esc;
-    const v = (x) => (x != null && x !== '') ? esc(x) : '<span style="color:#94a3b8">Por registrar</span>';
-    const fila = (k, val) => `<tr><td style="padding:5px 10px;border:1px solid #cbd5e1;background:#f1f5f9;font-weight:bold;width:210px">${k}</td><td style="padding:5px 10px;border:1px solid #cbd5e1">${val}</td></tr>`;
-    const T = 'border-collapse:collapse;width:100%;font-size:13px;margin-bottom:6px';
+    const c = this._DOC;
+    const v = (x) => (x != null && x !== '') ? esc(x) : `<span style="color:${c.mut};font-style:italic">Por registrar</span>`;
+    const fila = (k, val) => `<tr><td style="padding:6px 12px;border:1px solid ${c.bord};background:${c.light};font-weight:bold;color:${c.p};width:205px">${k}</td><td style="padding:6px 12px;border:1px solid ${c.bord}">${val}</td></tr>`;
+    const T = 'border-collapse:collapse;width:100%;font-size:12.5px;margin-bottom:6px';
     const edad = this._edadEn(n.fecha_nacimiento, HOY_ISO);
     const term = n.fecha_termino_programa;
     const enCurso = !term || term >= HOY_ISO;
@@ -861,10 +869,12 @@ const Fichas = {
   // Tabla de sesiones reutilizable. conNota=true agrega la columna de registro clínico.
   _docTablaSesiones(arr, conNota) {
     const esc = UI.esc;
+    const c = this._DOC;
     const DIA = { lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié', jueves: 'Jue', viernes: 'Vie', 'sábado': 'Sáb', domingo: 'Dom' };
     let stored = {};
     if (conNota) { try { stored = JSON.parse(localStorage.getItem('casanogal_notas') || '{}') || {}; } catch {} }
-    const filas = arr.map(s => {
+    const td = `padding:5px 8px;border:1px solid ${c.bord};vertical-align:top`;
+    const filas = arr.map((s, idx) => {
       const ter = Data.terapeuta(s.id_terapeuta);
       const modal = (s.tipo_actividad && s.tipo_actividad !== 'Sesión') ? ` <i>(${esc(s.tipo_actividad)})</i>` : '';
       let notaCell = '';
@@ -875,31 +885,36 @@ const Fichas = {
         const texto = (loc && loc.texto) || (base && base.notas_libres) || '';
         const objs = (base && base.objetivos_trabajados) || [];
         const av = base ? base.avance_percibido : null;
-        notaCell = `<td>${texto ? esc(texto) : '<span style="color:#999">— sin nota —</span>'}${objs.length ? `<br><i>Objetivos: ${objs.map(esc).join(' · ')}</i>` : ''}${av != null ? `<br><b>Avance: ${av}/10</b>` : ''}</td>`;
+        notaCell = `<td style="${td}">${texto ? esc(texto) : `<span style="color:${c.mut}">— sin nota —</span>`}${objs.length ? `<br><i style="color:${c.mut}">Objetivos: ${objs.map(esc).join(' · ')}</i>` : ''}${av != null ? `<br><b style="color:${c.p}">Avance: ${av}/10</b>` : ''}</td>`;
       }
-      return `<tr>
-        <td>${esc(UI.fmtFechaCorta(s.fecha))} ${esc(DIA[s.dia_semana] || '')}</td>
-        <td>${esc(s.hora_inicio || '')}</td>
-        <td>${esc(s.tipo_terapia || '')}${modal}</td>
-        <td>${esc(ter?.nombre_completo || s.terapeuta_abr || '—')}</td>
-        <td>${esc(s.sala_nombre || '—')}</td>
-        <td>${esc(s.estado || '')}</td>
+      const bg = idx % 2 ? c.zebra : '#fff';
+      return `<tr style="background:${bg}">
+        <td style="${td};white-space:nowrap">${esc(UI.fmtFechaCorta(s.fecha))} ${esc(DIA[s.dia_semana] || '')}</td>
+        <td style="${td};white-space:nowrap">${esc(s.hora_inicio || '')}</td>
+        <td style="${td}">${esc(s.tipo_terapia || '')}${modal}</td>
+        <td style="${td}">${esc(ter?.nombre_completo || s.terapeuta_abr || '—')}</td>
+        <td style="${td}">${esc(s.sala_nombre || '—')}</td>
+        <td style="${td}">${esc(s.estado || '')}</td>
         ${notaCell}
       </tr>`;
     }).join('');
-    return `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:11.5px">
-      <tr style="background:#EAF2F5"><th>Fecha</th><th>Hora</th><th>Terapia</th><th>Terapeuta</th><th>Sala</th><th>Estado</th>${conNota ? '<th>Registro / notas / avance</th>' : ''}</tr>
+    const th = `padding:6px 8px;text-align:left;color:#fff;font-size:11px;letter-spacing:.3px;border:1px solid ${c.p}`;
+    return `<table style="border-collapse:collapse;width:100%;font-size:11.5px">
+      <tr style="background:${c.p}"><th style="${th}">Fecha</th><th style="${th}">Hora</th><th style="${th}">Terapia</th><th style="${th}">Terapeuta</th><th style="${th}">Sala</th><th style="${th}">Estado</th>${conNota ? `<th style="${th}">Registro · notas · avance</th>` : ''}</tr>
       ${filas}
     </table>`;
   },
 
   _docIntensivosPasados(n) {
     const esc = UI.esc;
+    const c = this._DOC;
     const hist = Data.historialDeNino(n.id_nino);
-    if (!hist.length) return '<p style="font-size:13px">Sin intensivos anteriores registrados.</p>';
-    return `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:12px">
-      <tr style="background:#EAF2F5"><th>Ciclo</th><th>Período</th><th>Estado</th><th>Resumen</th><th>Informe</th></tr>
-      ${hist.map(h => `<tr><td>${esc(h.tipo || '')}</td><td>${esc(h.fecha_inicio || '')}${h.fecha_termino ? `–${esc(h.fecha_termino)}` : ''}</td><td>${esc(h.estado || '')}</td><td>${esc(h.resumen || '—')}</td><td>${h.informe ? esc(h.informe.nombre_archivo || h.informe.tipo || 'sí') : '—'}</td></tr>`).join('')}
+    if (!hist.length) return `<p style="font-size:12.5px;color:${c.mut}">Sin intensivos anteriores registrados.</p>`;
+    const th = `padding:6px 8px;text-align:left;color:#fff;font-size:11px;border:1px solid ${c.p}`;
+    const td = `padding:5px 8px;border:1px solid ${c.bord};vertical-align:top`;
+    return `<table style="border-collapse:collapse;width:100%;font-size:12px">
+      <tr style="background:${c.p}"><th style="${th}">Ciclo</th><th style="${th}">Período</th><th style="${th}">Estado</th><th style="${th}">Resumen</th><th style="${th}">Informe</th></tr>
+      ${hist.map((h, i) => `<tr style="background:${i % 2 ? c.zebra : '#fff'}"><td style="${td}">${esc(h.tipo || '')}</td><td style="${td};white-space:nowrap">${esc(h.fecha_inicio || '')}${h.fecha_termino ? `–${esc(h.fecha_termino)}` : ''}</td><td style="${td}">${esc(h.estado || '')}</td><td style="${td}">${esc(h.resumen || '—')}</td><td style="${td}">${h.informe ? esc(h.informe.nombre_archivo || h.informe.tipo || 'sí') : '—'}</td></tr>`).join('')}
     </table>`;
   },
 
@@ -926,11 +941,44 @@ const Fichas = {
   },
 
   _descargarDoc(titulo, cuerpo, filename) {
+    const esc = UI.esc;
+    const c = this._DOC;
+    const partes = String(titulo).split(' · ');
+    const tipoDoc = partes[0] || 'Documento clínico';
+    const paciente = partes.slice(1).join(' · ');
+    const fecha = (UI.fmtFecha ? UI.fmtFecha(HOY_ISO) : HOY_ISO);
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"><title>${titulo}</title></head>
-      <body style="font-family:Calibri,Arial,sans-serif">
-        <h1 style="font-size:20px;color:#1B6B8A">Casa Nogal · ${titulo}</h1>
+      <head><meta charset="utf-8"><title>${esc(titulo)}</title>
+      <style>
+        @page { margin: 1.6cm 1.7cm; }
+        body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: ${c.ink}; font-size: 12.5px; line-height: 1.5; }
+        p { margin: 4px 0; }
+        table { border-collapse: collapse; }
+        h1, h2, h3 { margin: 0; }
+      </style></head>
+      <body>
+        <table width="100%" style="border-collapse:collapse">
+          <tr>
+            <td style="vertical-align:middle;width:60%">
+              <table style="border-collapse:collapse"><tr>
+                <td style="width:42px;height:42px;background:${c.p};color:#fff;text-align:center;vertical-align:middle;font-family:Georgia,serif;font-size:19px;font-weight:bold">cn</td>
+                <td style="padding-left:11px;vertical-align:middle">
+                  <div style="font-family:Georgia,serif;font-size:21px;font-weight:bold;color:${c.p};letter-spacing:.3px">casa<span style="color:${c.acc}">nogal</span></div>
+                  <div style="font-size:9.5px;color:${c.mut};letter-spacing:1.5px;text-transform:uppercase">Centro de terapias · Sistema clínico</div>
+                </td>
+              </tr></table>
+            </td>
+            <td style="text-align:right;vertical-align:middle">
+              <div style="font-size:13px;font-weight:bold;color:${c.p};text-transform:uppercase;letter-spacing:.6px">${esc(tipoDoc)}</div>
+              <div style="font-size:10.5px;color:${c.mut}">Emitido el ${esc(fecha)}</div>
+            </td>
+          </tr>
+        </table>
+        <table width="100%" style="border-collapse:collapse;margin-top:8px"><tr><td style="border-top:3px solid ${c.p};font-size:1px;line-height:1px">&nbsp;</td></tr></table>
+        <table width="140" style="border-collapse:collapse;margin-bottom:14px"><tr><td style="border-top:2px solid ${c.acc};font-size:1px;line-height:1px">&nbsp;</td></tr></table>
+        ${paciente ? `<table width="100%" style="border-collapse:collapse;margin-bottom:16px"><tr><td style="background:${c.light};border-left:4px solid ${c.p};padding:9px 14px"><span style="font-size:18px;font-weight:bold;color:${c.p}">${esc(paciente)}</span></td></tr></table>` : ''}
         ${cuerpo}
+        <table width="100%" style="border-collapse:collapse;margin-top:26px"><tr><td style="border-top:1px solid ${c.bord};padding-top:8px;font-size:10px;color:${c.mut};text-align:center">Casa Nogal · Documento clínico confidencial · Generado por el sistema el ${esc(fecha)}</td></tr></table>
       </body></html>`;
     const blob = new Blob(['﻿', html], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
