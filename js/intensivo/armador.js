@@ -304,6 +304,7 @@ const Armador = {
     let titulo, subtitulo, badgeClass, badgeIcon, badgeText;
     const totalSes = res.semanas?.reduce((sum, s) => sum + s.sesionesPlanificadas, 0) || 0;
     const esReal = this._fuente === 'real';
+    const esTrini = this._intensivoVista === '41'; // el Int 41 es el armador real de Trini
 
     if (esReal) {
       titulo = 'Horario real de Trini';
@@ -311,21 +312,21 @@ const Armador = {
       badgeClass = 'ok'; badgeIcon = this._icons.check;
       badgeText = 'Fuente: Excel original';
     } else if (agg.incompletos.length === 0) {
-      titulo = 'Horario propuesto con los datos reales';
-      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
+      titulo = esTrini ? 'Intensivo 41 · el armador de Trini' : 'Horario propuesto con los datos reales';
+      subtitulo = `${esTrini ? 'Armado con los equipos y la disponibilidad reales de Trini' : 'Distribución calculada con los equipos y la disponibilidad reales'}. ${intensivo.niños.length} niños · ${totalSes} sesiones · sin choques de terapeuta ni sala.`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
-      badgeText = 'Completo · 100%';
+      badgeText = esTrini ? 'Armador de Trini · completo' : 'Completo · 100%';
     } else {
-      // Propuesta con datos reales: el empaque es muy ajustado (≈30 sesiones en 30 huecos útiles).
-      // La semana base se repite las N semanas, así que se expresa POR SEMANA (no acumulado ×semanas).
+      // Int 41 = armador de Trini. El empaque es muy ajustado (≈30 sesiones en 30 huecos): pocas
+      // sesiones se terminan de ubicar a mano. Se expresa POR SEMANA (la base se repite las N semanas).
       const semanas = intensivo.semanas || 6;
       const faltanTotal = agg.incompletos.reduce((s, i) => s + (i.faltan || 0), 0);
-      const porSem = Math.max(1, Math.round(faltanTotal / semanas)); // sesiones/semana que no alcanzan a entrar
+      const porSem = Math.max(1, Math.round(faltanTotal / semanas)); // sesiones/semana por ubicar
       const nombres = agg.incompletos.map(i => i.niño).join(', ');
-      titulo = 'Horario propuesto con los datos reales';
-      subtitulo = `Distribución calculada con los equipos y la disponibilidad reales de Trini. ${intensivo.niños.length} niños · sin choques de terapeuta ni sala. Solo ${porSem === 1 ? 'queda 1 sesión' : `quedan ${porSem} sesiones`} por semana por acomodar a mano (${nombres}); la misma base se repite las ${semanas} semanas. El empaque es muy ajustado (cada niño lleva ~30 sesiones en ~30 bloques).`;
+      titulo = esTrini ? 'Intensivo 41 · el armador de Trini' : 'Horario propuesto con los datos reales';
+      subtitulo = `${esTrini ? 'Armado con los equipos y la disponibilidad reales de Trini' : 'Distribución calculada con los datos reales'}. ${intensivo.niños.length} niños · sin choques de terapeuta ni sala. ${porSem === 1 ? 'Queda 1 sesión' : `Quedan ${porSem} sesiones`} por semana que se termina${porSem === 1 ? '' : 'n'} de ubicar a mano (${nombres}) — lo normal al cerrar un intensivo; el empaque es muy ajustado (~30 sesiones en ~30 bloques).`;
       badgeClass = 'ok'; badgeIcon = this._icons.ok;
-      badgeText = `Propuesta · ${agg.totalPct}%`;
+      badgeText = esTrini ? 'Armador de Trini' : `Propuesta · ${agg.totalPct}%`;
     }
 
     const tieneReal = !!this._resultadoReal;
