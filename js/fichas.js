@@ -121,7 +121,7 @@ const Fichas = {
         <span class="ficha-avatar" style="background:${c.bg};color:${c.text};${UI.ringIntensivo(n)}">${UI.esc(UI.initials(n.nombre_completo))}</span>
         <div style="flex:1;min-width:0">
           <div class="ficha-name">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div>
-          <div class="ficha-prog">${UI.esc(n.programa_nombre)}${n.semana_actual?` · Sem ${n.semana_actual}`:''} · ${n.edad_anios} años</div>
+          <div class="ficha-prog">${UI.esc(n.programa_nombre)}${n.semana_actual?` · Sem ${n.semana_actual}`:''}${n.edad_anios != null ? ` · ${n.edad_anios} años` : ''}</div>
         </div>
       </div>
       <div class="ficha-diag">
@@ -169,7 +169,7 @@ const Fichas = {
         <div>
           <div class="ficha-detail-name">${UI.esc(n.nombre_completo)}${UI.badgeIntensivo(n)}</div>
           <div class="ficha-detail-meta">
-            <span>${n.edad_anios} años</span>
+            ${n.edad_anios != null ? `<span>${n.edad_anios} años</span>` : ''}
             <span class="mono">RUT ${UI.esc(n.rut)}</span>
             <span>${UI.esc(prog?.nombre || '—')}</span>
             <span class="mono">${UI.fmtFechaCorta(n.fecha_inicio_programa)} → ${UI.fmtFechaCorta(n.fecha_termino_programa)}</span>
@@ -256,6 +256,45 @@ const Fichas = {
     document.querySelectorAll('.obj-del').forEach(b =>
       b.addEventListener('click', (e) => { e.stopPropagation(); Data.eliminarObjetivo(b.dataset.id); this.render(); UI.toast('Objetivo eliminado', ''); })
     );
+    // Editor inline del objetivo: reemplaza el contenido de un contenedor por input + Guardar/Cancelar.
+    // Al cancelar, re-enlaza SOLO los botones dentro del host restaurado (no todo el documento),
+    // para no apilar listeners duplicados en las otras filas de objetivos.
+    const editorInline = (host, valorInicial, onGuardar) => {
+      const prev = host.innerHTML;
+      host.innerHTML = `<span class="obj-inline-edit">
+          <input type="text" class="obj-inline-in" value="${UI.esc(valorInicial)}" maxlength="180" placeholder="Escribe el objetivo…">
+          <button class="btn btn-primary btn-sm obj-inline-save" type="button">Guardar</button>
+          <button class="btn btn-ghost btn-sm obj-inline-cancel" type="button">Cancelar</button>
+        </span>`;
+      const inp = host.querySelector('.obj-inline-in');
+      inp.focus(); inp.select();
+      const cancelar = () => { host.innerHTML = prev; bindObjBtns(host); };
+      const guardar = () => { const v = inp.value.trim(); if (!v) { UI.toast('Escribe el objetivo primero', 'error'); inp.focus(); return; } onGuardar(v); };
+      host.querySelector('.obj-inline-save').addEventListener('click', guardar);
+      host.querySelector('.obj-inline-cancel').addEventListener('click', cancelar);
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); guardar(); } if (e.key === 'Escape') { e.preventDefault(); cancelar(); } });
+    };
+    // Enlaza los botones de objetivo dentro de un contenedor (documento en la carga inicial,
+    // o un host puntual tras cancelar). Escribir en fila vacía / editar con lápiz.
+    const bindObjBtns = (root) => {
+      root.querySelectorAll('.obj-write').forEach(btn =>
+        btn.addEventListener('click', () => editorInline(btn.closest('.cif-desc'), '', (v) => agregarObjetivo(v, btn.dataset.cif)))
+      );
+      root.querySelectorAll('.obj-edit').forEach(btn =>
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const host = btn.closest('.cif-row')?.querySelector('.cif-desc');
+          const txtEl = host?.querySelector('.cif-desc-text');
+          if (!host || !txtEl) return;
+          editorInline(host, txtEl.textContent || '', (v) => {
+            Data.editarObjetivo(btn.dataset.id, { descripcion: v });
+            this.render();
+            UI.toast('Objetivo actualizado', 'success');
+          });
+        })
+      );
+    };
+    bindObjBtns(document);
     // Click en el body de la fila abre el panel; el caret expande/colapsa la nota inline
     document.querySelectorAll('.timeline-item').forEach(item => {
       const head = item.querySelector('.timeline-head');
@@ -1191,13 +1230,14 @@ const Fichas = {
     const nObjetivos = Math.min(4, Math.max(1, ...this.CIF_SUBCATS.map(c => porCif[c].length)));
 
     const bloques = Array.from({ length: nObjetivos }, (_, k) => {
+      const lapiz = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
       const filas = this.CIF_SUBCATS.map(cif => {
         const o = porCif[cif][k];
         return `<div class="cif-row${o ? '' : ' is-empty'}">
           <span class="cif-label">${UI.esc(cif)}</span>
           ${o
-            ? `<span class="cif-desc">${UI.esc(o.descripcion)}<small>${UI.esc(o.area || 'objetivo propio')}</small></span><span class="cif-end">${pillEstado(o.estado)}${o._extra ? `<button class="obj-del" data-id="${UI.esc(o.id_objetivo)}" title="Quitar objetivo">×</button>` : ''}</span>`
-            : `<span class="cif-desc cif-vacio">— sin objetivo en esta área —</span>`}
+            ? `<span class="cif-desc" data-cif="${UI.esc(cif)}"><span class="cif-desc-text">${UI.esc(o.descripcion)}</span><small>${UI.esc(o.area || 'objetivo propio')}</small></span><span class="cif-end">${pillEstado(o.estado)}<button class="obj-edit" data-id="${UI.esc(o.id_objetivo)}" title="Editar el enunciado del objetivo">${lapiz}</button>${o._extra ? `<button class="obj-del" data-id="${UI.esc(o.id_objetivo)}" title="Quitar objetivo">×</button>` : ''}</span>`
+            : `<span class="cif-desc cif-vacio"><button class="obj-write" type="button" data-cif="${UI.esc(cif)}" title="Escribir el objetivo de esta área">+ Escribir objetivo</button></span>`}
         </div>`;
       }).join('');
       return `<div class="objetivo-bloque">

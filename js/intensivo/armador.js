@@ -130,6 +130,12 @@ const Armador = {
       main.innerHTML = `<div class="empty-state"><div class="empty-state-title">No se pudo cargar la data del intensivo</div><div>${UI.esc(e.message)}</div></div>`;
       return;
     }
+    // Vista de Evaluación = flujo aparte (no la grilla del intensivo)
+    if (this._intensivoVista === 'eval') {
+      main.innerHTML = this._htmlEval(data);
+      this._wireEval();
+      return;
+    }
     const tieneNinos = (data.intensivo.niños || []).length > 0;
     if (!this._resultado && tieneNinos) this._generar();
     // Si el intensivo activo no tiene niños, se muestra el estado "aún sin armar"; si tiene, se arma.
@@ -408,6 +414,7 @@ const Armador = {
               <option value="41" ${this._intensivoVista === '41' ? 'selected' : ''}>Intensivo 41 · actual (datos reales)</option>
               <option value="42" ${this._intensivoVista === '42' ? 'selected' : ''}>Intensivo 42 · próximo (armar nuevo)</option>
               <option value="40" ${this._intensivoVista === '40' ? 'selected' : ''}>Intensivo 40 · ejemplo anterior</option>
+              <option value="eval" ${this._intensivoVista === 'eval' ? 'selected' : ''}>Evaluación · equipo evaluador</option>
             </select>
           </label>
           <label class="armador-select">
@@ -1273,13 +1280,411 @@ const Armador = {
   // Registra un niño de atención continua o evaluación sin tocar el grid del intensivo
   // (esas instancias se arman por separado; el motor por instancia queda para una fase dedicada).
   _registrarNinoOtraInstancia(nino) {
+    // Evaluación tiene su propio flujo (datos básicos → fechas → mail → reuniones → formularios).
+    if (nino.instancia === 'evaluacion') {
+      const caso = this._nuevoCasoEval({ nombre: nino.nombre, apoderado: nino.encargado, fechaInicio: nino.fecha_inicio, semanas: 1 });
+      const arr = this._evaluaciones(); arr.push(caso); this._persistirEvaluaciones(arr);
+      this._intensivoVista = 'eval';
+      this._activarCacheSegunToggle();
+      this.render();
+      UI.toast(`${nino.nombre} agregado a Evaluación`, 'success');
+      return;
+    }
     const KEY = 'casanogal_armador_otras_instancias';
     let arr = [];
     try { const a = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(a)) arr = a; } catch {}
     arr.push(nino);
     localStorage.setItem(KEY, JSON.stringify(arr));
-    const etq = nino.instancia === 'continua' ? 'Atención continua' : 'Evaluación';
-    UI.toast(`${nino.nombre} registrado en ${etq}. Esa instancia se arma por separado (en construcción).`, 'success');
+    UI.toast(`${nino.nombre} registrado en Atención continua. Esa instancia se arma por separado (en construcción).`, 'success');
+  },
+
+  // ===================== MÓDULO DE EVALUACIÓN =====================
+  // Flujo aparte del intensivo: equipo evaluador de 4, 2 sesiones/semana, mail con documentos,
+  // reuniones online y formularios que al recibirse quedan registrados en el caso.
+  KEY_EVAL: 'casanogal_armador_evaluaciones',
+  _evaluaciones() {
+    try { const a = JSON.parse(localStorage.getItem(this.KEY_EVAL) || 'null'); if (Array.isArray(a)) return a; } catch {}
+    // En la instancia real se arranca vacío; en la demo, un caso de ejemplo para ver el flujo.
+    if (typeof State !== 'undefined' && State.instanciaReal) { this._persistirEvaluaciones([]); return []; }
+    const seed = [this._nuevoCasoEval({ nombre: 'Ejemplo · Martina', apoderado: 'Apoderado de Martina', email: '', semanas: 3, motivo: 'Evaluación de ingreso · sospecha TEA' })];
+    this._persistirEvaluaciones(seed);
+    return seed;
+  },
+  _persistirEvaluaciones(arr) { localStorage.setItem(this.KEY_EVAL, JSON.stringify(arr)); },
+
+  // Equipo evaluador por defecto (4), tomado del catálogo real; todo editable después.
+  _equipoEvalDefault() {
+    const cat = this._cache?.catalogo || {};
+    const ters = Object.entries(cat.terapeutas || {});
+    const buscar = (re) => { const e = ters.find(([s, t]) => re.test(t.disciplina || '') || re.test(s)); return e ? { sigla: e[0], nombre: e[1].nombre } : { sigla: '', nombre: '' }; };
+    return [
+      { rol: 'Líder · Neurología', ...buscar(/NEU|Neuro|^LP$/i) },
+      { rol: 'Evaluación Cognitiva', ...buscar(/Cognitiva|PSIC|^MM$/i) },
+      { rol: 'Cognitivo', ...buscar(/ED COG|COG|EJEC/i) },
+      { rol: 'Fonoaudiología', ...buscar(/FONO/i) },
+    ];
+  },
+  _docsEvalDefault() {
+    return ['Consentimiento informado', 'Ficha de anamnesis', 'Cuestionario para los padres', 'Autorización de uso de datos'].map(nombre => ({ nombre, enviado: false }));
+  },
+  _formsEvalDefault() {
+    return ['Cuestionario para los padres', 'Escala de desarrollo', 'Historia clínica del niño'].map(nombre => ({ nombre, estado: 'pendiente', fecha: null }));
+  },
+  // Lunes de la semana de una fecha ISO
+  _lunesDe(iso) {
+    const d = new Date((iso || HOY_ISO) + 'T00:00:00');
+    const dow = (d.getDay() + 6) % 7; // 0 = lunes
+    d.setDate(d.getDate() - dow);
+    return d.toISOString().slice(0, 10);
+  },
+  // Genera 2 sesiones/semana (lunes + miércoles) durante N semanas desde una fecha de inicio.
+  _genSesionesEval(fechaInicio, semanas, hora) {
+    const lun0 = this._lunesDe(fechaInicio);
+    const n = Math.max(1, semanas || 1);
+    const ses = [];
+    for (let w = 0; w < n; w++) {
+      const lun = this._sumarDias(lun0, w * 7);
+      const mie = this._sumarDias(lun0, w * 7 + 2);
+      ses.push({ fecha: lun, hora: hora || '09:00', tipo: w === 0 ? 'ingreso' : 'presencial', modalidad: w === 0 ? 'online' : 'presencial', link: '' });
+      ses.push({ fecha: mie, hora: hora || '11:00', tipo: w === n - 1 ? 'devolucion' : 'presencial', modalidad: w === n - 1 ? 'online' : 'presencial', link: '' });
+    }
+    return ses;
+  },
+  _nuevoCasoEval(base) {
+    base = base || {};
+    return {
+      id: 'EVAL-' + (this._evaluacionesRaw?.length || 0) + '-' + this._semilla + '-' + Math.floor(Math.random() * 100000),
+      nombre: base.nombre || 'Nuevo niño',
+      apoderado: base.apoderado || '',
+      email: base.email || '',
+      telefono: base.telefono || '',
+      motivo: base.motivo || '',
+      equipo: base.equipo || this._equipoEvalDefault(),
+      sesiones: base.sesiones || this._genSesionesEval(base.fechaInicio || HOY_ISO, base.semanas || 2, '09:00'),
+      documentos: base.documentos || this._docsEvalDefault(),
+      formularios: base.formularios || this._formsEvalDefault(),
+      estado: 'agendada',
+      creada: HOY_ISO,
+    };
+  },
+
+  // mailto con asunto + cuerpo prellenado (documentos + fechas de la evaluación)
+  _mailEvalHref(caso) {
+    const to = caso.email || '';
+    const subject = `Casa Nogal · Proceso de evaluación de ${caso.nombre}`;
+    const docs = (caso.documentos || []).map(d => `  • ${d.nombre}`).join('\n');
+    const fechas = (caso.sesiones || []).map(s => `  • ${UI.fmtFechaCorta(s.fecha)} ${s.hora} — ${this._tipoEvalLabel(s.tipo)} (${s.modalidad === 'online' ? 'online' : 'presencial'})`).join('\n');
+    const equipo = (caso.equipo || []).filter(e => e.nombre).map(e => `  • ${e.nombre} — ${e.rol}`).join('\n');
+    const body =
+`Estimada familia de ${caso.nombre}:
+
+Les damos la bienvenida al proceso de evaluación en Casa Nogal. A continuación encontrarán la información para comenzar.
+
+Documentos a completar y enviar antes de la primera sesión:
+${docs || '  • (por definir)'}
+
+Fechas agendadas:
+${fechas || '  • (por agendar)'}
+
+Equipo evaluador:
+${equipo || '  • (por asignar)'}
+
+Cualquier duda, quedamos atentos.
+
+Equipo Casa Nogal`;
+    return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  },
+  _tipoEvalLabel(t) { return t === 'ingreso' ? 'Reunión de ingreso' : t === 'devolucion' ? 'Devolución' : 'Evaluación presencial'; },
+  // Solo acepta http/https como link de reunión (evita esquemas peligrosos tipo javascript:)
+  _linkSeguro(u) { return /^https?:\/\//i.test((u || '').trim()) ? u.trim() : ''; },
+
+  _htmlEval(data) {
+    const casos = this._evaluaciones();
+    this._evaluacionesRaw = casos;
+    const agenda = this._agendaEvalHtml(casos);
+    const tarjetas = casos.length
+      ? casos.map((c, i) => this._casoEvalHtml(c, i)).join('')
+      : `<div class="empty-state"><div class="empty-state-title">Sin evaluaciones agendadas</div><div class="empty-state-sub">Crea la primera evaluación con el botón de arriba.</div></div>`;
+    return `
+      ${this._toolbarHtml(data.intensivo)}
+      <div class="armador-hero">
+        <div class="armador-hero-info">
+          <div class="armador-eyebrow">Evaluación · flujo aparte del intensivo</div>
+          <h2 class="armador-title">Evaluaciones</h2>
+          <p class="armador-subtitle">Equipo evaluador de 4 · 2 evaluaciones por semana (lunes y miércoles). Cada evaluación tiene su flujo: crear al niño con sus datos, agendar las fechas, mandar el mail con los documentos, coordinar las reuniones online y recibir los formularios que quedan en su ficha.</p>
+        </div>
+        <div class="armador-hero-cta">
+          <button class="btn btn-primary" id="evalAddBtn">${this._icons.plus}Nueva evaluación</button>
+        </div>
+      </div>
+      ${agenda}
+      <div class="eval-casos">${tarjetas}</div>
+    `;
+  },
+
+  // Agenda multi-semana: las sesiones agrupadas por semana (puede ir varias semanas adelante).
+  _agendaEvalHtml(casos) {
+    const todas = [];
+    casos.forEach(c => (c.sesiones || []).forEach(s => todas.push({ ...s, nombre: c.nombre })));
+    if (!todas.length) return '';
+    const porSemana = {};
+    todas.forEach(s => { const lun = this._lunesDe(s.fecha); (porSemana[lun] = porSemana[lun] || []).push(s); });
+    const semanas = Object.keys(porSemana).sort();
+    const bloques = semanas.map(lun => {
+      const items = porSemana[lun].sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+      const fin = this._sumarDias(lun, 4);
+      return `
+        <div class="eval-agenda-sem">
+          <div class="eval-agenda-sem-h">Semana del ${UI.fmtFechaCorta(lun)} al ${UI.fmtFechaCorta(fin)}</div>
+          <div class="eval-agenda-items">
+            ${items.map(s => `
+              <div class="eval-agenda-item eval-t-${s.tipo}">
+                <span class="eval-agenda-fecha">${UI.fmtFechaCorta(s.fecha)} · ${UI.esc(s.hora)}</span>
+                <span class="eval-agenda-nino">${UI.esc(s.nombre)}</span>
+                <span class="eval-agenda-tipo">${this._tipoEvalLabel(s.tipo)}${s.modalidad === 'online' ? ' · online' : ''}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="armador-card eval-agenda">
+        <div class="armador-card-head">${this._icons.check}Agenda de evaluaciones</div>
+        <div class="armador-card-body">${bloques}</div>
+      </div>`;
+  },
+
+  _casoEvalHtml(c, i) {
+    const equipo = (c.equipo || []).filter(e => e.nombre || e.sigla);
+    const online = (c.sesiones || []).filter(s => s.modalidad === 'online');
+    const docsEnviados = (c.documentos || []).filter(d => d.enviado).length;
+    const formsRecibidos = (c.formularios || []).filter(f => f.estado === 'recibido').length;
+    const paso = (n, titulo, hecho, cuerpo) => `
+      <div class="eval-paso${hecho ? ' is-done' : ''}">
+        <div class="eval-paso-n">${hecho ? this._icons.ok : n}</div>
+        <div class="eval-paso-body">
+          <div class="eval-paso-t">${titulo}</div>
+          ${cuerpo}
+        </div>
+      </div>`;
+
+    const datosCuerpo = `
+      <div class="eval-datos">
+        ${c.apoderado ? `<span><b>Apoderado:</b> ${UI.esc(c.apoderado)}</span>` : ''}
+        ${c.email ? `<span><b>Correo:</b> ${UI.esc(c.email)}</span>` : ''}
+        ${c.telefono ? `<span><b>Teléfono:</b> ${UI.esc(c.telefono)}</span>` : ''}
+        ${c.motivo ? `<span><b>Motivo:</b> ${UI.esc(c.motivo)}</span>` : ''}
+      </div>
+      <div class="eval-equipo">${equipo.length ? equipo.map(e => `<span class="eval-equipo-chip">${UI.esc(e.nombre || e.sigla)} <small>${UI.esc(e.rol)}</small></span>`).join('') : '<i class="eval-muted">Equipo por asignar</i>'}</div>`;
+
+    const docsCuerpo = `
+      <ul class="eval-docs">
+        ${(c.documentos || []).map((d, di) => `
+          <li>
+            <label class="eval-chk"><input type="checkbox" class="eval-doc-chk" data-ci="${i}" data-di="${di}" ${d.enviado ? 'checked' : ''}><span>${UI.esc(d.nombre)}</span></label>
+          </li>`).join('') || '<li class="eval-muted">Sin documentos</li>'}
+      </ul>
+      <a class="btn btn-secondary btn-sm" href="${this._mailEvalHref(c)}">${this._icons.info}Generar mail con los documentos</a>`;
+
+    const reunionesCuerpo = online.length ? `
+      <ul class="eval-reuniones">
+        ${online.map(s => {
+          const gi = (c.sesiones || []).indexOf(s);
+          return `<li class="eval-reunion">
+            <span class="eval-reunion-fecha">${UI.fmtFechaCorta(s.fecha)} · ${UI.esc(s.hora)} · ${this._tipoEvalLabel(s.tipo)}</span>
+            <input type="url" class="eval-link-in" data-ci="${i}" data-si="${gi}" value="${UI.esc(s.link || '')}" placeholder="Pega el link de Zoom/Meet…">
+            ${this._linkSeguro(s.link) ? `<a class="btn btn-ghost btn-sm" href="${UI.esc(this._linkSeguro(s.link))}" target="_blank" rel="noopener">Unirse</a>` : ''}
+          </li>`;
+        }).join('')}
+      </ul>` : '<div class="eval-muted">Sin reuniones online agendadas.</div>';
+
+    const formsCuerpo = `
+      <ul class="eval-forms">
+        ${(c.formularios || []).map((f, fi) => `
+          <li class="eval-form">
+            <span class="eval-form-nom">${UI.esc(f.nombre)}</span>
+            ${f.estado === 'recibido'
+              ? `<span class="eval-form-badge is-ok">Recibido${f.fecha ? ' · ' + UI.fmtFechaCorta(f.fecha) : ''} · en la ficha</span>`
+              : `<button class="btn btn-ghost btn-sm eval-form-recibir" data-ci="${i}" data-fi="${fi}">Marcar recibido</button>`}
+          </li>`).join('') || '<li class="eval-muted">Sin formularios</li>'}
+      </ul>`;
+
+    return `
+      <div class="armador-card eval-caso">
+        <div class="eval-caso-head">
+          <div>
+            <div class="eval-caso-nom">${UI.esc(c.nombre)}</div>
+            <div class="eval-caso-meta">${(c.sesiones || []).length} sesiones · ${docsEnviados}/${(c.documentos || []).length} documentos enviados · ${formsRecibidos}/${(c.formularios || []).length} formularios recibidos</div>
+          </div>
+          <div class="eval-caso-actions">
+            <button class="btn btn-ghost btn-sm eval-edit" data-ci="${i}">Editar</button>
+            <button class="btn btn-ghost btn-sm eval-del" data-ci="${i}" title="Quitar esta evaluación">${this._icons.trash}</button>
+          </div>
+        </div>
+        <div class="eval-pasos">
+          ${paso(1, 'Datos del niño y equipo', !!(c.apoderado || c.motivo), datosCuerpo)}
+          ${paso(2, 'Enviar documentos', docsEnviados > 0, docsCuerpo)}
+          ${paso(3, 'Reuniones online', online.some(s => s.link), reunionesCuerpo)}
+          ${paso(4, 'Formularios en la ficha', formsRecibidos > 0, formsCuerpo)}
+        </div>
+      </div>`;
+  },
+
+  _wireEval() {
+    // Selector de vista (compartido con la vista intensivo)
+    document.getElementById('armadorIntensivo')?.addEventListener('change', (e) => {
+      this._intensivoVista = e.target.value;
+      this._filtroNino = -1;
+      this._activarCacheSegunToggle();
+      this.render();
+    });
+    document.getElementById('evalAddBtn')?.addEventListener('click', () => this._abrirFormEval());
+    const casos = this._evaluaciones();
+    const guardar = () => this._persistirEvaluaciones(casos);
+    document.querySelectorAll('.eval-doc-chk').forEach(chk =>
+      chk.addEventListener('change', () => {
+        const c = casos[+chk.dataset.ci]; if (!c) return;
+        c.documentos[+chk.dataset.di].enviado = chk.checked;
+        guardar();
+      })
+    );
+    document.querySelectorAll('.eval-link-in').forEach(inp =>
+      inp.addEventListener('change', () => {
+        const c = casos[+inp.dataset.ci]; if (!c) return;
+        const val = inp.value.trim();
+        if (val && !this._linkSeguro(val)) { UI.toast('El link debe empezar con http:// o https://', 'error'); return; }
+        c.sesiones[+inp.dataset.si].link = val;
+        guardar(); this.render();
+      })
+    );
+    document.querySelectorAll('.eval-form-recibir').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const c = casos[+btn.dataset.ci]; if (!c) return;
+        const f = c.formularios[+btn.dataset.fi];
+        f.estado = 'recibido'; f.fecha = HOY_ISO;
+        guardar(); this.render();
+        UI.toast(`"${f.nombre}" recibido y guardado en la ficha de ${c.nombre}`, 'success');
+      })
+    );
+    document.querySelectorAll('.eval-edit').forEach(btn =>
+      btn.addEventListener('click', () => this._abrirFormEval(+btn.dataset.ci))
+    );
+    document.querySelectorAll('.eval-del').forEach(btn =>
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.ci; const c = casos[i]; if (!c) return;
+        if (!confirm(`¿Quitar la evaluación de ${c.nombre}?`)) return;
+        casos.splice(i, 1); guardar(); this.render();
+        UI.toast('Evaluación quitada', '');
+      })
+    );
+  },
+
+  _abrirFormEval(idx) {
+    const casos = this._evaluaciones();
+    const edit = typeof idx === 'number' && casos[idx];
+    const c = edit ? casos[idx] : null;
+    const cat = this._cache?.catalogo || {};
+    const tersOpts = (selSigla) => '<option value="">— sin asignar —</option>' +
+      Object.entries(cat.terapeutas || {}).map(([s, t]) => `<option value="${UI.esc(s)}" ${selSigla === s ? 'selected' : ''}>${UI.esc(s)} · ${UI.esc(t.nombre)}</option>`).join('');
+    const equipo = c ? c.equipo : this._equipoEvalDefault();
+    const inicio = c && c.sesiones?.length ? this._lunesDe(c.sesiones[0].fecha) : this._lunesDe(HOY_ISO);
+    const nSem = c ? Math.max(1, Math.round((c.sesiones || []).length / 2)) : 2;
+    const docsTxt = (c ? c.documentos.map(d => d.nombre) : this._docsEvalDefault().map(d => d.nombre)).join('\n');
+    const formsTxt = (c ? c.formularios.map(f => f.nombre) : this._formsEvalDefault().map(f => f.nombre)).join('\n');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'pendiente-modal-overlay';
+    overlay.id = 'evalFormOverlay';
+    overlay.innerHTML = `
+      <div class="pendiente-modal armador-form-modal">
+        <div class="pendiente-modal-head">
+          ${this._icons.plus}
+          <div>
+            <div class="pendiente-modal-title">${edit ? 'Editar evaluación' : 'Nueva evaluación'}</div>
+            <div class="pendiente-modal-eyebrow">Datos básicos, fechas (2/semana), equipo de 4, documentos y formularios</div>
+          </div>
+          <button class="panel-close" id="evalFormClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="pendiente-modal-body armador-form-body">
+          <div class="armador-form-grid">
+            <label class="armador-form-field"><span>Nombre del niño *</span><input type="text" id="evalNombre" maxlength="60" value="${c ? UI.esc(c.nombre) : ''}" placeholder="Ej: Martina"></label>
+            <label class="armador-form-field"><span>Apoderado</span><input type="text" id="evalApoderado" maxlength="60" value="${c ? UI.esc(c.apoderado) : ''}" placeholder="Nombre del apoderado"></label>
+            <label class="armador-form-field"><span>Correo del apoderado</span><input type="email" id="evalEmail" maxlength="80" value="${c ? UI.esc(c.email) : ''}" placeholder="correo@ejemplo.cl"></label>
+            <label class="armador-form-field"><span>Teléfono</span><input type="text" id="evalTel" maxlength="30" value="${c ? UI.esc(c.telefono) : ''}" placeholder="+56 9 ..."></label>
+            <label class="armador-form-field" style="grid-column:1/-1"><span>Motivo de consulta</span><input type="text" id="evalMotivo" maxlength="120" value="${c ? UI.esc(c.motivo) : ''}" placeholder="Ej: Evaluación de ingreso, sospecha TEA"></label>
+            <label class="armador-form-field"><span>Inicio (lunes de la 1ª semana)</span><input type="date" id="evalInicio" value="${inicio}"></label>
+            <label class="armador-form-field"><span>Nº de semanas</span><input type="number" id="evalSemanas" min="1" max="12" value="${nSem}"></label>
+            <label class="armador-form-field"><span>Hora de las sesiones</span><input type="time" id="evalHora" value="${c && c.sesiones?.[0]?.hora ? UI.esc(c.sesiones[0].hora) : '09:00'}"></label>
+          </div>
+          <div class="armador-form-info arm-info-eval">
+            <b>Equipo evaluador (4):</b> lunes y miércoles. Ajusta cada rol; los nombres salen del catálogo real.
+          </div>
+          <div class="eval-form-equipo">
+            ${equipo.map((e, ei) => `
+              <div class="eval-form-rol">
+                <span class="eval-form-rol-lbl">${UI.esc(e.rol)}</span>
+                <select class="eval-form-sel" data-ei="${ei}">${tersOpts(e.sigla)}</select>
+              </div>`).join('')}
+          </div>
+          <div class="armador-form-grid">
+            <label class="armador-form-field" style="grid-column:1/-1"><span>Documentos a enviar (uno por línea)</span><textarea id="evalDocs" rows="3" class="eval-form-ta">${UI.esc(docsTxt)}</textarea></label>
+            <label class="armador-form-field" style="grid-column:1/-1"><span>Formularios que contestan los padres (uno por línea)</span><textarea id="evalForms" rows="3" class="eval-form-ta">${UI.esc(formsTxt)}</textarea></label>
+          </div>
+        </div>
+        <div class="pendiente-modal-foot">
+          <button class="btn btn-ghost" id="evalFormCancel">Cancelar</button>
+          <button class="btn btn-primary" id="evalFormSave">${edit ? 'Guardar cambios' : 'Crear evaluación'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cerrar = () => overlay.remove();
+    document.getElementById('evalFormClose').addEventListener('click', cerrar);
+    document.getElementById('evalFormCancel').addEventListener('click', cerrar);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
+    setTimeout(() => document.getElementById('evalNombre')?.focus(), 80);
+
+    document.getElementById('evalFormSave').addEventListener('click', () => {
+      const nombre = document.getElementById('evalNombre').value.trim();
+      if (!nombre) { UI.toast('Falta el nombre del niño', 'error'); return; }
+      const inicioV = document.getElementById('evalInicio').value || HOY_ISO;
+      const semanas = Math.max(1, parseInt(document.getElementById('evalSemanas').value, 10) || 1);
+      const hora = document.getElementById('evalHora').value || '09:00';
+      const equipoNuevo = [...document.querySelectorAll('.eval-form-sel')].map((sel, ei) => {
+        const sigla = sel.value.trim();
+        const nombreTer = sigla ? (cat.terapeutas[sigla]?.nombre || sigla) : '';
+        return { rol: equipo[ei].rol, sigla, nombre: nombreTer };
+      });
+      const parseLineas = (id) => (document.getElementById(id).value || '').split('\n').map(s => s.trim()).filter(Boolean);
+      const docsNom = parseLineas('evalDocs');
+      const formsNom = parseLineas('evalForms');
+
+      if (edit) {
+        // Conservar estado enviado/recibido y links cuando el nombre calza
+        const prevDocs = c.documentos || []; const prevForms = c.formularios || []; const prevSes = c.sesiones || [];
+        c.nombre = nombre;
+        c.apoderado = document.getElementById('evalApoderado').value.trim();
+        c.email = document.getElementById('evalEmail').value.trim();
+        c.telefono = document.getElementById('evalTel').value.trim();
+        c.motivo = document.getElementById('evalMotivo').value.trim();
+        c.equipo = equipoNuevo;
+        c.documentos = docsNom.map(nom => ({ nombre: nom, enviado: prevDocs.find(d => d.nombre === nom)?.enviado || false }));
+        c.formularios = formsNom.map(nom => { const p = prevForms.find(f => f.nombre === nom); return { nombre: nom, estado: p?.estado || 'pendiente', fecha: p?.fecha || null }; });
+        const nuevasSes = this._genSesionesEval(inicioV, semanas, hora);
+        c.sesiones = nuevasSes.map(s => { const p = prevSes.find(x => x.fecha === s.fecha && x.hora === s.hora); return p ? { ...s, link: p.link || '' } : s; });
+      } else {
+        const caso = this._nuevoCasoEval({ nombre, apoderado: document.getElementById('evalApoderado').value.trim(), email: document.getElementById('evalEmail').value.trim(), fechaInicio: inicioV, semanas });
+        caso.telefono = document.getElementById('evalTel').value.trim();
+        caso.motivo = document.getElementById('evalMotivo').value.trim();
+        caso.equipo = equipoNuevo;
+        caso.sesiones = this._genSesionesEval(inicioV, semanas, hora);
+        caso.documentos = docsNom.map(nom => ({ nombre: nom, enviado: false }));
+        caso.formularios = formsNom.map(nom => ({ nombre: nom, estado: 'pendiente', fecha: null }));
+        casos.push(caso);
+      }
+      this._persistirEvaluaciones(casos);
+      cerrar();
+      this.render();
+      UI.toast(edit ? 'Evaluación actualizada' : `Evaluación de ${nombre} creada`, 'success');
+    });
   },
 
   _aplicarNinoNuevo(nino) {

@@ -1,9 +1,27 @@
 // Carga y queries sobre data.json
 const Data = {
+  // Interruptor de fuente de datos: demo (data.json) vs instancia real limpia (data-real.json).
+  // Se activa con ?real=1 (sticky en localStorage) o si el dominio contiene "real"
+  // (ej. casanogal-real.vercel.app). ?real=0 vuelve a la demo.
+  KEY_FUENTE_DATOS: 'casanogal_fuente_datos',
+  esInstanciaReal() {
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.get('real') === '1') localStorage.setItem(this.KEY_FUENTE_DATOS, 'real');
+      if (p.get('real') === '0') localStorage.setItem(this.KEY_FUENTE_DATOS, 'demo');
+    } catch {}
+    const flag = (() => { try { return localStorage.getItem(this.KEY_FUENTE_DATOS); } catch { return null; } })();
+    if (flag === 'real') return true;
+    if (flag === 'demo') return false;   // ?real=0 fuerza demo aun en dominios con "real"
+    return /(^|[.-])real([.-]|$)/i.test(location.hostname || '');
+  },
   async load() {
-    const res = await fetch('data.json');
-    if (!res.ok) throw new Error('No se pudo cargar data.json');
+    const real = this.esInstanciaReal();
+    const archivo = real ? 'data-real.json' : 'data.json';
+    const res = await fetch(archivo);
+    if (!res.ok) throw new Error('No se pudo cargar ' + archivo);
     State.data = await res.json();
+    State.instanciaReal = real;
     this._aplicarOverridesNinos();
     return State.data;
   },
@@ -25,6 +43,9 @@ const Data = {
     // Objetivos agregados desde la ficha (banco o propios)
     const extra = this._objetivosExtra();
     if (extra.length) State.data.objetivos_terapeuticos.push(...extra);
+    // Ediciones inline de objetivos base (enunciado/estado) — se aplican encima de la semilla
+    const ovObj = this._objetivosOverride();
+    (State.data.objetivos_terapeuticos || []).forEach(o => { if (ovObj[o.id_objetivo]) Object.assign(o, ovObj[o.id_objetivo]); });
   },
 
   // Niños creados a mano desde la ficha (nuevos ingresos)
@@ -65,6 +86,31 @@ const Data = {
     if (State.data?.objetivos_terapeuticos) {
       const i = State.data.objetivos_terapeuticos.findIndex(o => o.id_objetivo === id);
       if (i >= 0) State.data.objetivos_terapeuticos.splice(i, 1);
+    }
+  },
+  // Ediciones inline del enunciado/estado de un objetivo (base o agregado)
+  KEY_OBJ_OV: 'casanogal_objetivos_override',
+  _objetivosOverride() {
+    try { const o = JSON.parse(localStorage.getItem(this.KEY_OBJ_OV) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch { return {}; }
+  },
+  editarObjetivo(id, campos) {
+    // Si es un objetivo agregado desde la ficha, se edita en su propia lista
+    const extra = this._objetivosExtra();
+    const idx = extra.findIndex(o => o.id_objetivo === id);
+    if (idx >= 0) {
+      Object.assign(extra[idx], campos);
+      localStorage.setItem(this.KEY_OBJ, JSON.stringify(extra));
+    } else {
+      // Objetivo base (semilla): se guarda un override por id
+      const ov = this._objetivosOverride();
+      ov[id] = { ...(ov[id] || {}), ...campos };
+      localStorage.setItem(this.KEY_OBJ_OV, JSON.stringify(ov));
+    }
+    // Reflejar en memoria sin recargar
+    if (State.data?.objetivos_terapeuticos) {
+      const o = State.data.objetivos_terapeuticos.find(x => x.id_objetivo === id);
+      if (o) Object.assign(o, campos);
     }
   },
   guardarNino(id, campos) {

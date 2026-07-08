@@ -125,16 +125,9 @@ const Main = {
           return;
         }
         if (newRole === 'padres') {
-          // Pasa directo a consola de comunicación; ya hay un niño seleccionado por default
-          document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
-          State.role = 'padres';
-          State.currentUser = DEMO_USERS.padres;
-          State.module = 'comunicacion';
-          this.refreshUserChip();
-          this.refreshCounts();
-          this.renderPendientes();
-          this._renderModule();
+          // Admin previsualiza vista apoderado — abre selector para elegir de qué niño ver el portal
+          // (antes entraba fijo al niño por default y no se podía ver el de otros apoderados).
+          this._openPadresSelector(b);
           return;
         }
         document.querySelectorAll('#roleSwitcher .role-pill').forEach(x => x.classList.remove('active'));
@@ -322,6 +315,7 @@ const Main = {
           };
           localStorage.setItem('casanogal_padre_nino', nid);
         }
+        State.module = 'comunicacion';   // el portal del apoderado es la consola de comunicación
         this._aplicarRol('padres', pillEl);
       },
       onCancel: () => {

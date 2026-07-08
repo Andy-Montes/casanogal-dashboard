@@ -395,6 +395,54 @@
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md);
   overflow: hidden;
 }
+
+/* ===== Módulo de Evaluación ===== */
+.eval-agenda { margin-top: 14px; }
+.eval-agenda-sem { margin-bottom: 12px; }
+.eval-agenda-sem:last-child { margin-bottom: 0; }
+.eval-agenda-sem-h { font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+.eval-agenda-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.eval-agenda-item { display: flex; flex-direction: column; gap: 1px; padding: 7px 11px; border-radius: var(--r-sm, 6px); background: var(--bg-soft); border-left: 3px solid var(--cn-azul); min-width: 150px; }
+.eval-agenda-item.eval-t-ingreso { border-left-color: var(--cn-mostaza); }
+.eval-agenda-item.eval-t-devolucion { border-left-color: var(--success); }
+.eval-agenda-fecha { font-size: 12px; font-weight: 700; color: var(--text); }
+.eval-agenda-nino { font-size: 12px; color: var(--text); }
+.eval-agenda-tipo { font-size: 11px; color: var(--text-3); }
+
+.eval-casos { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.eval-caso { padding: 0; }
+.eval-caso-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.eval-caso-nom { font-size: 15px; font-weight: 700; color: var(--text); }
+.eval-caso-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.eval-caso-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.eval-caso-actions .eval-del svg { width: 13px; height: 13px; }
+.eval-pasos { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+@media (max-width: 720px) { .eval-pasos { grid-template-columns: 1fr; } }
+.eval-paso { display: flex; gap: 11px; padding: 14px 16px; background: var(--bg); }
+.eval-paso-n { flex-shrink: 0; width: 24px; height: 24px; border-radius: 999px; background: var(--bg-soft); color: var(--text-2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.eval-paso.is-done .eval-paso-n { background: var(--success-bg, #e6f5ec); color: var(--success); }
+.eval-paso.is-done .eval-paso-n svg { width: 13px; height: 13px; }
+.eval-paso-body { flex: 1; min-width: 0; }
+.eval-paso-t { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
+.eval-datos { display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; color: var(--text); margin-bottom: 8px; }
+.eval-equipo { display: flex; flex-wrap: wrap; gap: 6px; }
+.eval-equipo-chip { display: inline-flex; flex-direction: column; padding: 4px 9px; border-radius: var(--r-sm, 6px); background: var(--cn-azul-bg); color: var(--cn-azul-deep); font-size: 12px; font-weight: 600; }
+.eval-equipo-chip small { font-size: 10px; font-weight: 500; opacity: 0.8; text-transform: uppercase; }
+.eval-muted { color: var(--text-3); font-size: 12px; font-style: italic; }
+.eval-docs, .eval-forms, .eval-reuniones { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 6px; }
+.eval-chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.eval-reunion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.eval-reunion-fecha { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.eval-link-in { flex: 1 1 200px; min-width: 140px; font-size: 12px; padding: 5px 9px; border: 1px solid var(--border); border-radius: var(--r-sm, 6px); background: var(--bg); color: var(--text); }
+.eval-form { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.eval-form-nom { color: var(--text); }
+.eval-form-badge.is-ok { font-size: 11px; font-weight: 700; color: var(--success); background: var(--success-bg, #e6f5ec); padding: 3px 9px; border-radius: 999px; }
+.eval-form-equipo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+@media (max-width: 640px) { .eval-form-equipo { grid-template-columns: 1fr; } }
+.eval-form-rol { display: flex; flex-direction: column; gap: 3px; }
+.eval-form-rol-lbl { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.03em; }
+.eval-form-sel { font-size: 13px; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--r-sm, 6px); background: var(--bg); color: var(--text); }
+.eval-form-ta { font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-sm, 6px); background: var(--bg); color: var(--text); resize: vertical; font-family: inherit; }
 .armador-restr-group-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 8px; }
 .armador-restr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .armador-restr-sala { font-size: 13px; color: var(--text); font-weight: 500; }
@@ -1765,6 +1813,13 @@
 .cif-end { display: inline-flex; align-items: center; gap: 6px; }
 .obj-del { border: none; background: none; color: var(--text-3); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; border-radius: 4px; }
 .obj-del:hover { color: var(--alert); background: var(--alert-bg); }
+.obj-edit { display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-3); cursor: pointer; padding: 2px; border-radius: 4px; }
+.obj-edit:hover { color: var(--cn-azul-deep); background: var(--cn-azul-bg); }
+.obj-write { border: 1px dashed var(--border); background: none; color: var(--cn-azul-deep); font-size: 12px; font-weight: 600; font-style: normal; cursor: pointer; padding: 3px 10px; border-radius: 999px; }
+.obj-write:hover { border-color: var(--cn-azul); background: var(--cn-azul-bg); }
+.obj-inline-edit { display: inline-flex; align-items: center; gap: 6px; width: 100%; flex-wrap: wrap; }
+.obj-inline-in { flex: 1 1 220px; min-width: 160px; font-size: 13px; padding: 5px 9px; border: 1px solid var(--cn-azul); border-radius: var(--r-sm, 6px); background: var(--bg); color: var(--text); }
+.obj-inline-in:focus { outline: 2px solid var(--cn-azul-bg); outline-offset: 1px; }
 
 /* Bandeja de notificaciones (avisos recibidos) */
 .notif-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--alert); color: #fff; font-size: 11px; font-weight: 700; vertical-align: middle; }
