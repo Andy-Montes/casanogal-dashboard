@@ -53,8 +53,27 @@ function esSesionSoloPadres(s) { return !!s && MODALIDADES_SOLO_PADRES.includes(
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const DIAS_ABBR = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
-const HOY_ISO = '2026-05-20'; // miércoles 20 mayo 2026
-const HOY_HORA = 10.5; // 10:30 — para la línea "ahora"
+// "Hoy": en la DEMO es fijo (20 may 2026, para que calcen las sesiones sintéticas);
+// en la INSTANCIA REAL es la fecha/hora real. Misma detección que Data.esInstanciaReal,
+// duplicada acá porque state.js carga antes que data.js.
+const _CN_ES_REAL = (() => {
+  try {
+    const p = new URLSearchParams(location.search);
+    if (p.get('real') === '1') localStorage.setItem('casanogal_fuente_datos', 'real');
+    if (p.get('real') === '0') localStorage.setItem('casanogal_fuente_datos', 'demo');
+    const f = localStorage.getItem('casanogal_fuente_datos');
+    if (f === 'real') return true;
+    if (f === 'demo') return false;
+  } catch (e) {}
+  return /(^|[.-])real([.-]|$)/i.test((typeof location !== 'undefined' && location.hostname) || '');
+})();
+// Fecha local (no UTC) para no correr el día en la madrugada de Chile.
+const HOY_ISO = _CN_ES_REAL
+  ? (() => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); })()
+  : '2026-05-20'; // demo: miércoles 20 mayo 2026
+const HOY_HORA = _CN_ES_REAL
+  ? (() => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; })()
+  : 10.5; // demo: 10:30 — para la línea "ahora"
 
 function fechaDeDia(dia) {
   // weekStart es lunes ISO, devuelve fecha ISO del día solicitado
