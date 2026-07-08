@@ -2,6 +2,9 @@
 const Main = {
   async init() {
     try {
+      // Sincronización con la planilla compartida (si está configurada): trae el estado
+      // guardado ANTES de cargar los datos, y activa el espejo de escrituras.
+      if (typeof Sync !== 'undefined') { await Sync.pull(); Sync.init(); }
       await Data.load();
     } catch (e) {
       document.getElementById('main').innerHTML = `<div class="empty-state"><div class="empty-state-title">No se pudo cargar data.json</div><div>${UI.esc(e.message)}</div></div>`;
