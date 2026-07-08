@@ -70,7 +70,7 @@ const _CN_ES_REAL = (() => {
 // Fecha local (no UTC) para no correr el día en la madrugada de Chile.
 const HOY_ISO = _CN_ES_REAL
   ? (() => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); })()
-  : '2026-05-20'; // demo: miércoles 20 mayo 2026
+  : '2026-07-08'; // demo: miércoles 8 julio 2026 (data desplazada +49d para caer en la semana en curso)
 const HOY_HORA = _CN_ES_REAL
   ? (() => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; })()
   : 10.5; // demo: 10:30 — para la línea "ahora"
