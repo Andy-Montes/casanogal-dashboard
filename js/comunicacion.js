@@ -29,7 +29,7 @@ const Comunicacion = {
       <div id="paRoot" class="pa-root">
         ${this._paHeader(n)}
         <div class="pa-grid">
-          <div class="pa-col-main">${this._paHorario(n)}${this._paParticipacion(n)}${this._paHorarioPadres(n)}</div>
+          <div class="pa-col-main">${this._paHorario(n)}${this._paParticipacion(n)}</div>
           <aside class="pa-col-side">
             ${this._paEquipo(n)}
             ${this._paCapsulas(n)}
@@ -78,49 +78,60 @@ const Comunicacion = {
   // semanal con día y hora. Observaciones (desde la semana 2) = el papá acompaña la sesión de TO/
   // Fono/Cog del niño esa semana; coaching viernes 10-12; taller jueves. Solo intensivo.
   _paParticipacion(n) {
-    if (!UI.esIntensivo(n)) return '';
     const fechas = fechasSemana();
     const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
     const ABBR = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+    const esInt = UI.esIntensivo(n);
     const inicio = n.fecha_inicio_programa || fechas[0];
     const semNum = Math.floor((new Date(this._lunISO(fechas[0])) - new Date(this._lunISO(inicio))) / (7 * 86400000)) + 1;
     const eventos = DIAS.map(() => []);
-    // Observaciones desde la semana 2: una por TO / Fono / Cognitivo (Kine a veces), en el bloque real del niño
-    if (semNum >= 2) {
-      const OBS = { 'Terapia Ocupacional': 1, 'Fonoaudiología': 1, 'Cognitivo': 1 }; // Kine "a veces" → lo agrega coordinación
-      const vistas = {};
-      Data.sesionesDeNino(n.id_nino)
-        .filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo' && OBS[s.tipo_terapia])
-        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
-        .forEach(s => {
-          if (vistas[s.tipo_terapia]) return; // una observación por disciplina
-          vistas[s.tipo_terapia] = 1;
-          const di = DIAS.indexOf(s.dia_semana);
-          if (di >= 0) eventos[di].push({ hora: s.hora_inicio, horaFin: s.hora_fin, txt: 'Observación · ' + s.tipo_terapia, tag: 'obs' });
-        });
+    if (esInt) {
+      // Observaciones desde la semana 2: 1ª sesión de TO/Fono/Cog del niño esa semana (Kine a veces)
+      if (semNum >= 2) {
+        const OBS = { 'Terapia Ocupacional': 1, 'Fonoaudiología': 1, 'Cognitivo': 1 };
+        const vistas = {};
+        Data.sesionesDeNino(n.id_nino)
+          .filter(s => fechas.includes(s.fecha) && s.tipo_actividad !== 'Reunión de equipo' && OBS[s.tipo_terapia])
+          .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '') || (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+          .forEach(s => {
+            if (vistas[s.tipo_terapia]) return;
+            vistas[s.tipo_terapia] = 1;
+            const di = DIAS.indexOf(s.dia_semana);
+            if (di >= 0) eventos[di].push({ hora: s.hora_inicio, horaFin: s.hora_fin, txt: 'Observación · ' + s.tipo_terapia, tag: 'obs' });
+          });
+      }
+      // Coaching viernes 10:00–12:00 · Taller jueves
+      eventos[4].push({ hora: '10:00', horaFin: '12:00', txt: 'Coaching para papás', tag: 'coach' });
+      eventos[3].push({ hora: '', horaFin: '', txt: 'Taller para papás', tag: 'taller' });
     }
-    // Coaching viernes 10:00–12:00 · Taller jueves
-    eventos[4].push({ hora: '10:00', horaFin: '12:00', txt: 'Coaching para papás', tag: 'coach' });
-    eventos[3].push({ hora: '', horaFin: '', txt: 'Taller para papás', tag: 'taller' });
+    // Sesiones "solo papás" del niño que caigan en la semana visible (con su día y hora reales)
+    Data.sesionesDeNino(n.id_nino).filter(s => this._esPadresSolos(s) && fechas.includes(s.fecha)).forEach(s => {
+      const di = DIAS.indexOf(s.dia_semana);
+      if (di >= 0) eventos[di].push({ hora: s.hora_inicio, horaFin: s.hora_fin, txt: s.tipo_terapia || s.tipo_actividad || 'Sesión para papás', tag: 'coach' });
+    });
+    if (!eventos.some(e => e.length)) return '';
+    // Misma grilla que el calendario del niño: día + fecha en el encabezado, hora en cada tarjeta
     const cols = DIAS.map((d, i) => {
+      const [, , dd] = fechas[i].split('-').map(Number);
+      const esHoy = fechas[i] === HOY_ISO;
       const evs = eventos[i].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
       const cuerpo = evs.length ? evs.map(e => `
         <div class="pa-ses pa-particip-ev is-${e.tag}">
           <div class="pa-ses-time mono">${e.hora ? UI.esc(e.hora) + (e.horaFin ? '–' + UI.esc(e.horaFin) : '') : 'Por confirmar'}</div>
           <div class="pa-ses-esp">${UI.esc(e.txt)}</div>
         </div>`).join('') : '<div class="pa-day-empty">—</div>';
-      return `<div class="pa-day"><div class="pa-day-head"><span class="pa-day-name">${ABBR[i]}</span></div><div class="pa-day-body">${cuerpo}</div></div>`;
+      return `<div class="pa-day${esHoy ? ' is-today' : ''}"><div class="pa-day-head"><span class="pa-day-name">${ABBR[i]}</span><span class="pa-day-date">${dd}</span></div><div class="pa-day-body">${cuerpo}</div></div>`;
     }).join('');
     return `
       <section class="pa-card pa-particip-card">
         <div class="pa-card-head">
           <div>
-            <div class="pa-card-eyebrow">Su participación · semana ${semNum}</div>
+            <div class="pa-card-eyebrow">Su participación${esInt ? ' · semana ' + semNum : ''}</div>
             <h2 class="pa-card-title">Su horario de participación</h2>
           </div>
         </div>
         <div class="pa-week">${cols}</div>
-        <div class="pa-particip-hint">Observaciones cada semana desde la semana 2 (TO, Fono y Cognitivo; a veces Kine) · Coaching los viernes 10:00–12:00 · Taller los jueves. Coordinación confirma la hora exacta de cada observación.</div>
+        ${esInt ? '<div class="pa-particip-hint">Observaciones cada semana desde la semana 2 (TO, Fono y Cognitivo; a veces Kine) · Coaching los viernes 10:00–12:00 · Taller los jueves. Coordinación confirma la hora exacta de cada observación.</div>' : ''}
       </section>`;
   },
 
@@ -401,7 +412,7 @@ const Comunicacion = {
         // de otra semana quedaban congeladas / no aparecían.
         const n = Data.nino(DEMO_USERS.padres.id_nino);
         const col = root.querySelector('.pa-col-main');
-        if (col && n) col.innerHTML = this._paHorario(n) + this._paHorarioPadres(n);
+        if (col && n) col.innerHTML = this._paHorario(n) + this._paParticipacion(n);
         return;
       }
       if (e.target.closest('#paDescargar')) { Main._downloadPDF(); return; }
